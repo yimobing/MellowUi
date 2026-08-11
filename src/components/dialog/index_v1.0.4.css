@@ -1,0 +1,114 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 弹窗外层容器 */
+.mel-dialog-wrap {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+/* 遮罩层 */
+.mel-dialog-mask {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+/* 弹窗主体盒子 */
+.mel-dialog-box {
+    position: relative;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* 头部标题栏 */
+.mel-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+}
+.mel-dialog-title {
+    font-size: 18px;
+    color: #222;
+}
+.mel-dialog-close {
+    font-size: 22px;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+}
+.mel-dialog-close:hover {
+    color: #333;
+}
+
+/* 内容区域 */
+.mel-dialog-content {
+    padding: 20px;
+    font-size: 15px;
+    color: #555;
+    line-height: 1.6;
+    overflow-y: auto;
+}
+
+/* 底部按钮容器 核心修复：alert单按钮靠右排布 */
+.mel-dialog-footer {
+    display: flex;
+    padding: 16px 20px;
+    gap: 12px;
+    border-top: 1px solid #eee;
+    justify-content: flex-end;
+}
+
+/* prompt输入框 */
+.mel-prompt-input {
+    margin-top: 12px;
+}
+.mel-prompt-input input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* 按钮通用样式 */
+.mel-btn {
+    padding: 7px 18px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.mel-btn-cancel {
+    background: #f5f5f5;
+    color: #333;
+}
+.mel-btn-primary {
+    background: #1677ff;
+    color: #fff;
+}
+
+/* 主题配色拓展 */
+.mel-theme-success .mel-btn-primary {
+    background: #00b42a;
+}
+.mel-theme-warning .mel-btn-primary {
+    background: #ff7d00;
+}
+.mel-theme-danger .mel-btn-primary {
+    background: #f53f3f;
+}

@@ -1,0 +1,145 @@
+/*
+MelUi Dialog 弹窗组件样式
+版本：v1.0.6
+创建时间：2026-08-10
+更新时间：2026-08-10
+兼容：IE9/10/11、移动端自适应
+*/
+.melui-dialog-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+}
+.melui-dialog-wrap {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 420px;
+    min-width: 320px;
+    max-width: 90%;
+    background: #ffffff;
+    border-radius: 6px;
+    overflow: hidden;
+    z-index: 9999;
+}
+.melui-dialog-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid #eeeeee;
+    position: relative;
+    background: #fff;
+}
+.melui-dialog-title {
+    font-size: 16px;
+    color: #333;
+}
+.melui-dialog-close {
+    position: absolute;
+    right: 16px;
+    top: 14px;
+    font-size: 18px;
+    color: #999;
+    cursor: pointer;
+}
+.melui-dialog-body {
+    padding: 20px 18px;
+    text-align: center;
+    font-size: 14px;
+    color: #333;
+}
+/* 输入框容器 */
+.melui-dialog-input-box {
+    margin-top: 14px;
+}
+.melui-dialog-input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+}
+/* 按钮容器默认横向 */
+.melui-dialog-footer {
+    padding: 14px 18px;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+/* 竖向布局修复：按钮自适应内容宽度，不再默认铺满 */
+.melui-dialog-footer-vert {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+/* 开启通栏铺满才拉伸100% */
+.melui-dialog-footer-full {
+    justify-content: stretch;
+}
+.melui-dialog-footer-full .melui-dialog-btn {
+    width: 100%;
+}
+/* 竖向+通栏铺满：撑满整行 */
+.melui-dialog-footer-vert.melui-dialog-footer-full {
+    align-items: stretch;
+}
+/* 按钮基础 */
+.melui-dialog-btn {
+    padding: 8px 16px;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    white-space: nowrap;
+}
+/* 主题色 */
+.melui-btn-default {
+    background: #fff;
+    color: #606266;
+}
+.melui-btn-info {
+    background: #409eff;
+    color: #fff;
+    border-color: #409eff;
+}
+.melui-btn-success {
+    background: #67c23a;
+    color: #fff;
+    border-color: #67c23a;
+}
+.melui-btn-warning {
+    background: #e6a23c;
+    color: #fff;
+    border-color: #e6a23c;
+}
+.melui-btn-danger {
+    background: #f56c6c;
+    color: #fff;
+    border-color: #f56c6c;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 576px) {
+    .melui-dialog-wrap {
+        width: 92%;
+        min-width: unset;
+    }
+    .melui-dialog-header {
+        padding: 12px 15px;
+    }
+    .melui-dialog-body {
+        padding: 16px 15px;
+    }
+    .melui-dialog-footer {
+        padding: 12px 15px;
+        gap: 10px;
+    }
+    .melui-dialog-btn {
+        padding: 10px 12px;
+    }
+}

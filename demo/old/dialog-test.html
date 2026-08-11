@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="applicable-device" content="pc,mobile">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+<title>MelUi Dialog 弹窗插件使用文档</title>
+<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/styles/stackoverflow-light.min.css">
+<script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+<link rel="stylesheet" href="../src/components/dialog/style.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 20px;
+    font-family: "Microsoft YaHei",system-ui,sans-serif;
+    color: #303133;
+    line-height: 1.7;
+}
+h1 {
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: #1f2937;
+}
+.version-desc {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+h2 {
+    font-size: 18px;
+    margin: 36px 0 16px;
+    padding-left: 12px;
+    border-left: 4px solid #409eff;
+}
+h3 {
+    font-size: 16px;
+    margin: 24px 0 12px;
+    color: #222;
+}
+.desc-text {
+    font-size: 14px;
+    color: #606266;
+    margin-bottom: 12px;
+}
+.btn-box {
+    margin: 10px 0;
+}
+.run-btn {
+    padding: 8px 16px;
+    border: 1px solid #dcdfe6;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.run-btn:hover {
+    background: #f5f7fa;
+}
+pre {
+    padding: 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0 26px;
+    font-size: 13px;
+}
+.note {
+    padding: 12px 16px;
+    background: #fef6e7;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #e6a23c;
+    margin: 20px 0;
+}
+</style>
+</head>
+<body>
+<h1>MelUi Dialog 弹窗插件</h1>
+<div class="version-desc">兼容：IE9/10/11、PC端、移动端自适应</div>
+
+<h2>一、引入方式</h2>
+<p class="desc-text">页面引入CSS样式与JS脚本，即可全局调用弹窗方法</p>
+<pre><code class="html">
+&lt;link rel="stylesheet" href="../src/components/dialog/style.css"&gt;
+&lt;script src="../src/components/dialog/index.js"&gt;&lt;/script&gt;
+</code></pre>
+
+<h2>二、全局调用方式</h2>
+<ul class="desc-text">
+    <li>快捷调用：MelUi.alert() / MelUi.confirm() / MelUi.prompt()</li>
+    <li>完整自定义实例：new MelUi.Dialog(options)</li>
+</ul>
+
+<h2>三、全部配置参数说明</h2>
+<p class="desc-text">初始化传入配置对象，完整参数默认结构如下：</p>
+<pre><code class="javascript">
+{
+    title: "",
+    content: "",
+    theme: "info",
+    showClose: false,
+    btnDirection: "horizontal",
+    btnFullWidth: false,
+    buttons: null,
+    defaultValue: "",
+    onClick: null
+}
+</code></pre>
+<p class="desc-text">
+title：弹窗标题，空字符串不渲染标题栏<br>
+content：弹窗正文提示文字<br>
+theme：按钮主题：info / success / warning / danger / default<br>
+showClose：是否显示右上角关闭按钮<br>
+btnDirection：按钮排布：horizontal横向、vertical竖向<br>
+btnFullWidth：按钮是否铺满整行宽度<br>
+buttons：自定义按钮数组，优先级高于默认按钮<br>
+defaultValue：prompt输入框默认填充文本<br>
+onClick：按钮点击回调函数
+</p>
+
+<div class="note">
+回调规则：默认双按钮弹窗 ret=1 取消，ret=2 确认；竖向不通栏时按钮自适应文字宽度居中
+</div>
+
+<h2>四、功能使用示例</h2>
+<div id="demoWrap"></div>
+
+<!-- 优先加载插件主体 -->
+<script src="../src/components/dialog/index.js"></script>
+<script>
+/**
+ * 统一生成示例工具函数
+ * @param {String} title 示例标题
+ * @param {String} btnId 按钮ID
+ * @param {String} type 类型：alert/confirm/prompt/custom
+ * @param {String} codeText 页面展示的完整代码文本
+ * @param {Object} runOpts 实际运行配置（包含函数）
+ */
+function createDemo(title, btnId, type, codeText, runOpts) {
+    let html = `
+<h3>${title}</h3>
+<div class="btn-box">
+    <button class="run-btn" id="${btnId}">点击唤起弹窗</button>
+</div>
+<pre><code class="javascript">${codeText}</code></pre>
+    `;
+    document.getElementById("demoWrap").innerHTML += html;
+
+    // 绑定点击事件，使用完整带函数的运行参数
+    const btn = document.getElementById(btnId);
+    btn.onclick = function () {
+        switch (type) {
+            case "alert":
+                MelUi.alert(runOpts);
+                break;
+            case "confirm":
+                MelUi.confirm(runOpts);
+                break;
+            case "prompt":
+                MelUi.prompt(runOpts);
+                break;
+            case "custom":
+                new MelUi.Dialog(runOpts);
+                break;
+        }
+    };
+}
+
+// ========== 统一配置示例：展示文本、运行参数分开定义，一处维护 ==========
+createDemo(
+    "示例1：alert 消息提示框",
+    "btnAlert",
+    "alert",
+`MelUi.alert({
+    title: "系统提示",
+    content: "文件上传成功",
+    theme: "success"
+});`,
+    {
+        title: "系统提示",
+        content: "文件上传成功",
+        theme: "success"
+    }
+);
+
+createDemo(
+    "示例2：confirm 删除确认弹窗",
+    "btnConfirm",
+    "confirm",
+`MelUi.confirm({
+    title: "删除确认",
+    content: "删除后数据无法找回，确定要删除吗？",
+    theme: "danger",
+    onClick: function(ret) {
+        ret === 2 ? console.log("确认删除") : console.log("取消删除");
+    }
+});`,
+    {
+        title: "删除确认",
+        content: "删除后数据无法找回，确定要删除吗？",
+        theme: "danger",
+        onClick: function (ret) {
+            ret === 2 ? console.log("确认删除") : console.log("取消删除");
+        }
+    }
+);
+
+createDemo(
+    "示例3：竖向按钮、不通栏",
+    "btnVertical",
+    "confirm",
+`MelUi.confirm({
+    title: "夜间模式",
+    content: "降低屏幕亮度舒缓用眼疲劳",
+    btnDirection: "vertical",
+    btnFullWidth: false,
+    theme: "warning"
+});`,
+    {
+        title: "夜间模式",
+        content: "降低屏幕亮度舒缓用眼疲劳",
+        btnDirection: "vertical",
+        btnFullWidth: false,
+        theme: "warning"
+    }
+);
+
+createDemo(
+    "示例4：竖向按钮、移动端通栏铺满",
+    "btnMobileFull",
+    "confirm",
+`MelUi.confirm({
+    title: "夜间模式",
+    content: "降低屏幕亮度舒缓用眼疲劳",
+    btnDirection: "vertical",
+    btnFullWidth: true,
+    theme: "warning"
+});`,
+    {
+        title: "夜间模式",
+        content: "降低屏幕亮度舒缓用眼疲劳",
+        btnDirection: "vertical",
+        btnFullWidth: true,
+        theme: "warning"
+    }
+);
+
+createDemo(
+    "示例5：prompt 文本输入弹窗",
+    "btnPrompt",
+    "prompt",
+`MelUi.prompt({
+    title: "修改昵称",
+    content: "填写新昵称",
+    defaultValue: "默认昵称",
+    theme: "info",
+    onClick: function(ret, val) {
+        if (ret === 2) alert("已设置昵称：" + val);
+    }
+});`,
+    {
+        title: "修改昵称",
+        content: "填写新昵称",
+        defaultValue: "默认昵称",
+        theme: "info",
+        onClick: function (ret, val) {
+            if (ret === 2) alert("已设置昵称：" + val);
+        }
+    }
+);
+
+createDemo(
+    "示例6：自定义多按钮弹窗",
+    "btnCustom",
+    "custom",
+`new MelUi.Dialog({
+    title: "订单操作",
+    content: "选择处理方案",
+    showClose: true,
+    btnDirection: "vertical",
+    btnFullWidth: true,
+    buttons: [
+        { text: "取消订单", type: "default" },
+        { text: "修改地址", type: "info" },
+        { text: "确认发货", type: "success" }
+    ],
+    onClick: function(idx) {
+        console.log("点击按钮序号：", idx);
+    }
+});`,
+    {
+        title: "订单操作",
+        content: "选择处理方案",
+        showClose: true,
+        btnDirection: "vertical",
+        btnFullWidth: true,
+        buttons: [
+            { text: "取消订单", type: "default" },
+            { text: "修改地址", type: "info" },
+            { text: "确认发货", type: "success" }
+        ],
+        onClick: function (idx) {
+            console.log("点击按钮序号：", idx);
+        }
+    }
+);
+
+// 全部DOM渲染完毕，仅执行一次代码高亮，消除重复调用
+hljs.highlightAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+结论：现阶段完全可以打包试运行发布，整体条件已经成熟，同时区分「简易原生打包」「标准化工程打包」两套方案，贴合你 IE 兼容、内网后台使用场景，顺带标注风险与前置检查项
+一、打包前必须自检 6 项前置条件（全部达标再打包）
+1. 代码语法与兼容性核验
+JS 通篇 ES5，无箭头函数、let/const、模板字符串等 ES6 + 语法
+IE9/10/11 完整自测：alert/confirm/prompt/ 自定义弹窗、按钮回调、层级堆叠、关闭逻辑均正常
+polyfill 按需配置：IE 条件注释加载 es5-shim + es6-promise，现代浏览器无冗余加载
+2. 目录结构规整无误
+plaintext
+项目根目录
+├─ src
+│  └─ components
+│     └─ dialog
+│        ├─ polyfill          # 垫片文件存放目录
+│        │  ├─ es5-shim.min.js
+│        │  └─ es6-promise.auto.min.js
+│        ├─ index.js          # 源码未压缩
+│        └─ index.css         # 样式未压缩
+├─ demo
+│  └─ dialog-demo.html        # 演示页（发布时可剔除）
+└─ CHANGELOG.md              # 版本更新日志
+3. 版本与注释锁定
+头部版本、更新时间统一；本次初次打包定为 v1.0.6，CHANGELOG 记录初次打包上线、基础弹窗全套功能完成
+4. 业务逻辑无遗留 bug
+多弹窗层级不会互相遮挡
+prompt 输入取值、按钮回调序号 ret 计数准确
+关闭 DOM 销毁无内存堆积
+demo 循环绑定闭包问题已修复
+5. 资源路径统一
+所有内部相对路径均为组件内引用，不会出现打包后路径失效
+6. 无冗余调试代码
+console 调试日志、测试注释全部清理干净
+二、两套打包方案（按需选择）
+方案一：极简原生打包（最推荐，适配内网老旧环境、无 node 依赖）
+无需 webpack/rollup，纯文件压缩，上手零成本，最契合你的场景
+打包产出两个版本
+开发版：未压缩 index.js、index.css（用于后续迭代维护）
+生产版：压缩混淆 index.min.js、index.min.css
+压缩工具选择
+JS 压缩：Terser / UglifyJS（只压缩不转译，保留 ES5）
+CSS 压缩：cssnano
+最终发布包结构（对外交付）
+plaintext
+melui-dialog-v1.0.6
+├─ dist
+│  ├─ index.js
+│  ├─ index.min.js
+│  ├─ index.css
+│  ├─ index.min.css
+│  └─ polyfill
+│     ├─ es5-shim.min.js
+│     └─ es6-promise.auto.min.js
+└─ README.md （引入方式、参数文档、IE兼容说明）
+页面引入示例
+html
+预览
+<!-- IE专属加载垫片 -->
+<!--[if lte IE 11]>
+<script src="dist/polyfill/es5-shim.min.js"></script>
+<script src="dist/polyfill/es6-promise.auto.min.js"></script>
+<![endif]-->
+<link rel="stylesheet" href="dist/index.min.css">
+<script src="dist/index.min.js"></script>
+优势：体积小巧、无打包工具依赖、IE 兼容性不会被打包工具篡改、内网部署直接复制文件夹即可
+方案二：标准化工程打包（rollup，对标 ElementUI/Vant 大厂规范，后续拓展用）
+适合未来要新增组件合集、上传 npm、TS 拓展场景
+打包配置要点
+输出格式：umd 通用模块（浏览器直接引入 + CommonJS 都兼容）
+转译关闭：源码已是 ES5，无需 babel 降级
+分别输出未压缩 + 压缩产物
+polyfill 不打包进主 JS，外置按需引入，避免现代浏览器冗余体积
+优点：工程化规范、可上传 npm、方便后续整套 MelUi 组件合集统一管理
+三、打包后会不会影响线上使用？风险 & 规避
+正向优势
+源码 ES5 纯净，打包压缩后不会产生 IE 兼容异常
+API 完全固定，存量页面替换 css/js 文件即可无缝升级
+垫片外置按需加载，现代浏览器加载速度更快
+潜在风险 + 规避
+风险：压缩时破坏代码语法、去掉必要分号引发 IE 报错
+规避：压缩后务必重新打开 IE11 完整跑一遍所有弹窗案例
+风险：发布包附带 demo 调试页面，业务人员误用
+规避：正式交付包剔除 demo 文件夹，只保留 dist 资源 + 文档
+风险：后期迭代版本混乱
+规避：严格语义化版本，小 bug 升级补丁号，新增功能升级次版本，大架构改动升级主版本
+四、对标大厂发布习惯
+附带 README：参数列表、调用示例、IE 兼容说明、更新日志
+区分开发 / 生产压缩包
+polyfill 独立拆分，不侵入主代码
+版本号清晰归档，历史版本留存
+五、实操建议
+现阶段优先走方案一极简打包，试运行一段时间，确认线上内网 IE 环境全部稳定之后，再切换 rollup 工程化打包、上架 npm，稳妥不出错。
+如果你需要，我可以给你：README 文档模板、CHANGELOG 初始内容、压缩简易操作步骤。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------
+        使用方案二进行打包的步骤
+--------------------------------------------
+
+MelUi Dialog Rollup 完整打包流程（方案二：工程化 UMD 打包，兼容浏览器直接引入 + Node/CommonJS，适配 IE9~11）
+整体流程：环境安装 → 新建打包配置文件 → 配置参数（ES5 输出、不转码、压缩、区分开发 / 生产包）→ 打包命令编写 → 打包执行 → 产出 dist 发布文件 → 测试校验
+前置说明
+代码现状：源码已经全部 ES5，无需 Babel 转译，最大程度保留 IE 兼容性
+polyfill 全局外置，绝不打包进组件内部，所有组件共用一套垫片
+打包产物：umd 通用模块格式（浏览器 script 标签直接引入、require 均可使用）
+目录沿用既定结构：
+plaintext
+项目根目录
+├─ src
+│  ├─ polyfill            # 全局垫片公共目录
+│  │  ├─ es5-shim.min.js
+│  │  ├─ es5-sham.min.js
+│  │  └─ es6-promise.auto.min.js
+│  └─ components
+│     └─ dialog
+│        ├─ index.js      # 组件JS源码
+│        └─ index.css     # 组件样式
+├─ demo
+│  └─ dialog-demo.html
+├─ package.json           # npm配置、打包命令
+└─ rollup.config.js      # rollup打包核心配置
+第一步：安装 Node.js 环境
+1. 下载安装
+官网下载 LTS 长期支持版 Node.js，安装完成后打开 CMD / 终端校验：
+bash
+node -v
+npm -v
+输出版本号即代表安装成功
+第二步：项目根目录初始化 npm
+终端进入项目根文件夹
+执行初始化命令，一路回车默认即可：
+bash
+npm init -y
+根目录自动生成 package.json 文件
+第三步：安装打包依赖（开发依赖，仅打包时使用）
+执行安装命令：
+
+# 安装最新的 rollup
+npm install rollup rollup-plugin-terser rollup-plugin-css-only --save-dev
+
+
+如果是win7系统，一般 node v13.14.0，npm 6.14.4，则要安装node13对应的rollup版本
+# 先卸载最新版的 rollup
+npm uninstall rollup rollup-plugin-terser rollup-plugin-css-only --save-dev
+# 再安装适配 Node13 的固定兼容版本
+npm install rollup@2.79.1 rollup-plugin-terser@7.0.2 rollup-plugin-css-only@4.3.0 --save-dev
+
+
+
+依赖作用拆解：
+rollup：打包核心工具
+rollup-plugin-terser：JS 代码压缩混淆（ES5 友好，不会破坏 IE 语法）
+rollup-plugin-css-only：单独抽离 CSS 文件，不和 JS 打包混杂
+第四步：编写 rollup.config.js 打包配置文件（根目录新建）
+javascript
+运行
+// rollup.config.js
+import { terser } from 'rollup-plugin-terser';
+import css from 'rollup-plugin-css-only';
+
+// 打包配置数组：同时输出未压缩版、压缩版
+export default [
+    // 1. 未压缩开发版
+    {
+        input: 'src/components/dialog/index.js', // 组件入口文件
+        output: {
+            file: 'dist/dialog.js', // 输出路径
+            format: 'umd', // 通用模块格式
+            name: 'MelUi', // 全局挂载变量名 window.MelUi
+            exports: 'default'
+        },
+        plugins: [
+            css({
+                output: 'dist/dialog.css' // 提取css输出位置
+            })
+        ]
+    },
+    // 2. 压缩生产版
+    {
+        input: 'src/components/dialog/index.js',
+        output: {
+            file: 'dist/dialog.min.js',
+            format: 'umd',
+            name: 'MelUi',
+            exports: 'default'
+        },
+        plugins: [
+            css({
+                output: 'dist/dialog.min.css'
+            }),
+            terser({
+                ecma: 5, // 强制输出ES5语法，保障IE兼容
+                mangle: true,
+                compress: true
+            })
+        ]
+    }
+];
+第五步：修改 package.json 打包脚本
+打开 package.json，找到 "scripts" 节点，替换为：
+json
+"scripts": {
+  "build": "rollup -c"
+}
+含义：运行 npm run build 就会执行打包
+第六步：执行打包
+终端根目录运行打包命令：
+bash
+npm run build
+打包成功后，根目录自动生成 dist 文件夹，产出 4 个文件：
+plaintext
+dist
+├─ dialog.js       未压缩源码（调试、迭代使用）
+├─ dialog.css      未压缩样式
+├─ dialog.min.js   压缩混淆线上生产JS
+└─ dialog.min.css  压缩线上生产CSS
+第七步：dist 发布包完整结构（最终交付用户）
+plaintext
+melui-dialog-v1.0.6
+├─ dist
+│  ├─ dialog.js
+│  ├─ dialog.css
+│  ├─ dialog.min.js
+│  └─ dialog.min.css
+├─ polyfill                # 全局垫片（整套MelUi通用）
+│  ├─ es5-shim.min.js
+│  ├─ es5-sham.min.js
+│  └─ es6-promise.auto.min.js
+└─ README.md               # 使用文档、IE兼容说明
+第八步：页面引入写法（线上正式使用标准格式）
+html
+预览
+<!-- IE9/10/11 专属加载垫片，现代浏览器忽略 -->
+<!--[if lte IE 11]>
+<script src="polyfill/es5-shim.min.js"></script>
+<script src="polyfill/es5-sham.min.js"></script>
+<script src="polyfill/es6-promise.auto.min.js"></script>
+<![endif]-->
+
+<!-- 引入压缩版资源 -->
+<link rel="stylesheet" href="dist/dialog.min.css">
+<script src="dist/dialog.min.js"></script>
+第九步：打包后校验（必做，防止 IE 出错）
+打开 IE11，引入 dist 文件，依次测试：alert /confirm/prompt / 自定义弹窗、按钮回调、弹窗关闭、层级堆叠
+Chrome 打开验证功能正常
+查看 JS 源码，确认依旧是 ES5 语法，无箭头函数、let/const
+
+
+第十步：后续迭代打包规则
+修改源码后，更改版本号、头部更新时间
+
+
+新建 src/index.js 文件，代码如下：
+// 聚合弹窗组件，后续新增组件依次在此引入
+import './components/dialog/index.js';
+export default window.MelUi;
+
+
+执行 
+npm run build 
+
+重新打包覆盖 dist 文件
+
+更新 CHANGELOG.md 记录变更内容
+补充关键注意事项
+全程不会把 polyfill 打包进 JS 内部，公共垫片全局复用，符合大厂设计规范
+ecma: 5 强制锁死 ES5 输出，terser 不会转成 ES6 语法，杜绝 IE 报错
+CSS 单独抽离，方便后期自定义主题覆盖样式
+如需后续整套 MelUi 多组件统一打包，只需要新增入口配置即可复用这套流程
+需要我顺带把 README.md 使用文档模板一并写给你吗？

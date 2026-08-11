@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="applicable-device" content="pc,mobile">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>MelUi Dialog 弹窗示例</title>
+    <!-- 国内BootCDN稳定源 highlight 11.3.1 -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/styles/stackoverflow-light.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        h1 {
+            text-align: center;
+            font-size: 26px;
+            color: #222;
+            margin-bottom: 42px;
+        }
+        .demo-item {
+            margin-bottom: 36px;
+        }
+        .demo-btn {
+            padding: 7px 18px;
+            border: 1px solid #ccc;
+            background: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 14px;
+        }
+        .demo-btn:hover {
+            background-color: #f0f2f5;
+        }
+        .code-panel {
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        /* 纯文本源码容器隐藏 */
+        .script-source {
+            display: none;
+        }
+    </style>
+    <!-- 弹窗组件样式（本地路径保留） -->
+    <link rel="stylesheet" href="../src/components/dialog/style.css">
+</head>
+<body>
+    <h1>确认对话框 / Alert 弹窗示例</h1>
+    <div id="container"></div>
+
+    <!-- 源码存储区：type="text/plain" 仅做文本容器，不会自动执行 -->
+    <div class="script-source">
+        <script type="text/plain" id="s1">
+MelUi.alert("这是一条普通信息提示内容", "消息提醒", "info", function () {
+    console.log("已关闭普通提示");
+});
+        </script>
+        <script type="text/plain" id="s2">
+MelUi.confirm("删除后数据无法恢复，确认永久删除本条记录？", "删除确认", "danger", function () {
+    alert("已执行删除操作");
+});
+        </script>
+        <script type="text/plain" id="s3">
+MelUi.prompt("请填写备注内容：", "填写备注", "", function (val) {
+    alert("你输入的内容：" + val);
+});
+        </script>
+        <script type="text/plain" id="s4">
+MelUi.alert("操作执行成功！", "完成", "success", function () {
+    console.log("成功弹窗关闭");
+});
+        </script>
+        <script type="text/plain" id="s5">
+MelUi.alert("参数填写有误，请检查表单", "警告", "warning", null);
+        </script>
+        <script type="text/plain" id="s6">
+MelUi.confirm("是否要清空当前草稿内容？清空后无法找回", "清空草稿", "warning", function(){
+    console.log("草稿已清空");
+});
+        </script>
+        <script type="text/plain" id="s7">
+MelUi.prompt("设置自定义昵称：", "昵称设置", "默认昵称", function(val){
+    val && alert("新昵称：" + val);
+});
+        </script>
+    </div>
+
+    <!-- 弹窗组件JS -->
+    <script src="../src/components/dialog/index.js"></script>
+    <!-- 国内CDN JS文件 -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+    <script>
+    // 完整7组弹窗示例配置
+    var demoConfig = [
+        { btnText: "普通信息Alert", sourceId: "s1" },
+        { btnText: "删除确认弹窗(Danger主题)", sourceId: "s2" },
+        { btnText: "输入弹窗Prompt", sourceId: "s3" },
+        { btnText: "成功提示弹窗", sourceId: "s4" },
+        { btnText: "警告提示弹窗", sourceId: "s5" },
+        { btnText: "清空草稿确认弹窗", sourceId: "s6" },
+        { btnText: "昵称自定义输入弹窗", sourceId: "s7" }
+    ];
+
+    // 页面渲染初始化
+    function initDemo() {
+        var wrap = document.getElementById("container");
+        var htmlList = [];
+
+        // 循环生成所有示例区块
+        for (var i = 0; i < demoConfig.length; i++) {
+            var item = demoConfig[i];
+            var codeRaw = document.getElementById(item.sourceId).innerHTML.trim();
+            // 标准规范：<pre><code class="language-javascript">
+            htmlList.push('<div class="demo-item">');
+            htmlList.push('    <button class="demo-btn" data-codeid="' + item.sourceId + '">' + item.btnText + '</button>');
+            htmlList.push('    <div class="code-panel">');
+            htmlList.push('        <pre><code class="language-javascript">' + codeRaw + '</code></pre>');
+            htmlList.push('    </div>');
+            htmlList.push('</div>');
+        }
+        wrap.innerHTML = htmlList.join('\r\n');
+
+        // 全局执行代码高亮着色
+        hljs.highlightAll();
+
+        // 批量绑定按钮点击事件
+        var btnArr = wrap.querySelectorAll('.demo-btn');
+        for (var j = 0; j < btnArr.length; j++) {
+            btnArr[j].onclick = function () {
+                var cid = this.getAttribute('data-codeid');
+                var execCode = document.getElementById(cid).innerHTML;
+                new Function(execCode)();
+            };
+        }
+    }
+
+    // 启动渲染
+    initDemo();
+    </script>
+</body>
+</html>

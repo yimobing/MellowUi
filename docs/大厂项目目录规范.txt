@@ -1,0 +1,62 @@
+melui/
+├── package.json
+├── rollup.config.js
+├── babel.config.js
+├── postcss.config.js
+├── config/                  # 打包脚本、环境配置
+│   ├── build-full.js        # 打包全量文件
+│   └── build-module.js      # 打包按需组件模块
+├── src/
+│   ├── index.js             # 全量入口：导出所有组件、全局MelUi对象
+│   ├── index.ie.js          # IE兼容入口（注入polyfill、IE补丁）
+│   ├── styles/              # 全局公共样式层
+│   │   ├── base.css         # 全局重置、通用基础样式
+│   │   ├── vars.css         # 主题CSS变量、色值、尺寸
+│   │   ├── base.ie.css      # IE降级全局样式（剔除css变量、补充-ms前缀）
+│   │   └── index.css        # 汇总全局样式
+│   ├── core/                # 内核公共底层（所有组件共用）
+│   │   ├── util.js          # 通用工具：浅合并、class操作、浏览器判断
+│   │   ├── scroll-lock.js   # 滚动锁定、IE滚动抖动修复
+│   │   ├── zindex.js        # 全局层级管理器，防止弹窗互相遮挡
+│   │   └── shortcut.js      # alert/confirm/prompt 快捷弹窗封装
+│   ├── compat/              # IE专属垫片仓库
+│   │   └── ie-polyfill.js   # Promise、数组方法、DOM API 兼容垫片
+│   └── components/          # 所有UI组件统一存放，核心目录
+│       ├── dialog/          # 弹窗组件
+│       │   ├── index.js     # 组件逻辑源码
+│       │   ├── style.css    # 标准版样式
+│       │   └── style.ie.css # IE降级样式
+│       ├── btn/             # 按钮组件
+│       │   ├── index.js
+│       │   ├── style.css
+│       │   └── style.ie.css
+│       ├── input/           # 输入框
+│       ├── message/         # 轻提示
+│       └── multi-select/    # 你之前开发的下拉多选组件
+├── dist/                    # 打包输出目录（自动生成）
+│   ├── 全量打包产物
+│   │   ├── melui.js
+│   │   ├── melui.min.js
+│   │   ├── melui.ie.js
+│   │   ├── melui.ie.min.js
+│   │   ├── melui.css
+│   │   ├── melui.min.css
+│   │   ├── melui.ie.css
+│   │   └── melui.ie.min.css
+│   └── components/         # 按需拆分单组件资源
+│       ├── dialog/
+│       │   ├── index.js
+│       │   ├── style.css
+│       │   ├── index.ie.js
+│       │   └── style.ie.css
+│       ├── btn/
+│       └── ...其他组件
+├── demo/                    # 场景演示页面
+│   ├── full-use.html        # 全量引入示例（.NET内嵌网页主流用法）
+│   ├── dialog/
+│   │   ├── base.html
+│   │   ├── multi-btn.html
+│   │   └── ie9-test.html
+│   └── module-use.html      # 按需引入示例
+├── docs/                    # 使用文档、参数手册、兼容说明
+└── test/                    # 兼容性测试用例

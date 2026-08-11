@@ -1,0 +1,54 @@
+一、回顾之前约定的 IE 兼容方案
+没错，最开始敲定的兼容策略：
+主体代码全程手写 ES5 原生语法，坚决不用箭头函数、let/const、模板字符串、解构、forEach 等 ES6+ 特性；
+遇到 IE9/10/11 原生缺失的底层 API（Promise、数组部分方法、classList 等），外部按需引入轻量 polyfill 垫片，而非改写主体业务逻辑。
+细分两块：
+es5-shim / es5-sham
+补齐 IE9 残缺的 ES5 数组方法、Object 静态方法、函数特性，保证数组遍历、对象操作不出错；
+es6-promise
+IE9~IE11 原生不存在 Promise，如果后续弹窗要增加异步关闭、异步加载内容、动画异步回调场景，单独引入 Promise 垫片；
+现代浏览器会自动忽略 polyfill，不会冗余加载。
+二、垫片加载最佳实践（贴合后台内网场景）
+1、引入顺序（必须严格）
+html
+预览
+<!-- 优先加载垫片 -->
+<script src="../src/components/dialog/polyfill/es5-shim.min.js"></script>
+<script src="../src/components/dialog/polyfill/es6-promise.auto.min.js"></script>
+<!-- 再加载组件本体 -->
+<link rel="stylesheet" href="../src/components/dialog/index.css">
+<script src="../src/components/dialog/index.js"></script>
+2、按需加载优化（推荐，减少现代浏览器多余体积）
+利用 IE 条件注释，仅 IE9/10/11 才加载垫片：
+html
+预览
+<!--[if lte IE 11]>
+<script src="../src/components/dialog/polyfill/es5-shim.min.js"></script>
+<script src="../src/components/dialog/polyfill/es6-promise.auto.min.js"></script>
+<![endif]-->
+优势：Chrome、Edge、Firefox 完全不会下载垫片，无性能损耗；只有老旧内网 IE 环境启用兼容补丁。
+三、垫片适用边界 & 注意事项
+主体代码依然死守 ES5
+哪怕有 polyfill，代码内部依旧统一：
+var 声明变量、普通 function、for 循环拼接字符串，不因为有垫片就随意上 ES6 语法；
+目的：降低调试成本，规避垫片兼容细微差异。
+Promise 仅预留备用
+现阶段弹窗同步逻辑为主（点击按钮立刻回调），暂时用不到 Promise；
+后续新增异步场景（弹窗延时关闭、接口请求后弹出、动态渲染弹窗内容）再启用即可。
+样式层面 polyfill 无法解决
+flex 间距、transform 居中细节、阴影圆角降级，依旧靠 CSS 兼容写法处理，JS 垫片管不了样式渲染差异。
+打包发布处理
+开发环境：垫片单独存放 dialog/polyfill 文件夹；
+生产压缩包：可把垫片代码内嵌合并到 index.js 头部（仅 IE 生效区段），方便业务页面只引入一个 JS 文件。
+四、对标大厂 UI 库的通用做法（ElementUI / Vant）
+大厂底层逻辑完全一致：
+内核源码编译降级至 ES5；
+缺失 API 依靠 polyfill 补充；
+IE 环境专属加载垫片，现代浏览器轻量化运行；
+和咱们这套方案完全吻合，后期工程化打包时可以无缝沿用这套兼容体系。
+五、我会牢记的关键要点
+代码本体永久 ES5，绝不擅自使用 ES6+ 语法糖；
+IE 缺失 API 依靠 es5-shim + es6-promise 外部垫片补充；
+IE 条件注释按需引入，现代浏览器不加载冗余脚本；
+Promise 不作为现阶段必需，预留接口后续拓展异步场景；
+样式兼容单独处理，JS 垫片不解决布局渲染问题。

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"
+        />
+        <meta http-equiv="X-UA-Compatible" content="IE=9; IE=10; IE=11; edge" />
+        <title>MelUi Dialog v1.0.6 弹窗组件演示</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/styles/stackoverflow-light.min.css"
+        />
+        <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+        <!-- IE9/10/11 才加载垫片，现代浏览器直接跳过 -->
+        <!--[if lte IE 11]>
+            <script src="../src/polyfill/es5-shim.min.js"></script>
+            <script src="../src/polyfill/es5-sham.min.js"></script>
+            <script src="../src/polyfill/es6-promise.auto.min.js"></script>
+        <![endif]-->
+        <!-- 固定约定路径 -->
+        <link rel="stylesheet" href="../dist/melui.min.css" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                max-width: 960px;
+                margin: 0 auto;
+                padding: 40px 24px;
+                font-family: "Microsoft YaHei", sans-serif;
+                color: #333;
+                line-height: 1.7;
+            }
+            .page-title {
+                font-size: 26px;
+                margin-bottom: 8px;
+                color: #111;
+            }
+            .version-desc {
+                font-size: 14px;
+                color: #666;
+                margin-bottom: 40px;
+            }
+            h2 {
+                font-size: 18px;
+                margin: 40px 0 16px;
+                padding-left: 12px;
+                border-left: 4px solid #409eff;
+            }
+            h3 {
+                font-size: 16px;
+                margin-bottom: 10px;
+                font-weight: normal;
+            }
+            .demo-box {
+                margin: 32px 0;
+            }
+            .demo-box button {
+                padding: 7px 16px;
+                border: 1px solid #dcdfe6;
+                background: #fff;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+            }
+            .demo-box button:hover {
+                background: #f5f7fa;
+            }
+            pre {
+                margin-top: 12px;
+                padding: 16px;
+                background: #f8f9fa;
+                border-radius: 6px;
+                overflow-x: auto;
+                font-size: 13px;
+            }
+            .tips {
+                padding: 12px 16px;
+                background: #fff7e6;
+                border-radius: 6px;
+                margin: 16px 0;
+                font-size: 14px;
+                color: #e6a23c;
+            }
+        </style>
+    </head>
+    <body>
+        <h1 class="page-title">MelUi Dialog 弹窗对话框组件</h1>
+        <div class="version-desc">
+            版本：v1.0.6 | 兼容IE9~11、移动端自适应 | MelUi.xxx / melui.xxx
+            大小写均可调用
+        </div>
+
+        <h2>一、标准引入方式</h2>
+        <pre><code class="html">
+&lt;link rel="stylesheet" href="../dist/melui.min.css"&gt;
+&lt;script src="../dist/melui.min.js"&gt;&lt;/script&gt;
+</code></pre>
+
+        <h2>二、默认配置参数</h2>
+        <pre><code class="javascript">
+var defaults = {
+    title: "", // 弹窗标题，空则不展示标题栏
+    content: "", // 弹窗正文内容
+    theme: "info", // 按钮主题：info / success / warning / danger / default
+    showClose: false, // 是否显示右上角关闭按钮
+    btnDirection: "horizontal", // 按钮排布：horizontal横向、vert竖向
+    btnFullWidth: false, // 按钮是否通栏铺满整行
+    buttons: null, // 自定义按钮数组，优先级最高
+    onClick: null, // 按钮回调，ret从1开始计数
+    defaultValue: "" // 仅prompt生效，输入框默认文字
+};
+</code></pre>
+
+        <div class="tips">
+            规则：仅prompt带有输入框；alert、confirm、dialog无输入框；回调参数：普通弹窗只返回按钮序号，prompt额外带回输入内容
+        </div>
+
+        <h2>三、调用示例</h2>
+
+        <div class="demo-box">
+            <h3>示例1：MelUi.alert 成功提示弹窗</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+MelUi.alert({
+    title: "系统提示",
+    content: "文件上传全部完成",
+    theme: "success"
+});
+    </code></pre>
+        </div>
+
+        <div class="demo-box">
+            <h3>示例2：melui.confirm 确认删除（小写调用）</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+melui.confirm({
+    title: "删除确认",
+    content: "数据删除后无法恢复，确认继续吗？",
+    theme: "danger",
+    onClick: function(ret){
+        if(ret === 2){
+            alert("删除操作已确认");
+        }
+    }
+});
+    </code></pre>
+        </div>
+
+        <div class="demo-box">
+            <h3>示例3：MelUi.prompt 输入弹窗（唯一带输入框）</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+MelUi.prompt({
+    title: "修改昵称",
+    content: "请输入你的新昵称",
+    defaultValue: "游客用户",
+    onClick: function(ret, val){
+        if(ret === 2){
+            alert("昵称已修改为：" + val);
+        }
+    }
+});
+    </code></pre>
+        </div>
+
+        <div class="demo-box">
+            <h3>示例4：vert 竖向排列按钮</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+melui.confirm({
+    title: "操作选择",
+    content: "请选择需要执行的功能",
+    btnDirection: "vert",
+    theme: "warning"
+});
+    </code></pre>
+        </div>
+
+        <div class="demo-box">
+            <h3>示例5：按钮通栏铺满</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+MelUi.confirm({
+    title: "设置提醒",
+    content: "参数即将保存并生效",
+    btnFullWidth: true
+});
+    </code></pre>
+        </div>
+
+        <div class="demo-box">
+            <h3>示例6：melui.dialog 极简快捷弹窗</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+melui.dialog({
+    title: "系统通知",
+    content: "页面配置保存完毕"
+});
+    </code></pre>
+        </div>
+
+        <div class="demo-box">
+            <h3>示例7：new 构造函数自定义多按钮弹窗</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+new MelUi.Dialog({
+    title: "订单处理",
+    content: "选择订单后续处理方式",
+    showClose: true,
+    btnDirection: "vert",
+    btnFullWidth: true,
+    buttons: [
+        {text:"取消订单",type:"default"},
+        {text:"申请退款",type:"danger"},
+        {text:"确认收货",type:"success"}
+    ],
+    onClick: function(ret){
+        console.log("点击了第" + ret + "个按钮");
+    }
+});
+    </code></pre>
+        </div>
+
+        <!-- 组件脚本 固定路径 -->
+        <script src="../dist/melui.min.js"></script>
+        <script>
+            // 修复var循环闭包问题，每个按钮独立绑定代码
+            var demoList = document.querySelectorAll(".demo-box");
+            for (var i = 0; i < demoList.length; i++) {
+                // 立即执行函数隔离作用域，杜绝全部触发最后一条代码的bug
+                (function (itemWrap) {
+                    var btn = itemWrap.querySelector("button");
+                    var codeText = itemWrap
+                        .querySelector("code")
+                        .textContent.trim();
+                    btn.onclick = function () {
+                        try {
+                            eval(codeText);
+                        } catch (err) {
+                            alert("代码执行出错：" + err.message);
+                        }
+                    };
+                })(demoList[i]);
+            }
+            // 初始化代码高亮
+            hljs.highlightAll();
+        </script>
+    </body>
+</html>
