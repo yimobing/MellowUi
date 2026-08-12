@@ -31,6 +31,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
+        // 使用 css-only 压缩（无效，不起作用）
         plugins: [
             css({ output: 'dist/dialog/dialog.min.css' }),
             terser(terserConfig)

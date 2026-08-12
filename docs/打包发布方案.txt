@@ -157,6 +157,26 @@ npm install rollup@2.79.1 rollup-plugin-terser@7.0.2 rollup-plugin-css-only@4.3.
 
 
 
+因为terser 只会压缩 JS 文件，完全不管 CSS的压缩；rollup-plugin-css-only 本职仅提取、合并样式，天生不带压缩功能。
+故需新增 css 压缩依赖（推荐），依靠 postcss + cssnano 实现 CSS 压缩，兼容 IE9，不会打乱你现有的目录、引入规则
+
+# 卸载原来的css-only（根据需要来，不一定要卸载）
+npm uninstall rollup-plugin-css-only -D
+
+# 安装依赖（最新版）
+npm install rollup-plugin-postcss cssnano autoprefixer --save-dev
+# 安装依赖（指定版本 PostCSS 8 cssnano 5npm）
+npm i rollup-plugin-postcss postcss@8 cssnano@5.0.17 autoprefixer --save-dev
+
+
+
+【说明】
+关键版本边界区分
+PostCSS 9：强制要求 Node ≥18，老旧环境会直接报错
+PostCSS 8：兼容 Node 10.13 / 12 /14 /16 /18，最稳妥、适配面最广
+cssnano v5：最低 Node10.13，和 PostCSS8 完美搭档
+
+
 依赖作用拆解：
 rollup：打包核心工具
 rollup-plugin-terser：JS 代码压缩混淆（ES5 友好，不会破坏 IE 语法）

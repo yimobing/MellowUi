@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="MelDatePicker - 兼容IE9+的原生日期选择器插件">
+    <title>MelDatePicker 日期选择器插件 - 兼容IE9+/移动端/PC端</title>
+    <link type="text/css" rel="stylesheet" href="../src/components/datePicker/index.css">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            color: #fff;
+        }
+        .header h1 { font-size: 32px; margin: 0 0 10px 0; }
+        .header p { font-size: 16px; opacity: 0.9; margin: 0; }
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .feature-tag {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #fff;
+        }
+        .demo-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .demo-section h2 {
+            font-size: 18px;
+            color: #333;
+            margin: 0 0 10px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            display: inline-block;
+        }
+        .demo-section p { color: #666; font-size: 14px; margin: 0 0 20px 0; }
+        .demo-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .demo-row:last-child { margin-bottom: 0; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group label { font-size: 13px; color: #666; font-weight: 500; }
+        .form-control {
+            padding: 10px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 200px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .form-control:hover { border-color: #999; }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #e0e0e0;
+        }
+        .btn-secondary:hover { background: #eee; }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            overflow-x: auto;
+        }
+        .code-block pre {
+            margin: 0;
+            font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .code-block code { color: #e83e8c; }
+        .result-display {
+            background: #f0f4ff;
+            border: 1px solid #d0e0ff;
+            border-radius: 6px;
+            padding: 10px 15px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #667eea;
+            min-height: 42px;
+        }
+        .result-display span { color: #333; }
+        .static-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .method-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 13px;
+        }
+        .method-item .name { color: #667eea; font-weight: 500; }
+        .method-item .value { color: #333; margin-top: 4px; }
+        @media screen and (max-width: 600px) {
+            body { padding: 10px; }
+            .header { padding: 30px 15px; }
+            .header h1 { font-size: 24px; }
+            .demo-section { padding: 20px 15px; }
+            .form-control { width: 100%; }
+            .btn { width: 100%; justify-content: center; }
+            .demo-row { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        (function() {
+            var ua = navigator.userAgent;
+            var isIE = ua.indexOf('MSIE') > -1;
+            var isIE11 = ua.indexOf('Trident') > -1 && ua.indexOf('rv:11.0') > -1;
+            if (isIE || isIE11) {
+                var version = isIE11 ? 11 : parseInt(ua.match(/MSIE (\d+)/)[1]);
+                if (version === 9) document.documentElement.className += ' ie9';
+                else if (version === 10) document.documentElement.className += ' ie10';
+            }
+        })();
+    </script>
+    
+    <div class="container">
+        <div class="header">
+            <h1>📅 MelDatePicker 日期选择器</h1>
+            <p>轻量级原生JS日期选择器插件，参考jeDate设计</p>
+            <div class="features">
+                <span class="feature-tag">✓ 兼容IE9+</span>
+                <span class="feature-tag">✓ 兼容Edge</span>
+                <span class="feature-tag">✓ 移动端适配</span>
+                <span class="feature-tag">✓ PC端适配</span>
+                <span class="feature-tag">✓ 多种触发方式</span>
+                <span class="feature-tag">✓ 零依赖</span>
+                <span class="feature-tag">✓ 丰富静态方法</span>
+            </div>
+        </div>
+
+        <!-- 演示1: 两种调用方式 -->
+        <div class="demo-section">
+            <h2>方式一：两种调用方式</h2>
+            <p>支持 new MelDatePicker() 和 MelDatePicker() 两种方式</p>
+            <div class="demo-row">
+                <div class="form-group">
+                    <label for="demo1-1">new MelDatePicker() 方式</label>
+                    <input type="text" id="demo1-1" class="form-control" placeholder="点击选择日期">
+                </div>
+                <div class="form-group">
+                    <label for="demo1-2">MelDatePicker() 工厂模式</label>
+                    <input type="text" id="demo1-2" class="form-control" placeholder="点击选择日期">
+                </div>
+            </div>
+            <div class="code-block">
+                <pre><code>// 方式1：构造函数调用
+var picker1 = new MelDatePicker('#demo1-1', { format: 'yyyy-MM-dd' });
+
+// 方式2：工厂模式（无需new关键字）
+var picker2 = MelDatePicker('#demo1-2', { format: 'yyyy-MM-dd' });</code></pre>
+            </div>
+        </div>
+
+        <!-- 演示2: ID选择器 -->
+        <div class="demo-section">
+            <h2>方式二：ID选择器触发</h2>
+            <p>通过元素ID初始化，点击输入框即可弹出日期选择器</p>
+            <div class="demo-row">
+                <div class="form-group">
+                    <label for="demo2">选择日期</label>
+                    <input type="text" id="demo2" class="form-control" placeholder="点击选择日期">
+                </div>
+            </div>
+            <div class="code-block">
+                <pre><code>MelDatePicker('#demo2', {
+    format: 'yyyy-MM-dd',
+    minDate: '2020-01-01',
+    maxDate: '2030-12-31'
+});</code></pre>
+            </div>
+        </div>
+
+        <!-- 演示3: Class选择器批量触发 -->
+        <div class="demo-section">
+            <h2>方式三：Class选择器批量触发</h2>
+            <p>一个实例可以绑定多个相同class的元素</p>
+            <div class="demo-row">
+                <div class="form-group">
+                    <label>开始日期</label>
+                    <input type="text" class="demo-class" placeholder="点击选择开始日期">
+                </div>
+                <div class="form-group">
+                    <label>结束日期</label>
+                    <input type="text" class="demo-class" placeholder="点击选择结束日期">
+                </div>
+                <div class="form-group">
+                    <label>截止日期</label>
+                    <input type="text" class="demo-class" placeholder="点击选择截止日期">
+                </div>
+            </div>
+            <div class="code-block">
+                <pre><code>MelDatePicker('.demo-class', { format: 'yyyy-MM-dd' });</code></pre>
+            </div>
+        </div>
+
+        <!-- 演示4: data-trigger按钮触发 -->
+        <div class="demo-section">
+            <h2>方式四：data-trigger 按钮触发</h2>
+            <p>在input上添加 data-trigger 属性绑定按钮ID，点击按钮触发</p>
+            <div class="demo-row">
+                <div class="form-group">
+                    <label for="demo4-input">出生日期</label>
+                    <input type="text" id="demo4-input" class="form-control" placeholder="点击按钮选择" data-trigger="demo4-btn" readonly>
+                </div>
+                <button type="button" id="demo4-btn" class="btn btn-primary">📅 选择日期</button>
+            </div>
+            <div class="code-block">
+                <pre><code>&lt;input type="text" id="demo4-input" data-trigger="demo4-btn" readonly&gt;
+&lt;button id="demo4-btn"&gt;选择日期&lt;/button&gt;
+
+&lt;script&gt;
+MelDatePicker('#demo4-input', { inputTrigger: false });
+&lt;/script&gt;</code></pre>
+            </div>
+        </div>
+
+        <!-- 演示5: inputTrigger参数 -->
+        <div class="demo-section">
+            <h2>方式五：inputTrigger 参数</h2>
+            <p>按钮触发模式下，inputTrigger 控制输入框是否也能触发</p>
+            <div class="demo-row">
+                <div class="form-group">
+                    <label>inputTrigger: true（输入框+按钮都能触发）</label>
+                    <div class="demo-row" style="margin-top:8px;">
+                        <input type="text" id="demo5-1-input" class="form-control" placeholder="输入框或按钮都可触发" data-trigger="demo5-1-btn" readonly>
+                        <button type="button" id="demo5-1-btn" class="btn btn-secondary">📅</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>inputTrigger: false（仅按钮触发）</label>
+                    <div class="demo-row" style="margin-top:8px;">
+                        <input type="text" id="demo5-2-input" class="form-control" placeholder="只能按钮触发" data-trigger="demo5-2-btn" readonly>
+                        <button type="button" id="demo5-2-btn" class="btn btn-secondary">📅</button>
+                    </div>
+                </div>
+            </div>
+            <div class="code-block">
+                <pre><code>MelDatePicker('#demo5-1-input', { inputTrigger: true });  // 输入框和按钮都能触发
+MelDatePicker('#demo5-2-input', { inputTrigger: false }); // 只能按钮触发</code></pre>
+            </div>
+        </div>
+
+        <!-- 演示6: 默认日期 -->
+        <div class="demo-section">
+            <h2>方式六：defaultDate 默认日期</h2>
+            <p>设置输入框的默认日期值</p>
+            <div class="demo-row">
+                <div class="form-group">
+                    <label for="demo6-1">默认今天</label>
+                    <input type="text" id="demo6-1" class="form-control" placeholder="点击选择">
+                </div>
+                <div class="form-group">
+                    <label for="demo6-2">默认指定日期</label>
+                    <input type="text" id="demo6-2" class="form-control" placeholder="点击选择">
+                </div>
+            </div>
+            <div class="code-block">
+                <pre><code>MelDatePicker('#demo6-1', { defaultDate: new Date() });
+MelDatePicker('#demo6-2', { defaultDate: '2024-06-15' });</code></pre>
+            </div>
+        </div>
+
+        <!-- 演示7: 回调函数 -->
+        <div class="demo-section">
+            <h2>方式七：回调函数</h2>
+            <p>监听选择事件，获取选中的日期</p>
+            <div class="demo-row">
+                <div class="form-group">
+                    <label for="demo7">选择日期</label>
+                    <input type="text" id="demo7" class="form-control" placeholder="点击选择">
+                </div>
+            </div>
+            <div class="result-display">
+                回调结果：<span id="demo7-result">暂未选择</span>
+            </div>
+            <div class="code-block">
+                <pre><code>MelDatePicker('#demo7', {
+    onSelect: function(date, dateStr) {
+        document.getElementById('demo7-result').innerText = dateStr;
+    },
+    onClear: function() {
+        document.getElementById('demo7-result').innerText = '已清空';
+    }
+});</code></pre>
+            </div>
+        </div>
+
+        <!-- 演示8: 日期范围限制 -->
+        <div class="demo-section">
+            <h2>方式八：日期范围限制</h2>
+            <p>设置最小和最大可选日期</p>
+            <div class="demo-row">
+                <div class="form-group">
+                    <label for="demo8">选择日期（限制范围：今天起30天内）</label>
+                    <input type="text" id="demo8" class="form-control" placeholder="点击选择">
+                </div>
+            </div>
+            <div class="code-block">
+                <pre><code>MelDatePicker('#demo8', {
+    minDate: MelDatePicker.today('yyyy-MM-dd'),
+    maxDate: MelDatePicker.addDays(30, 'yyyy-MM-dd')
+});</code></pre>
+            </div>
+        </div>
+
+        <!-- 演示9: confirmToClose参数 -->
+        <div class="demo-section">
+            <h2>方式九：confirmToClose 确定后关闭</h2>
+            <p>控制选择日期后是否需要点击确定按钮才关闭控件</p>
+            <div class="demo-row">
+                <div class="form-group">
+                    <label for="demo9-1">confirmToClose: false（默认，选择即关闭）</label>
+                    <input type="text" id="demo9-1" class="form-control" placeholder="选择日期后自动关闭">
+                </div>
+                <div class="form-group">
+                    <label for="demo9-2">confirmToClose: true（需点确定关闭）</label>
+                    <input type="text" id="demo9-2" class="form-control" placeholder="需点击确定按钮">
+                </div>
+            </div>
+            <div class="code-block">
+                <pre><code>MelDatePicker('#demo9-1', { confirmToClose: false }); // 选择日期后直接关闭
+MelDatePicker('#demo9-2', { confirmToClose: true });  // 选择日期后需点确定才关闭</code></pre>
+            </div>
+        </div>
+
+        <!-- 演示10: 静态方法 -->
+        <div class="demo-section">
+            <h2>静态方法：快捷日期获取</h2>
+            <p>MelDatePicker 提供丰富的静态方法快速获取常用日期</p>
+            <div class="static-methods" id="static-methods"></div>
+            <div class="code-block">
+                <pre><code>// 基础日期
+MelDatePicker.today()           // 今天
+MelDatePicker.tomorrow()        // 明天
+MelDatePicker.yesterday()       // 昨天
+
+// 月/季/年边界
+MelDatePicker.monthFirst()      // 本月第一天
+MelDatePicker.monthLast()       // 本月最后一天
+MelDatePicker.yearFirst()       // 本年第一天
+MelDatePicker.yearLast()        // 本年最后一天
+
+// N天/月/年前后
+MelDatePicker.addDays(7)        // 7天后
+MelDatePicker.addMonths(-1)     // 1个月前
+MelDatePicker.addYears(1)       // 1年后
+
+// 支持传入格式参数
+MelDatePicker.today('yyyy年MM月dd日')</code></pre>
+            </div>
+        </div>
+
+        <!-- API文档 -->
+        <div class="demo-section">
+            <h2>API 文档</h2>
+            <p>MelDatePicker 提供了丰富的配置选项和方法</p>
+            <div class="code-block">
+                <pre><code>// 配置选项
+{
+    format: 'yyyy-MM-dd',      // 日期格式
+    minDate: '1900-01-01',     // 最小日期
+    maxDate: '2099-12-31',     // 最大日期
+    defaultDate: null,         // 输入框默认日期
+    trigger: 'click',          // 触发方式: click/focus
+    inputTrigger: false,       // 按钮模式下输入框是否可触发
+    zIndex: 9999,              // 弹层层级
+    readOnly: true,            // 输入框只读
+    closeOnSelected: true,     // 选择后自动关闭
+    confirmToClose: false,    // 选择日期后是否需要点击确定按钮才关闭
+    
+    // 回调函数
+    onSelect: function(date, dateStr) {},
+    onOk: function(date, dateStr) {},
+    onClear: function() {},
+    onClose: function() {}
+}
+
+// 实例方法
+picker.setDate(date)
+picker.getDate()
+picker.getValue()
+picker.show()
+picker.hide()
+picker.destroy()
+
+// 静态方法
+MelDatePicker.today([format])
+MelDatePicker.tomorrow([format])
+MelDatePicker.yesterday([format])
+MelDatePicker.monthFirst([format])
+MelDatePicker.monthLast([format])
+MelDatePicker.yearFirst([format])
+MelDatePicker.yearLast([format])
+MelDatePicker.addDays(n, [format])
+MelDatePicker.addMonths(n, [format])
+MelDatePicker.addYears(n, [format])
+MelDatePicker.format(date, format)
+MelDatePicker.parse(dateStr)</code></pre>
+            </div>
+        </div>
+    </div>
+
+    
+    <script src="../src/components/datePicker/index.js"></script>
+    <script>
+        (function() {
+            // 示例1: 两种调用方式
+            new MelDatePicker('#demo1-1', { format: 'yyyy-MM-dd' });
+            MelDatePicker('#demo1-2', { format: 'yyyy-MM-dd' });
+            
+            // 示例2: ID选择器
+            MelDatePicker('#demo2', {
+                format: 'yyyy-MM-dd',
+                minDate: '2020-01-01',
+                maxDate: '2030-12-31'
+            });
+            
+            // 示例3: Class选择器批量触发
+            MelDatePicker('.demo-class', { format: 'yyyy-MM-dd' });
+            
+            // 示例4: data-trigger按钮触发
+            MelDatePicker('#demo4-input', { inputTrigger: false });
+            
+            // 示例5: inputTrigger参数
+            MelDatePicker('#demo5-1-input', { inputTrigger: true });
+            MelDatePicker('#demo5-2-input', { inputTrigger: false });
+            
+            // 示例6: 默认日期
+            MelDatePicker('#demo6-1', { defaultDate: new Date() });
+            MelDatePicker('#demo6-2', { defaultDate: '2024-06-15' });
+            
+            // 示例7: 回调函数
+            MelDatePicker('#demo7', {
+                format: 'yyyy-MM-dd',
+                onSelect: function(date, dateStr) {
+                    document.getElementById('demo7-result').innerText = dateStr;
+                },
+                onClear: function() {
+                    document.getElementById('demo7-result').innerText = '已清空';
+                }
+            });
+            
+            // 示例8: 日期范围限制
+            MelDatePicker('#demo8', {
+                minDate: MelDatePicker.today('yyyy-MM-dd'),
+                maxDate: MelDatePicker.addDays(30, 'yyyy-MM-dd')
+            });
+            
+            // 示例9: confirmToClose参数
+            MelDatePicker('#demo9-1', { confirmToClose: false });
+            MelDatePicker('#demo9-2', { confirmToClose: true });
+            
+            // 示例9: 静态方法演示
+            var staticMethods = [
+                { name: 'today()', value: MelDatePicker.today('yyyy-MM-dd') },
+                { name: 'tomorrow()', value: MelDatePicker.tomorrow('yyyy-MM-dd') },
+                { name: 'yesterday()', value: MelDatePicker.yesterday('yyyy-MM-dd') },
+                { name: 'monthFirst()', value: MelDatePicker.monthFirst('yyyy-MM-dd') },
+                { name: 'monthLast()', value: MelDatePicker.monthLast('yyyy-MM-dd') },
+                { name: 'quarterFirst()', value: MelDatePicker.quarterFirst('yyyy-MM-dd') },
+                { name: 'quarterLast()', value: MelDatePicker.quarterLast('yyyy-MM-dd') },
+                { name: 'yearFirst()', value: MelDatePicker.yearFirst('yyyy-MM-dd') },
+                { name: 'yearLast()', value: MelDatePicker.yearLast('yyyy-MM-dd') },
+                { name: 'lastMonthFirst()', value: MelDatePicker.lastMonthFirst('yyyy-MM-dd') },
+                { name: 'lastMonthLast()', value: MelDatePicker.lastMonthLast('yyyy-MM-dd') },
+                { name: 'lastYearFirst()', value: MelDatePicker.lastYearFirst('yyyy-MM-dd') },
+                { name: 'lastYearLast()', value: MelDatePicker.lastYearLast('yyyy-MM-dd') },
+                { name: 'addDays(7)', value: MelDatePicker.addDays(7, 'yyyy-MM-dd') },
+                { name: 'addDays(-7)', value: MelDatePicker.addDays(-7, 'yyyy-MM-dd') },
+                { name: 'addMonths(1)', value: MelDatePicker.addMonths(1, 'yyyy-MM-dd') },
+                { name: 'addYears(1)', value: MelDatePicker.addYears(1, 'yyyy-MM-dd') },
+                { name: 'now()', value: MelDatePicker.now('yyyy-MM-dd hh:mm:ss') }
+            ];
+            
+            var methodsHtml = '';
+            for (var i = 0; i < staticMethods.length; i++) {
+                var item = staticMethods[i];
+                methodsHtml += '<div class="method-item">' +
+                    '<div class="name">' + item.name + '</div>' +
+                    '<div class="value">' + item.value + '</div>' +
+                '</div>';
+            }
+            document.getElementById('static-methods').innerHTML = methodsHtml;
+        })();
+    </script>
+</body>
+</html>
