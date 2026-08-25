@@ -123,89 +123,7 @@ var defaults = {
         <h2>三、调用示例</h2>
 
         <div class="demo-box">
-            <h3>示例1：MelUi.alert 成功提示弹窗</h3>
-            <button>打开弹窗</button>
-            <pre><code class="javascript">
-MelUi.alert({
-    title: "系统提示",
-    content: "文件上传全部完成",
-    theme: "success"
-});
-    </code></pre>
-        </div>
-
-        <div class="demo-box">
-            <h3>示例2：melui.confirm 确认删除（小写调用）</h3>
-            <button>打开弹窗</button>
-            <pre><code class="javascript">
-melui.confirm({
-    title: "删除确认",
-    content: "数据删除后无法恢复，确认继续吗？",
-    theme: "danger",
-    onClick: function(ret){
-        if(ret === 2){
-            alert("删除操作已确认");
-        }
-    }
-});
-    </code></pre>
-        </div>
-
-        <div class="demo-box">
-            <h3>示例3：MelUi.prompt 输入弹窗（唯一带输入框）</h3>
-            <button>打开弹窗</button>
-            <pre><code class="javascript">
-MelUi.prompt({
-    title: "修改昵称",
-    content: "请输入你的新昵称",
-    defaultValue: "游客用户",
-    onClick: function(ret, val){
-        if(ret === 2){
-            alert("昵称已修改为：" + val);
-        }
-    }
-});
-    </code></pre>
-        </div>
-
-        <div class="demo-box">
-            <h3>示例4：vert 竖向排列按钮</h3>
-            <button>打开弹窗</button>
-            <pre><code class="javascript">
-melui.confirm({
-    title: "操作选择",
-    content: "请选择需要执行的功能",
-    btnDirection: "vert",
-    theme: "warning"
-});
-    </code></pre>
-        </div>
-
-        <div class="demo-box">
-            <h3>示例5：按钮通栏铺满</h3>
-            <button>打开弹窗</button>
-            <pre><code class="javascript">
-MelUi.confirm({
-    title: "设置提醒",
-    content: "参数即将保存并生效",
-    btnFullWidth: true
-});
-    </code></pre>
-        </div>
-
-        <div class="demo-box">
-            <h3>示例6：melui.dialog 极简快捷弹窗</h3>
-            <button>打开弹窗</button>
-            <pre><code class="javascript">
-melui.dialog({
-    title: "系统通知",
-    content: "页面配置保存完毕"
-});
-    </code></pre>
-        </div>
-
-        <div class="demo-box">
-            <h3>示例7：new 构造函数自定义多按钮弹窗</h3>
+            <h3> 1、 new 构造函数自定义多按钮弹窗</h3>
             <button>打开弹窗</button>
             <pre><code class="javascript">
 new MelUi.Dialog({
@@ -225,6 +143,97 @@ new MelUi.Dialog({
 });
     </code></pre>
         </div>
+
+        
+        <div class="demo-box">
+            <h3> 2、 melui.dialog 极简快捷弹窗</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+melui.dialog({
+    title: "系统通知",
+    content: "页面配置保存完毕"
+});
+    </code></pre>
+        </div>
+
+
+        <div class="demo-box">
+            <h3> 3、 melui.alert 提示信息弹窗</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+melui.alert({
+    title: "系统提示",
+    content: "文件上传全部完成",
+    theme: "success"
+});
+    </code></pre>
+        </div>
+
+
+        <div class="demo-box">
+            <h3> 4、 melui.confirm 确认对话框 </h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+melui.confirm({
+    title: "删除确认",
+    content: "数据删除后无法恢复，确认继续吗？",
+    theme: "danger",
+    onClick: function(ret){
+        if(ret === 2){
+            alert("删除操作已确认");
+        }
+    }
+});
+    </code></pre>
+        </div>
+
+
+        <div class="demo-box">
+            <h3> 4-1.自定义按钮方向：vert 竖向排列按钮</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+melui.confirm({
+    title: "操作选择",
+    content: "请选择需要执行的功能",
+    btnDirection: "vert",
+    theme: "warning"
+});
+    </code></pre>
+        </div>
+
+        <div class="demo-box">
+            <h3> 4-2.自定义按钮铺满：按钮通栏铺满</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+melui.confirm({
+    title: "设置提醒",
+    content: "参数即将保存并生效",
+    btnFullWidth: true
+});
+    </code></pre>
+        </div>
+
+        <div class="demo-box">
+            <h3> 5、 melui.prompt 输入弹窗（唯一带输入框）</h3>
+            <button>打开弹窗</button>
+            <pre><code class="javascript">
+melui.prompt({
+    title: "修改昵称",
+    content: "请输入你的新昵称",
+    defaultValue: "游客用户",
+    onClick: function(ret, val){
+        if(ret === 2){
+            alert("昵称已修改为：" + val);
+        }
+    }
+});
+    </code></pre>
+        </div>
+
+        
+
+
+        
 
         <!-- 组件脚本 固定路径 -->
         <script src="../src/components/dialog/index.js"></script>

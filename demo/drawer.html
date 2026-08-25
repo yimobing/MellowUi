@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MelUi Drawer 抽屉示例</title>
+    <link rel="stylesheet" href="../src/components/drawer/index.css">
+</head>
+<body>
+    <div style="padding:30px;">
+        <h3>Drawer抽屉组件测试</h3>
+        <div>
+            <button id="btnRight">右侧抽屉</button>
+            <button id="btnLeft">左侧抽屉</button>
+            <button id="btnBottom">底部抽屉</button>
+            <button id="btnTop">顶部抽屉</button>
+            <button id="btnAdaptive">居中弹窗模式</button>
+        </div>
+    </div>
+
+    <script src="../src/components/drawer/index.js"></script>
+    <script>
+        document.getElementById("btnRight").onclick = function(){
+            MelUi.drawer({
+                direction:"right",
+                title:"侧栏搜索",
+                content:`
+                    <div>
+                        <p>测试表单内容</p>
+                        <input placeholder="请输入内容" style="width:100%;padding:8px;margin:8px 0;box-sizing:border-box;">
+                    </div>
+                `,
+                buttons:[
+                    {text:"重置"},
+                    {text:"完成"},
+                    {text:"提交"}
+                ],
+                onClick:function(ret){
+                    alert("点击按钮序号："+ret);
+                }
+            })
+        };
+
+        document.getElementById("btnLeft").onclick = function(){
+            MelUi.drawer({
+                direction:"left",
+                width:340,
+                title:"左侧弹出",
+                content:"左侧抽屉测试内容"
+            })
+        };
+
+        document.getElementById("btnBottom").onclick = function(){
+            MelUi.drawer({
+                direction:"bottom",
+                height:400,
+                title:"底部弹出",
+                content:"底部抽屉测试"
+            })
+        };
+
+        document.getElementById("btnTop").onclick = function(){
+            MelUi.drawer({
+                direction:"top",
+                height:300,
+                title:"顶部弹出",
+                content:"顶部抽屉测试"
+            })
+        };
+
+        document.getElementById("btnAdaptive").onclick = function(){
+            MelUi.drawer({
+                adaptive:true,
+                title:"居中模式",
+                content:"adaptive:true，类似dialog弹窗效果"
+            })
+        };
+    </script>
+</body>
+</html>
