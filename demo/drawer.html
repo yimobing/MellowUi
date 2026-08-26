@@ -1,80 +1,399 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-cmn-Hans">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MelUi Drawer 抽屉示例</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="">
+    <meta name="applicable-device" content="pc,mobile">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title> MelUi Drawer v1.0.8 抽屉组件演示 </title>
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <!-- 页面布局样式统一引用 layout.css（不内嵌） -->
+    <link rel="stylesheet" href="layout.css">
     <link rel="stylesheet" href="../src/components/drawer/index.css">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/styles/stackoverflow-light.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+    <!--[if lte IE 11]>
+        <script src="../src/polyfill/es5-shim.min.js"></script>
+        <script src="../src/polyfill/es5-sham.min.js"></script>
+        <script src="../src/polyfill/es6-promise.auto.min.js"></script>
+    <![endif]-->
 </head>
 <body>
-    <div style="padding:30px;">
-        <h3>Drawer抽屉组件测试</h3>
-        <div>
-            <button id="btnRight">右侧抽屉</button>
-            <button id="btnLeft">左侧抽屉</button>
-            <button id="btnBottom">底部抽屉</button>
-            <button id="btnTop">顶部抽屉</button>
-            <button id="btnAdaptive">居中弹窗模式</button>
+    <h1 class="page-title">MelUi Drawer 抽屉组件</h1>
+    <div class="version-desc">
+        版本：v1.0.8 | 兼容IE9~Edge、移动端自适应 | MelUi.Drawer() / melui.drawer() 无需new直接调用 | el按钮绑定复用（仅destroyOnClose:false生效）
+    </div>
+
+    <h2>一、标准引入方式</h2>
+<pre><code class="html">
+&lt;link rel="stylesheet" href="../src/components/drawer/index.css"&gt;
+&lt;script src="../src/components/drawer/index.js"&gt;&lt;/script&gt;
+</code></pre>
+
+    <h2>二、默认配置参数（注释为参数文档基线）</h2>
+<pre><code>
+var defaults = {
+
+    // 方向与位置尺寸
+    direction: "right", // 弹出方向：right / left / top / bottom (可选)
+    width: "auto", // 左右弹出方向抽屉基准宽度，"auto"=css自适应；支持数字px / 字符串百分比calc (可选)
+    height: "auto", // 上下弹出方向抽屉基准高度，"auto"=css自适应；支持数字px / 字符串百分比calc (可选)
+    top: 0, // 抽屉距离视口上边偏移，非0则覆盖方向默认定位 (可选)
+    bottom: 0, // 抽屉距离视口下边偏移，非0则覆盖方向默认定位 (可选)
+    left: 0, // 抽屉距离视口左边偏移，非0则覆盖方向默认定位 (可选)
+    right: 0, // 抽屉距离视口右边偏移，非0则覆盖方向默认定位 (可选)
+    minWidth: 320, // 抽屉最小宽度，左右方向生效，单位px，仅数字 (可选)
+    minHeight: 280, // 抽屉最小高度，上下方向生效，单位px，仅数字 (可选)
+    adaptive: false, // 是否居中对话框模式，true时direction、偏移、width、height、拖拽失效 (可选)
+    resizable: false, // 是否开启拖拽调整大小；IE自动降级不生效，adaptive模式自动失效 (可选)
+
+    // 遮罩层相关
+    showMask: true, // 是否显示遮罩层 (可选)
+    zIndex: 9999, // 抽屉容器层级；遮罩内部自动 zIndex-1，最小为1 (可选)
+    animation: true, // 是否开启打开关闭动画；IE9无transition能力自动无动画但功能正常 (可选)
+    maskClose: true, // 点击遮罩是否关闭抽屉 (可选)
+
+    // 按钮行为控制
+    closeOnBackClick: true, // 点击顶部返回按钮是否自动关闭抽屉 (可选)
+    closeOnCrossClick: true, // 点击右上角叉号关闭按钮是否自动关闭抽屉 (可选)
+    destroyOnClose: true, // DOM策略：false关闭仅隐藏保留dom；true关闭销毁dom (可选)
+    el: null, // 绑定触发按钮；支持 DOM节点/'id'/'#id'或'.class'/jQuery集合/HTMLCollection；仅destroyOnClose:false生效；首次创建、关闭仅隐藏、再点复用不重建 (可选)
+
+    // header顶部配置
+    showHeader: true, // 是否显示顶部头部区域 (可选)
+    headerSticky: true, // 头部是否悬浮固定；本布局header为结构固定（非滚动容器内），sticky仅装饰，IE自动按文档流定位不影响位置 (可选)
+    headerHeight: 48, // 头部高度，单位px (可选)
+    showBack: false, // 是否显示头部左侧返回区域，默认关闭 (可选)
+    backShowIcon: false, // 返回按钮是否显示图标，默认关闭 (可选)
+    backShowText: false, // 返回按钮是否显示文字，默认关闭 (可选)
+    backText: "返回", // 返回按钮文字 (可选)
+    backDisabled: false, // 返回按钮是否禁用点击 (可选)
+    title: "", // 抽屉标题，超长自动省略 (可选)
+    titleAlign: "center", // 标题文字对齐：left / center / right (可选)
+    showClose: true, // 是否显示头部右侧关闭区域 (可选)
+    closeShowIcon: true, // 关闭按钮是否显示叉号图标 (可选)
+    closeShowText: false, // 关闭按钮是否显示文字 (可选)
+    closeText: "关闭", // 关闭按钮文字 (可选)
+    closeDisabled: false, // 关闭按钮是否禁用点击 (可选)
+
+    // footer底部配置
+    showFooter: true, // 是否显示底部区域 (可选)
+    footerSticky: true, // 底部是否悬浮固定；本布局footer为结构固定（非滚动容器内），sticky仅装饰，IE自动按文档流定位不影响位置 (可选)
+    footerHeight: 52, // 底部高度，单位px；flex下按钮用align-items:center垂直居中，不使用padding撑高 (可选)
+    showDefaultFooterBtn: true, // 是否渲染底部默认关闭按钮 (可选)
+    defaultFooterBtnText: "关闭", // 默认底部按钮文字 (可选)
+    onDefaultFooterBtnClick: null, // 默认按钮回调，入参(instance, rootDom, contentDom)；return false阻止关闭 (可选)
+    buttons: null, // 自定义按钮数组 [{text, theme, bgColor, fontColor}]，传入后覆盖默认按钮 (可选)
+    onBtnClick: null, // 自定义按钮回调，入参(ret, instance, rootDom)，ret从1开始 (可选)
+
+    // 内容
+    content: "", // 抽屉主体HTML内容 (可选)
+
+    // 回调事件
+    onOpen: null, // 抽屉打开完成(动画结束)回调，入参：rootDom；IE9无transitionend由定时器兜底触发 (可选)
+    onBack: null, // 顶部返回按钮点击回调，入参：rootDom (可选)
+    onClose: null, // 点击右上角叉号瞬间回调，不等动画，入参：rootDom (可选)
+    afterClose: null // 抽屉关闭动作完成(动画结束、DOM处理完毕)之后回调，入参：rootDom (可选)
+};
+</code></pre>
+    <div class="tips">
+        规则说明：buttons数组有内容则底部默认按钮失效；onDefaultFooterBtnClick返回false可阻止关闭；destroyOnClose=false关闭仅隐藏DOM，配合el参数可实现"首次创建、关闭隐藏、再次点击复用"；width:"auto"为自适应宽度；MelUi.Drawer()无需new直接返回实例。
+    </div>
+
+    <h2>三、调用示例</h2>
+
+    <div class="block-group">
+        <div class="block-group__title"> 1、最简快速调用（复制即可直接运行） </div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> 仅保留核心三个参数，快速体验组件 </div>
+                <button>打开抽屉</button>
+<pre>
+<code>
+melui.drawer({
+    direction: "right",
+    title: "标题",
+    content: "抽屉内容"
+});
+</code>
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title"> 2、MelUi.Drawer 实例用法（综合业务样板，content演示垂直滚动） </div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">无需new，接收实例ins；实例自带 ins.open() / ins.close() </div>
+                <button>打开抽屉</button>
+<pre>
+<code>
+// MelUi.Drawer() 不需要 new，直接返回实例对象 ins
+var ins = MelUi.Drawer({
+    direction: "right",
+    width: 600,
+    title: "综合示例抽屉",
+    titleAlign: "center",
+    showBack: true,
+    backShowIcon: true,
+    backShowText: true,
+    backText: "返回上一页",
+    closeShowText: true,
+    closeText: "关闭",
+    content: '&lt;div style="height:120px;border:1px solid #eee;margin:8px 0;line-height:120px;text-align:center;background:#fafafa;"&gt;表单项1（高120px）&lt;/div&gt;&lt;div style="height:120px;border:1px solid #eee;margin:8px 0;line-height:120px;text-align:center;background:#fafafa;"&gt;表单项2（高120px）&lt;/div&gt;&lt;div style="height:120px;border:1px solid #eee;margin:8px 0;line-height:120px;text-align:center;background:#fafafa;"&gt;表单项3（高120px）&lt;/div&gt;&lt;div style="height:120px;border:1px solid #eee;margin:8px 0;line-height:120px;text-align:center;background:#fafafa;"&gt;表单项4（高120px）&lt;/div&gt;&lt;div style="height:120px;border:1px solid #eee;margin:8px 0;line-height:120px;text-align:center;background:#fafafa;"&gt;表单项5（高120px）&lt;/div&gt;&lt;div style="height:120px;border:1px solid #eee;margin:8px 0;line-height:120px;text-align:center;background:#fafafa;"&gt;表单项6（高120px）&lt;/div&gt;&lt;div style="height:120px;border:1px solid #eee;margin:8px 0;line-height:120px;text-align:center;background:#fafafa;"&gt;表单项7（高120px）&lt;/div&gt;',
+    buttons: [
+        { text: "重置", theme: "default" },
+        { text: "预览", theme: "primary", bgColor: "#67c23a", fontColor: "#ffffff" },
+        { text: "提交", theme: "success" }
+    ],
+    maskClose: true,
+    onOpen: function(rootDom) {
+        console.log("抽屉打开完成", rootDom);
+    },
+    onBack: function(rootDom) {
+        console.log("点击返回按钮", rootDom);
+    },
+    onClose: function(rootDom) {
+        console.log("点击关闭按钮", rootDom);
+    },
+    onBtnClick: function(ret, ins, rootDom) {
+        console.log("点击第" + ret + "个按钮", ins, rootDom);
+        if(ret === 3){
+            ins.close();
+        }
+    },
+    afterClose: function(rootDom) {
+        console.log("抽屉关闭完成", rootDom);
+    }
+});
+
+/*
+实例公开方法：
+ins.open()   // 手动打开抽屉，任何实例均可调用
+ins.close()  // 手动关闭抽屉；destroyOnClose:false时关闭仅隐藏可再次open复用；destroyOnClose:true时关闭即销毁DOM
+*/
+</code>
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title"> 3、 melui.drawer快捷调用-各个弹出方向 </div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> 左侧弹出抽屉 </div>
+                <button>打开抽屉</button>
+<pre>
+<code>
+melui.drawer({
+    direction: "left",
+    width: 340,
+    title: "左侧弹出抽屉",
+    content: "左侧抽屉测试内容"
+});
+</code>
+</pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> 底部弹出抽屉 </div>
+                <button>打开抽屉</button>
+<pre>
+<code>
+melui.drawer({
+    direction: "bottom",
+    height: 400,
+    title: "底部弹出",
+    content: "底部抽屉测试内容"
+});
+</code>
+</pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> 顶部弹出抽屉 </div>
+                <button>打开抽屉</button>
+<pre>
+<code>
+melui.drawer({
+    direction: "top",
+    height: 300,
+    title: "顶部弹出",
+    content: "顶部抽屉测试内容"
+});
+</code>
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title"> 4、 width:"auto" 自适应宽度 </div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> width:"auto"，由内容决定宽度，最小受minWidth限制 </div>
+                <button>打开抽屉</button>
+<pre>
+<code>
+melui.drawer({
+    direction: "right",
+    width: "auto",
+    minWidth: 320,
+    title: "auto自适应宽度",
+    content: "宽度auto，由内容自动撑开，不会小于minWidth=320px"
+});
+</code>
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title"> 5、 adaptive居中弹窗模式 </div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> adaptive:true，淡入淡出模拟Dialog弹窗 </div>
+                <button>打开抽屉</button>
+<pre>
+<code>
+melui.drawer({
+    adaptive: true,
+    title: "居中模式(淡入淡出)",
+    content: "adaptive:true，模拟Dialog弹窗效果"
+});
+</code>
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title"> 6、 底部默认按钮相关 </div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> 获取instance、rootDom、contentDom，return false阻止关闭 </div>
+                <button>打开抽屉</button>
+<pre>
+<code>
+melui.drawer({
+    title: "默认底部按钮",
+    content: '&lt;input placeholder="请输入内容" class="inp"&gt;',
+    showDefaultFooterBtn: true,
+    defaultFooterBtnText: "确认关闭",
+    onDefaultFooterBtnClick: function(ins, rootDom, contentDom) {
+        var val = contentDom.querySelector('.inp').value;
+        if(!val){
+            alert('请填写内容');
+            return false;
+        }
+    }
+});
+</code>
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title"> 7、 destroyOnClose:false 按钮绑定复用（el参数） </div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">
+                    el参数仅 destroyOnClose:false 生效；支持4种传法（DOM对象 / 'btn7' / '#btn7'或'.xxx' / jQuery对象）；
+                    首次点击创建，关闭仅隐藏DOM，再次点击复用同一实例，不会重复创建；可反复点击测试
+                </div>
+                <button id="btn7">打开抽屉</button>
+<pre>
+<code>
+// el按钮绑定：首次创建，关闭仅隐藏，再次点击复用显示，不新建DOM
+MelUi.Drawer({
+    el: document.getElementById('btn7'), // 也可传 'btn7' / '#btn7' / $('.btn7') / document.getElementsByClassName('btn7')
+    direction: "right",
+    title: "destroyOnClose:false",
+    content: "首次点击创建；关闭仅隐藏DOM；再次点击复用显示，不重复创建",
+    destroyOnClose: false
+});
+</code>
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title"> 8、 animation动画开关 </div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> animation: false，关闭全部过渡动画，瞬间显隐 </div>
+                <button>打开抽屉</button>
+<pre>
+<code>
+melui.drawer({
+    animation: false,
+    direction: "right",
+    title: "无动画抽屉",
+    content: "打开关闭没有过渡动画，直接显示隐藏"
+});
+</code>
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title"> 9、 resizable开启拖拽缩放（现代浏览器，IE自动降级） </div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> resizable:true，边缘拖拽调整尺寸，IE9/10/11自动降级无手柄 </div>
+                <button>打开抽屉</button>
+<pre>
+<code>
+melui.drawer({
+    direction: "right",
+    resizable: true,
+    width: 400,
+    minWidth: 320,
+    title: "支持拖拽调整大小",
+    content: "鼠标移到抽屉左侧边缘，出现拖拽手柄拖动改变宽度，不能超出视口、不能小于minWidth"
+});
+</code>
+</pre>
+            </div>
         </div>
     </div>
 
     <script src="../src/components/drawer/index.js"></script>
     <script>
-        document.getElementById("btnRight").onclick = function(){
-            MelUi.drawer({
-                direction:"right",
-                title:"侧栏搜索",
-                content:`
-                    <div>
-                        <p>测试表单内容</p>
-                        <input placeholder="请输入内容" style="width:100%;padding:8px;margin:8px 0;box-sizing:border-box;">
-                    </div>
-                `,
-                buttons:[
-                    {text:"重置"},
-                    {text:"完成"},
-                    {text:"提交"}
-                ],
-                onClick:function(ret){
-                    alert("点击按钮序号："+ret);
-                }
-            })
-        };
+        // demo演示：每个按钮eval运行其代码块
+        var demoList = document.querySelectorAll(".block-group__content_box");
+        for (var i = 0; i < demoList.length; i++) {
+            (function (itemWrap) {
+                var btn = itemWrap.querySelector("button");
+                var codeText = itemWrap.querySelector("code").textContent.trim();
+                btn.onclick = function () {
+                    try {
+                        eval(codeText);
+                    } catch (err) {
+                        alert("代码执行出错：" + err.message);
+                    }
+                };
+            })(demoList[i]);
+        }
 
-        document.getElementById("btnLeft").onclick = function(){
-            MelUi.drawer({
-                direction:"left",
-                width:340,
-                title:"左侧弹出",
-                content:"左侧抽屉测试内容"
-            })
-        };
-
-        document.getElementById("btnBottom").onclick = function(){
-            MelUi.drawer({
-                direction:"bottom",
-                height:400,
-                title:"底部弹出",
-                content:"底部抽屉测试"
-            })
-        };
-
-        document.getElementById("btnTop").onclick = function(){
-            MelUi.drawer({
-                direction:"top",
-                height:300,
-                title:"顶部弹出",
-                content:"顶部抽屉测试"
-            })
-        };
-
-        document.getElementById("btnAdaptive").onclick = function(){
-            MelUi.drawer({
-                adaptive:true,
-                title:"居中模式",
-                content:"adaptive:true，类似dialog弹窗效果"
-            })
-        };
+        // 代码高亮
+        if (window.hljs) {
+            var blocks = document.querySelectorAll("pre code");
+            for (var j = 0; j < blocks.length; j++) {
+                hljs.highlightBlock(blocks[j]);
+            }
+        }
     </script>
 </body>
 </html>

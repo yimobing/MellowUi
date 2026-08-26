@@ -18,7 +18,8 @@
     width: 280px;
     background: #fff;
     border-radius: 4px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    -webkit-box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     font-family: "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;
     /* IE9 不支持 opacity 动画，直接显示 */
@@ -479,7 +480,8 @@
 @media screen and (-webkit-min-device-pixel-ratio: 2),
        screen and (min-resolution: 192dpi) {
     .mel-dp-container {
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+        -webkit-box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
     }
 }
 

@@ -1,0 +1,106 @@
+/* ===== Demoé¡µé¢å¸ƒå±€æ ·å¼ï¼ˆéžç»„ä»¶æ ·å¼ï¼‰ ===== */
+* {
+    margin: 0;
+    padding: 0;
+    -moz-box-sizing: border-box;
+    -o-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+    box-sizing: border-box;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    background: #f5f7fa;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    color: #303133;
+}
+.page-title {
+    font-size: 26px;
+    margin: 0 0 6px;
+}
+.version-desc {
+    color: #909399;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+h2 {
+    font-size: 20px;
+    margin: 28px 0 12px;
+    border-left: 4px solid #1890ff;
+    padding-left: 10px;
+}
+.tips {
+    background: #e6f7ff;
+    border: 1px solid #91d5ff;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #0958d9;
+    line-height: 1.7;
+    margin: 10px 0;
+}
+.block-group {
+    background: #fff;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    margin: 0 0 16px;
+    overflow: hidden;
+}
+.block-group__title {
+    background: #fafafa;
+    padding: 10px 16px;
+    font-size: 15px;
+    font-weight: bold;
+    border-bottom: 1px solid #ebeef5;
+}
+.block-group__content {
+    padding: 12px 16px;
+}
+.block-group__content_box {
+    margin: 0 0 16px;
+}
+.block-group__content_box:last-child {
+    margin-bottom: 0;
+}
+.block-group__content_box_title {
+    margin-bottom: 8px;
+    line-height: 1.6;
+    padding: 6px 8px;
+    display: inline-block;
+    background-color: #f5f7fa;
+    border: 1px dashed #51514d;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #606266;
+}
+.block-group__content_box button {
+    display: block;
+    padding: 8px 20px;
+    background: #1890ff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+.block-group__content_box button:hover {
+    background: #40a9ff;
+}
+pre {
+    background: #f8f8f8;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 12px;
+    overflow: auto;
+    margin: 0;
+}
+code {
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+}

@@ -28,11 +28,15 @@
    .mel-drawer {
        position: fixed;
        background: #ffffff;
-       box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+       -webkit-box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+               box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
        display: -ms-flexbox;
+       display: -webkit-box;
        display: flex;
        -ms-flex-direction: column;
-       flex-direction: column;
+       -webkit-box-orient: vertical;
+       -webkit-box-direction: normal;
+               flex-direction: column;
        overflow: hidden;
    }
    
@@ -43,48 +47,58 @@
    
    /* 开启动画：位移过渡（-ms-前缀兼容IE10；IE9无transition能力自动无动画） */
    .mel-drawer--animate {
-       -ms-transition: transform 0.3s ease;
+       -webkit-transition: -webkit-transform 0.3s ease;
+       transition: -webkit-transform 0.3s ease;
        transition: transform 0.3s ease;
+       transition: transform 0.3s ease, -webkit-transform 0.3s ease;
    }
    
    /* 右侧抽屉：初始移出屏幕右侧（-ms-前缀保证IE9初始隐藏位置正确） */
    .mel-drawer--right {
        -ms-transform: translateX(100%);
-       transform: translateX(100%);
+       -webkit-transform: translateX(100%);
+               transform: translateX(100%);
    }
    .mel-drawer--right.mel-drawer--open {
        -ms-transform: translateX(0);
-       transform: translateX(0);
+       -webkit-transform: translateX(0);
+               transform: translateX(0);
    }
    
    /* 左侧抽屉：初始移出屏幕左侧 */
    .mel-drawer--left {
        -ms-transform: translateX(-100%);
-       transform: translateX(-100%);
+       -webkit-transform: translateX(-100%);
+               transform: translateX(-100%);
    }
    .mel-drawer--left.mel-drawer--open {
        -ms-transform: translateX(0);
-       transform: translateX(0);
+       -webkit-transform: translateX(0);
+               transform: translateX(0);
    }
    
    /* 底部抽屉：初始移出屏幕下方 */
    .mel-drawer--bottom {
        -ms-transform: translateY(100%);
-       transform: translateY(100%);
+       -webkit-transform: translateY(100%);
+               transform: translateY(100%);
    }
    .mel-drawer--bottom.mel-drawer--open {
        -ms-transform: translateY(0);
-       transform: translateY(0);
+       -webkit-transform: translateY(0);
+               transform: translateY(0);
    }
    
    /* 顶部抽屉：初始移出屏幕上方 */
    .mel-drawer--top {
        -ms-transform: translateY(-100%);
-       transform: translateY(-100%);
+       -webkit-transform: translateY(-100%);
+               transform: translateY(-100%);
    }
    .mel-drawer--top.mel-drawer--open {
        -ms-transform: translateY(0);
-       transform: translateY(0);
+       -webkit-transform: translateY(0);
+               transform: translateY(0);
    }
    
    /* 自适应居中模式：模拟Dialog弹窗，淡入淡出 */
@@ -92,13 +106,14 @@
        top: 50%;
        left: 50%;
        -ms-transform: translate(-50%, -50%);
-       transform: translate(-50%, -50%);
+       -webkit-transform: translate(-50%, -50%);
+               transform: translate(-50%, -50%);
        max-width: 90vw;
        max-height: 90vh;
        opacity: 0;
    }
    .mel-drawer--adaptive.mel-drawer--animate {
-       -ms-transition: opacity 0.3s ease;
+       -webkit-transition: opacity 0.3s ease;
        transition: opacity 0.3s ease;
    }
    .mel-drawer--adaptive.mel-drawer--open {
@@ -162,11 +177,18 @@
        left: 16px;
        top: 0;
        height: 48px;
+       display: -webkit-box;
+       display: -ms-flexbox;
        display: flex;
-       align-items: center;
+       -webkit-box-align: center;
+           -ms-flex-align: center;
+               align-items: center;
        cursor: pointer;
        color: #606266;
-       user-select: none;
+       -webkit-user-select: none;
+          -moz-user-select: none;
+           -ms-user-select: none;
+               user-select: none;
    }
    /* 返回按钮禁用态 */
    .mel-drawer__back.is-disabled {
@@ -198,13 +220,18 @@
        top: 0;
        height: 48px;
        display: -ms-flexbox;
+       display: -webkit-box;
        display: flex;
        -ms-flex-align: center;
-       align-items: center;
+       -webkit-box-align: center;
+               align-items: center;
        font-size: 22px;
        color: #909399;
        cursor: pointer;
-       user-select: none;
+       -webkit-user-select: none;
+          -moz-user-select: none;
+           -ms-user-select: none;
+               user-select: none;
    }
    /* 关闭按钮禁用态 */
    .mel-drawer__close.is-disabled {
@@ -220,7 +247,8 @@
    /* 内容区：flex弹性占满（IE9由JS绝对定位撑满），内部可滚动 */
    .mel-drawer__content {
        -ms-flex: 1;
-       flex: 1;
+       -webkit-box-flex: 1;
+               flex: 1;
        overflow-y: auto;
        padding: 16px;
        font-size: 14px;
@@ -229,11 +257,14 @@
    /* 底部按钮区：定高+flex居中，不使用padding撑高，保证按钮文字垂直居中 */
    .mel-drawer__footer {
        display: -ms-flexbox;
+       display: -webkit-box;
        display: flex;
        -ms-flex-align: center;
-       align-items: center;
+       -webkit-box-align: center;
+               align-items: center;
        -ms-flex-pack: end;
-       justify-content: flex-end;
+       -webkit-box-pack: end;
+               justify-content: flex-end;
        height: 52px;
        border-top: 1px solid #e5e7eb;
        -ms-flex-negative: 0;

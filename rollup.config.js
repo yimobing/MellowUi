@@ -19,6 +19,7 @@ const terserConfig = {
 function createCssDev() {
   return postcss({
     extract: true,
+    verbose: true, // 输出postcss处理日志
     plugins: [
       autoprefixer({
         overrideBrowserslist: ['IE 9', 'IE 10', 'IE 11', 'last 2 versions']
@@ -30,6 +31,7 @@ function createCssDev() {
 function createCssProd() {
   return postcss({
     extract: true,
+    verbose: true, // 输出postcss处理日志
     plugins: [
       autoprefixer({
         overrideBrowserslist: ['IE 9', 'IE 10', 'IE 11', 'last 2 versions']
@@ -90,6 +92,30 @@ export default [
         },
         plugins: [createCssProd(), terser(terserConfig)]
     },
+
+
+    // drawer 开发版
+    {
+      input: 'src/components/drawer/index.js',
+        output: {
+            file: 'dist/drawer/drawer.js',
+            format: 'umd',
+            name: 'MelUi'
+        },
+        plugins: [createCssDev()]
+    },
+    // drawer 压缩版
+    {
+        input: 'src/components/drawer/index.js',
+        output: {
+            file: 'dist/drawer/drawer.min.js',
+            format: 'umd',
+            name: 'MelUi'
+        },
+        plugins: [createCssProd(), terser(terserConfig)]
+    },    
+
+
 
     //======================== 二. 全局完整库打包 ======================== 
     // 全量开发版
