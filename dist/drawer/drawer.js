@@ -5,9 +5,9 @@
 
     /**
      * MelUi Drawer 抽屉组件
-     * 版本：v1.0.8
+     * 版本：v1.0.9
      * 创建时间：2026-08-12
-     * 更新时间：2026-08-26
+     * 更新时间：2026-08-27
      * 兼容：IE9/IE10/IE11/Edge（拖拽resizable、position:sticky为先进功能，IE低版本自动降级）
      * 调用规则：
      *   构造调用：MelUi.Drawer({配置参数}) 【无需new，直接返回实例】
@@ -208,7 +208,7 @@
             right: 0, // 抽屉距离视口右边偏移，非0则覆盖方向默认定位 (可选)
             minWidth: 320, // 抽屉最小宽度，左右方向生效，单位px，仅数字 (可选)
             minHeight: 280, // 抽屉最小高度，上下方向生效，单位px，仅数字 (可选)
-            adaptive: false, // 是否居中对话框模式，true时direction、偏移、width、height、拖拽失效 (可选)
+            adaptive: false, // 是否居中对话框模式，true时direction、偏移、width、height、拖拽失效；IE9下自动用minWidth/minHeight兜底尺寸 (可选)
             resizable: false, // 是否开启拖拽调整大小；IE自动降级不生效，adaptive模式自动失效 (可选)
 
             // 遮罩层相关
@@ -505,7 +505,8 @@
             var opt = this.options;
             var wrap = this.wrap;
 
-            // 自适应居中模式：清空所有定位
+            // 自适应居中模式：清空方向定位（居中由CSS transform控制）
+            // IE9无shrink-to-fit能力，fixed+auto尺寸会塌陷为0导致不显示，需显式默认宽高+最小尺寸兜底
             if (opt.adaptive) {
                 wrap.style.top = "";
                 wrap.style.bottom = "";
@@ -515,6 +516,22 @@
                 wrap.style.height = "";
                 wrap.style.minWidth = "";
                 wrap.style.minHeight = "";
+
+                // 仅IE9兜底：设置最小尺寸+默认宽高，保证控件可见；现代浏览器/IE10/11保持shrink-to-fit原行为
+                if (isIE9()) {
+                    wrap.style.minWidth = opt.minWidth + "px";
+                    wrap.style.minHeight = opt.minHeight + "px";
+                    if (!opt.width || opt.width === "auto") {
+                        wrap.style.width = opt.minWidth + "px";
+                    } else {
+                        wrap.style.width = parseSize(opt.width);
+                    }
+                    if (!opt.height || opt.height === "auto") {
+                        wrap.style.height = opt.minHeight + "px";
+                    } else {
+                        wrap.style.height = parseSize(opt.height);
+                    }
+                }
                 return;
             }
 

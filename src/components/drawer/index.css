@@ -1,8 +1,8 @@
 /* ================================================
    MelUi Drawer 抽屉组件样式
-   版本：v1.0.8
+   版本：v1.0.9
    创建时间：2026-08-12
-   更新时间：2026-08-26
+   更新时间：2026-08-27
    兼容：IE9/IE10/IE11/Edge
    - IE10/11 使用 -ms- 前缀双声明兼容 flex
    - IE9 无flex/无classList/无transitionend，JS 加 .mel-drawer--no-flex 降级布局并定时器兜底回调
@@ -88,12 +88,15 @@
    }
    
    /* 自适应居中模式：模拟Dialog弹窗，淡入淡出 */
+   /* max-width/max-height 用百分比兜底（fixed元素%相对视口，IE9支持），vw/vh仅IE10+，双声明降级 */
    .mel-drawer--adaptive {
        top: 50%;
        left: 50%;
        -ms-transform: translate(-50%, -50%);
        transform: translate(-50%, -50%);
+       max-width: 90%;
        max-width: 90vw;
+       max-height: 90%;
        max-height: 90vh;
        opacity: 0;
    }

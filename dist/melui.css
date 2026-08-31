@@ -1,3 +1,415 @@
+@charset "utf-8";
+
+/* =====================================================================
+ * MelUi mel-layout.css  Layout 布局基础样式
+ * 版本：v1.2.0
+ * 创建时间：2026-08-31
+ * 兼容：IE9/IE10/IE11/Edge
+ * 定位：通过基础的 24 分栏，迅速简便地创建布局
+ * 命名规范：所有框架类统一 mel- 前缀；BEM 双横线修饰符 --
+ * 模块划分：
+ *   模块1：全局重置 & IE9-11兼容补丁
+ *   模块2：24栅格系统 mel-row / mel-col（现代flex + IE9 float降级）
+ *   模块3：表单布局 mel-form-item（BEM：mel-form-item__hd / mel-form-item__bd）
+ * 注意：
+ *   1. 本文件为源码，构建后输出 dist/mel-layout.css / dist/mel-layout.min.css
+ *   2. 全量打包 melui.css 由 rollup 通过 src/index.js import 本文件合并
+ *   3. 列间距、行间距拆成两个独立修饰类：mel-row--col-gap / mel-row--row-gap
+ *   4. 栅格默认自动换行，无需额外加 wrap 类
+ *   5. mel-offset-N 建议在无 gap 的 mel-row 上使用，避免百分比偏移与px边距混合错位
+ *   6. 不使用 CSS 变量（IE9 不支持 var()），常量以注释标注
+ *   7. 必填星号位置由 HTML 书写顺序控制（前/后/输入框后），CSS 只统一样式
+ ===================================================================== */
+
+/* =====================================================================
+ * 模块1：全局重置 & IE9-11兼容补丁
+ ===================================================================== */
+
+/* 全局盒模型统一为 border-box，避免 height+padding 冲突 */
+*,
+*::before,
+*::after {
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+}
+
+/* 清除浏览器默认内外边距 */
+html,
+body,
+h1, h2, h3, h4, h5, h6,
+p,
+ul, ol, li,
+dl, dt, dd,
+form, fieldset, legend,
+figure, figcaption {
+    margin: 0;
+    padding: 0;
+}
+
+/* 列表取消默认圆点 */
+ul, ol {
+    list-style: none;
+}
+
+/* a标签重置：去掉下划线，继承颜色 */
+a {
+    text-decoration: none;
+    color: inherit;
+    background-color: transparent;
+}
+a:hover {
+    text-decoration: none;
+}
+
+/* 图片：去掉IE9链接图片蓝色边框，最大宽度不溢出 */
+img {
+    border: 0;
+    max-width: 100%;
+    vertical-align: middle;
+}
+
+/* 表单元素修复：IE9下表单控件不继承body字体，强制继承 */
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    vertical-align: middle;
+}
+
+/* IE按钮默认内边距/边框怪异，统一重置 */
+button {
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    outline: none;
+}
+
+/* textarea禁止水平resize，避免撑破布局 */
+textarea {
+    resize: vertical;
+    overflow: auto;
+}
+
+/* 表格边框合并 */
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* 清除浮动工具类（IE9 BFC兼容写法） */
+.clearfix::before,
+.clearfix::after {
+    content: "";
+    display: table;
+}
+.clearfix::after {
+    clear: both;
+}
+
+/* 基础工具类：隐藏 */
+.hidden {
+    display: none !important;
+}
+
+/* 基础工具类：禁止选中文本（带各浏览器前缀含-ms-） */
+.user-select-none {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* 基础工具类：文字溢出省略（单行） */
+.text-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* =====================================================================
+ * 模块2：24栅格系统 mel-row / mel-col
+ * 兼容策略：
+ *   现代浏览器 / IE10-11：display:flex（带-ms-前缀）
+ *   IE9：float:left 降级（flex子项float自动失效，不影响现代浏览器）
+ * 间距策略：
+ *   列间距、行间距拆成两个独立修饰类，可叠加使用：
+ *     mel-row--col-gap：列间距（行负margin + 列左右padding，常量20px）
+ *     mel-row--row-gap：行间距（列padding-bottom + 行负margin，常量20px）
+ * 用法：
+ *   <div class="mel-row mel-row--col-gap mel-row--row-gap">
+ *       <div class="mel-col mel-span-8">...</div>
+ *       <div class="mel-col mel-span-16">...</div>
+ *   </div>
+ ===================================================================== */
+
+/* 栅格行：默认flex，IE9降级block+float；默认自动换行，无需额外wrap类 */
+.mel-row {
+    display: block;
+    display: -ms-flexbox;
+    display: -webkit-box;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+}
+
+/* IE9下清除浮动（flex下::after不影响布局） */
+.mel-row::before,
+.mel-row::after {
+    content: "";
+    display: table;
+}
+.mel-row::after {
+    clear: both;
+}
+
+/* 栅格列：IE9 float降级，现代浏览器flex子项float自动失效 */
+.mel-col {
+    float: left;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+    min-height: 1px;
+}
+
+/* ---- 列间距 mel-row--col-gap（常量20px，每侧padding 10px） ----
+ * row 左右负margin抵消col的padding，保证两侧与容器对齐
+ */
+.mel-row--col-gap {
+    margin-left: -10px;
+    margin-right: -10px;
+}
+.mel-row--col-gap > .mel-col {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* ---- 行间距 mel-row--row-gap（常量20px） ----
+ * 用 col padding-bottom 实现行间距，现代flex和IE9 float下都稳定生效；
+ * row 底部负margin抵消最后一行col的padding-bottom，不产生多余底部空白
+ */
+.mel-row--row-gap {
+    margin-bottom: -20px;
+}
+.mel-row--row-gap > .mel-col {
+    padding-bottom: 20px;
+}
+
+/* ---- mel-span-N 占比：N/24 * 100% ---- */
+.mel-span-1  { width: 4.16666667%; }
+.mel-span-2  { width: 8.33333333%; }
+.mel-span-3  { width: 12.5%; }
+.mel-span-4  { width: 16.66666667%; }
+.mel-span-5  { width: 20.83333333%; }
+.mel-span-6  { width: 25%; }
+.mel-span-7  { width: 29.16666667%; }
+.mel-span-8  { width: 33.33333333%; }
+.mel-span-9  { width: 37.5%; }
+.mel-span-10 { width: 41.66666667%; }
+.mel-span-11 { width: 45.83333333%; }
+.mel-span-12 { width: 50%; }
+.mel-span-13 { width: 54.16666667%; }
+.mel-span-14 { width: 58.33333333%; }
+.mel-span-15 { width: 62.5%; }
+.mel-span-16 { width: 66.66666667%; }
+.mel-span-17 { width: 70.83333333%; }
+.mel-span-18 { width: 75%; }
+.mel-span-19 { width: 79.16666667%; }
+.mel-span-20 { width: 83.33333333%; }
+.mel-span-21 { width: 87.5%; }
+.mel-span-22 { width: 91.66666667%; }
+.mel-span-23 { width: 95.83333333%; }
+.mel-span-24 { width: 100%; }
+
+/* ---- mel-offset-N 偏移：左侧 margin N/24*100% ----
+ * 注意：建议在无 gap 的 mel-row 上使用；
+ * 若叠加 col-gap（px padding），偏移百分比与固定px边距混合，视觉会有微小错位
+ */
+.mel-offset-0  { margin-left: 0; }
+.mel-offset-1  { margin-left: 4.16666667%; }
+.mel-offset-2  { margin-left: 8.33333333%; }
+.mel-offset-3  { margin-left: 12.5%; }
+.mel-offset-4  { margin-left: 16.66666667%; }
+.mel-offset-5  { margin-left: 20.83333333%; }
+.mel-offset-6  { margin-left: 25%; }
+.mel-offset-7  { margin-left: 29.16666667%; }
+.mel-offset-8  { margin-left: 33.33333333%; }
+.mel-offset-9  { margin-left: 37.5%; }
+.mel-offset-10 { margin-left: 41.66666667%; }
+.mel-offset-11 { margin-left: 45.83333333%; }
+.mel-offset-12 { margin-left: 50%; }
+.mel-offset-13 { margin-left: 54.16666667%; }
+.mel-offset-14 { margin-left: 58.33333333%; }
+.mel-offset-15 { margin-left: 62.5%; }
+.mel-offset-16 { margin-left: 66.66666667%; }
+.mel-offset-17 { margin-left: 70.83333333%; }
+.mel-offset-18 { margin-left: 75%; }
+.mel-offset-19 { margin-left: 79.16666667%; }
+.mel-offset-20 { margin-left: 83.33333333%; }
+.mel-offset-21 { margin-left: 87.5%; }
+.mel-offset-22 { margin-left: 91.66666667%; }
+.mel-offset-23 { margin-left: 95.83333333%; }
+
+/* =====================================================================
+ * 模块3：表单布局 mel-form-item
+ * BEM命名：
+ *   Block：mel-form-item（一个表单单元 = 标签区 + 控件区）
+ *   Element：mel-form-item__hd（head，标签头部） / mel-form-item__bd（body，控件主体）
+ *   Modifier：mel-form-item--edit（编辑模式，hd固定宽度右对齐） / mel-form-item--search（查询模式，hd自适应、与控件同一行）
+ * 控件基类：mel-form-ctrl（input/select/textarea统一加此类）
+ * 辅助：mel-form-item__required（必填星号） / mel-form-item__tip（校验提示）
+ * 注意：
+ *   1. mel-form-item自身不做多列换行，多列交给外层24栅格 mel-row/mel-col
+ *   2. mel-form-ctrl只统一样式，不写死textarea高度，高度由业务style/class控制
+ *   3. edit模式hd固定宽度常量：110px，bd margin-left:110px
+ *   4. search模式：hd float:left宽度自适应，bd overflow:hidden触发BFC占剩余宽度，标签与控件同一行
+ *   5. 必填星号位置由HTML书写顺序控制：
+ *      前置：<hd><span class="__required">*</span>文字</hd>
+ *      后置：<hd>文字<span class="__required">*</span></hd>
+ *      输入框后：<bd><input><span class="__required">*</span></bd>
+ ===================================================================== */
+
+/* 表单单元基础 */
+.mel-form-item {
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #303133;
+}
+
+/* 标签头部基础 */
+.mel-form-item__hd {
+    font-size: 14px;
+    color: #606266;
+    line-height: 34px;
+}
+
+/* 控件主体基础 */
+.mel-form-item__bd {
+    position: relative;
+}
+
+/* ---- 修饰符：edit 编辑模式（抽屉/弹窗内，hd固定宽度右对齐，追求标签边界对齐） ---- */
+.mel-form-item--edit .mel-form-item__hd {
+    float: left;
+    width: 110px;
+    text-align: right;
+    padding-right: 12px;
+    line-height: 34px;
+    min-height: 1px;
+}
+.mel-form-item--edit .mel-form-item__bd {
+    margin-left: 110px;
+}
+/* edit模式清除浮动 */
+.mel-form-item--edit::before,
+.mel-form-item--edit::after {
+    content: "";
+    display: table;
+}
+.mel-form-item--edit::after {
+    clear: both;
+}
+
+/* ---- 修饰符：search 查询模式（页面顶部条件区，标签与控件同一行，配合栅格自动换行） ---- */
+.mel-form-item--search .mel-form-item__hd {
+    float: left;
+    line-height: 34px;
+    padding-right: 8px;
+    white-space: nowrap; /* 标签宽度自适应内容，不换行 */
+}
+.mel-form-item--search .mel-form-item__bd {
+    overflow: hidden; /* 触发BFC，自动占满标签以外的剩余宽度，IE9兼容 */
+}
+/* search模式间距更小，适配密集查询区 */
+.mel-form-item--search {
+    margin-bottom: 12px;
+}
+
+/* ---- 修饰符：error 错误态（控件边框变红） ---- */
+.mel-form-item--error .mel-form-ctrl {
+    border-color: #f56c6c;
+}
+.mel-form-item--error .mel-form-ctrl:focus {
+    border-color: #f56c6c;
+}
+
+/* ---- 控件基类 mel-form-ctrl（input/select/textarea统一） ---- */
+.mel-form-ctrl {
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #303133;
+    background-color: #fff;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    outline: none;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+    -webkit-transition: border-color 0.2s;
+    transition: border-color 0.2s;
+}
+.mel-form-ctrl:focus {
+    border-color: #409eff;
+}
+.mel-form-ctrl::-webkit-input-placeholder {
+    color: #c0c4cc;
+}
+.mel-form-ctrl::-moz-placeholder {
+    color: #c0c4cc;
+}
+.mel-form-ctrl:-ms-input-placeholder {
+    color: #c0c4cc;
+}
+/* 禁用态 */
+.mel-form-ctrl:disabled,
+.mel-form-ctrl[disabled] {
+    background-color: #f5f7fa;
+    border-color: #e4e7ed;
+    color: #c0c4cc;
+    cursor: not-allowed;
+}
+
+/* textarea：高度不写死，由业务控制；padding上下调整 */
+textarea.mel-form-ctrl {
+    height: auto;
+    min-height: 70px;
+    padding: 8px 10px;
+    line-height: 1.6;
+    resize: vertical;
+}
+
+/* select 控件IE下箭头样式微调 */
+select.mel-form-ctrl {
+    padding-right: 24px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23909399'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    cursor: pointer;
+}
+
+/* ---- 辅助：必填星号（位置由HTML书写顺序控制，CSS 只统一样式） ---- */
+.mel-form-item__required {
+    color: #f56c6c;
+    margin: 0 2px;
+    font-weight: bold;
+}
+
+/* ---- 辅助：校验错误提示 ---- */
+.mel-form-item__tip {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #f56c6c;
+}
+
 /*
 MelUi Dialog 弹窗组件样式
 版本：v1.0.6
@@ -722,9 +1134,9 @@ MelUi Dialog 弹窗组件样式
 
 /* ================================================
    MelUi Drawer 抽屉组件样式
-   版本：v1.0.8
+   版本：v1.0.9
    创建时间：2026-08-12
-   更新时间：2026-08-26
+   更新时间：2026-08-27
    兼容：IE9/IE10/IE11/Edge
    - IE10/11 使用 -ms- 前缀双声明兼容 flex
    - IE9 无flex/无classList/无transitionend，JS 加 .mel-drawer--no-flex 降级布局并定时器兜底回调
@@ -824,13 +1236,16 @@ MelUi Dialog 弹窗组件样式
    }
    
    /* 自适应居中模式：模拟Dialog弹窗，淡入淡出 */
+   /* max-width/max-height 用百分比兜底（fixed元素%相对视口，IE9支持），vw/vh仅IE10+，双声明降级 */
    .mel-drawer--adaptive {
        top: 50%;
        left: 50%;
        -ms-transform: translate(-50%, -50%);
        -webkit-transform: translate(-50%, -50%);
                transform: translate(-50%, -50%);
+       max-width: 90%;
        max-width: 90vw;
+       max-height: 90%;
        max-height: 90vh;
        opacity: 0;
    }
