@@ -31,19 +31,6 @@
     box-sizing: border-box;
 }
 
-/* 清除浏览器默认内外边距 */
-html,
-body,
-h1, h2, h3, h4, h5, h6,
-p,
-ul, ol, li,
-dl, dt, dd,
-form, fieldset, legend,
-figure, figcaption {
-    margin: 0;
-    padding: 0;
-}
-
 /* 列表取消默认圆点 */
 ul, ol {
     list-style: none;
@@ -232,18 +219,23 @@ table {
 
 /* =====================================================================
  * 主推：mel-row--type-{value} 一套类同时控制全套间距
- * 实现原理：
+ * 实现原理（重要，避免间距叠加）：
  *   列间距：row 左右负margin(col-gap/2) + col 左右padding(col-gap/2)
- *   行间距：col padding-bottom(row-gap)，row 底部负margin抵消最后一行
- *   row之间：mel-row 自身 margin-bottom(space)
- * 注意：type 修饰符不要与独立 col-gap/row-gap/space 同时使用，避免样式叠加
+ *   行间距 & row之间间距：统一由 col 的 padding-bottom 承担
+ *     - row 内部 col 换行的行间距 = 上一行 col 的 padding-bottom
+ *     - 多个 mel-row 连续堆叠时，row 之间间距 = 上一个 row 最后一行 col 的 padding-bottom
+ *     - 两者数值完全一致 = gap，无需再为 mel-row 单独设置 margin-bottom
+ *   注意：
+ *   1. type 不再设置 margin-bottom，避免与 col padding-bottom 叠加导致 row 之间间距翻倍
+ *   2. row 底部天然带 gap 的 padding-bottom（row 之间间距来源），若最后一个 row 后
+ *      跟按钮等其他元素且不需要此留白，业务可在外层容器自行清除
+ *   3. type 修饰符不要与独立 col-gap/row-gap/space 同时使用，避免样式叠加
  ===================================================================== */
 
 /* ---- type-default 默认 20px（普通后台表单） ---- */
 .mel-row--type-default {
     margin-left: -10px;
     margin-right: -10px;
-    margin-bottom: 20px;
 }
 .mel-row--type-default > .mel-col {
     padding-left: 10px;
@@ -255,7 +247,6 @@ table {
 .mel-row--type-loose {
     margin-left: -7.5px;
     margin-right: -7.5px;
-    margin-bottom: 15px;
 }
 .mel-row--type-loose > .mel-col {
     padding-left: 7.5px;
@@ -267,7 +258,6 @@ table {
 .mel-row--type-moderate {
     margin-left: -5px;
     margin-right: -5px;
-    margin-bottom: 10px;
 }
 .mel-row--type-moderate > .mel-col {
     padding-left: 5px;
@@ -279,7 +269,6 @@ table {
 .mel-row--type-compact {
     margin-left: -2.5px;
     margin-right: -2.5px;
-    margin-bottom: 5px;
 }
 .mel-row--type-compact > .mel-col {
     padding-left: 2.5px;
@@ -341,7 +330,6 @@ table {
 
 /* 表单单元基础 */
 .mel-form-item {
-    margin-bottom: 16px;
     font-size: 14px;
     color: #303133;
 }

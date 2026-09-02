@@ -1,106 +1,164 @@
-/* ===== Demoé¡µé¢å¸ƒå±€æ ·å¼ï¼ˆéžç»„ä»¶æ ·å¼ï¼‰ ===== */
+@charset "utf-8";
+/* =====================================================================
+ * MelUi demo css/demo_docs.css  演示页面文档外壳样式（仅用于demo页面，不属于框架库）
+ * 说明：本文件为演示页面的页面级布局样式，业务项目可自行替换/扩展
+ * 由 demo/layout.css 改名而来，dialog / drawer / layout 演示页面统一引用
+ * 使用类名体系（与 drawer.html 保持一致）：
+ *   .page-title           页面主标题
+ *   .version-desc         版本说明行
+ *   h2                    一级区块标题（带下边框分隔）
+ *   .block-group          演示分组容器
+ *   .block-group__title   分组小标题
+ *   .block-group__content 分组内容卡片（带边框）
+ *   .block-group__content_box       内容盒（内边距+底部分隔线）
+ *   .block-group__content_box_title 内容盒内说明文字
+ *   .block-subtitle       二级小标题（h3替代样式）
+ *   .block-tip            提示/注意框
+ *   pre / code            代码块
+ *   .demo-row-gap         演示块之间的垂直间距
+ *   .demo-grid-bg         栅格演示色块
+ *   .demo-grid-bg-dark    栅格演示深色块
+ *   .demo-form-panel      表单演示面板（白底带边框）
+ ===================================================================== */
 * {
     margin: 0;
     padding: 0;
-    -moz-box-sizing: border-box;
-    -o-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-    -ms-box-sizing: border-box;
     box-sizing: border-box;
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
 }
 
 body {
     margin: 0;
     padding: 20px;
-    background: #f5f7fa;
-    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 14px;
+    color: #303133;
+    background-color: #f4f4f4;
+}
+/* 页面主标题 */
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #303133;
+    margin: 0 0 8px;
+}
+/* 版本说明行 */
+.version-desc {
+    font-size: 13px;
+    color: #909399;
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+/* 一级区块标题 */
+h2 {
+    margin-top: 35px;
+    padding: 20px;
+    background-color: #fff;
+    border-bottom: 1px solid #ebeef5;
+    border-radius: 12px 12px 0 0;
+    font-size: 18px;
+    font-weight: 600;
     color: #303133;
 }
-.page-title {
-    font-size: 26px;
-    margin: 0 0 6px;
+/* 二级小标题（h3替代） */
+.block-subtitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: #606266;
+    margin: 20px 0 10px;
+    padding-left: 8px;
+    border-left: 3px solid #409eff;
+    line-height: 1.4;
 }
-.version-desc {
-    color: #909399;
-    font-size: 14px;
-    margin-bottom: 20px;
-}
-h2 {
-    font-size: 20px;
-    margin: 28px 0 12px;
-    border-left: 4px solid #1890ff;
-    padding-left: 10px;
-}
-.tips {
-    background: #e6f7ff;
-    border: 1px solid #91d5ff;
-    border-radius: 4px;
-    padding: 10px 14px;
-    font-size: 13px;
-    color: #0958d9;
-    line-height: 1.7;
-    margin: 10px 0;
-}
+/* 演示分组 */
 .block-group {
-    background: #fff;
-    border: 1px solid #ebeef5;
-    border-radius: 6px;
-    margin: 0 0 16px;
-    overflow: hidden;
+    margin-bottom: 24px;
+    padding: 10px 15px;
+    background-color: #fff;
+    border-radius: 12px;
+}
+h2 + .block-group {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 .block-group__title {
-    background: #fafafa;
-    padding: 10px 16px;
+    margin: 25px 0 15px 0;
     font-size: 15px;
-    font-weight: bold;
-    border-bottom: 1px solid #ebeef5;
-}
-.block-group__content {
-    padding: 12px 16px;
-}
-.block-group__content_box {
-    margin: 0 0 16px;
-}
-.block-group__content_box:last-child {
-    margin-bottom: 0;
-}
-.block-group__content_box_title {
-    margin-bottom: 8px;
-    line-height: 1.6;
-    padding: 6px 8px;
-    display: inline-block;
-    background-color: #f5f7fa;
-    border: 1px dashed #51514d;
-    border-radius: 8px;
-    font-size: 13px;
+    font-weight: 600;
     color: #606266;
 }
-.block-group__content_box button {
-    display: block;
-    padding: 8px 20px;
-    background: #1890ff;
-    color: #fff;
-    border: none;
+.block-group__content {
+    border: 1px solid #ebeef5;
     border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    margin-bottom: 10px;
+    background-color: #fff;
+    overflow: hidden;
 }
-.block-group__content_box button:hover {
-    background: #40a9ff;
+.block-group__content_box {
+    margin-top: 15px;
+    padding: 16px;
+    border-bottom: 1px solid #ebeef5;
 }
+.block-group__content_box:last-child {
+    border-bottom: none;
+}
+.block-group__content_box_title {
+    font-size: 16px;
+    font-weight: 550;
+    color: #2196F3;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+/* 提示/注意框 */
+.block-tip {
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #606266;
+    background-color: #f4f4f5;
+    border-left: 4px solid #909399;
+    border-radius: 2px;
+}
+.block-tip strong {
+    color: #303133;
+}
+/* 代码块基础 */
 pre {
-    background: #f8f8f8;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    padding: 12px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px 8px;
+    background-color: #fff;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
     overflow: auto;
-    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
 }
 code {
-    font-family: Consolas, Monaco, "Courier New", monospace;
-    font-size: 13px;
-    line-height: 1.6;
+    display: block;
+    padding: 1em;
+    background-color: #f6f6f6;
+    font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
+    border-radius: 2px;
+    overflow-x: auto;
+}
+
+.inline-code {
+    font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
+    background-color: #f6f6f6;
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+h2 + pre {
+    margin-top: 0;
+    border-top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+.tips {
+    margin-top: 5px;
+    padding: 10px;
+    background-color: #f3efc5;
+    border-radius: 4px;
+    color: #262121;
 }

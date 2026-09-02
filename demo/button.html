@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="">
+    <meta name="applicable-device" content="pc,mobile">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title> MelUi Button 按钮</title>
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <link rel="stylesheet" href="css/demo_docs.css">
+    <link rel="stylesheet" href="../src/styles/button.css">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/styles/stackoverflow-light.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+    <style>
+        .demo-form-panel {
+            border: 1px solid #ebeef5;
+            border-radius: 4px;
+            padding: 20px;
+            background: #fff;
+            margin-bottom:16px;
+        }
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin:8px 0;
+        }
+        .api-table th,.api-table td {
+            border:1px solid #ebeef5;
+            padding:10px 12px;
+            text-align:left;
+        }
+        .api-table th {
+            background-color:#fafafa;
+        }
+        .inline-code {
+            font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
+            background-color: #f6f6f6;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        .demo-btn-space > button {
+            margin:0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="page-title">MelUi Button 按钮</h1>
+    <div class="version-desc">
+        <p>版本：v1.3.0 | 兼容：IE9~Edge | 按钮组件</p>
+        <p>说明：基础按钮组件；<strong>所有button标签务必添加 type="button"，避免.NET WebForm表单内点击触发页面提交刷新；仅真正提交表单时使用 type="submit"</strong></p>
+    </div>
+    <h2>一、基础用法</h2>
+    <div class="block-group">
+        <div class="block-group__title">
+            按钮类型对照（填充 / 描线outline / 朴素plain / 圆角round</div>
+        <div class="block-group__content">
+            <div class="demo-form-panel demo-btn-space">
+                <div>
+                    <span>填充：</span>
+                    <button type="button" class="mel-btn mel-btn--default">default 默认</button>
+                    <button type="button" class="mel-btn mel-btn--primary">primary 主要</button>
+                    <button type="button" class="mel-btn mel-btn--success">success 成功</button>
+                    <button type="button" class="mel-btn mel-btn--info">info 信息</button>
+                    <button type="button" class="mel-btn mel-btn--warning">warning 警告</button>
+                    <button type="button" class="mel-btn mel-btn--danger">danger 危险</button>
+                </div>
+                <div style="margin-top:8px;">
+                    <span>描线outline：</span>
+                    <button type="button" class="mel-btn mel-btn--default mel-btn--outline">default‑outline</button>
+                    <button type="button" class="mel-btn mel-btn--primary mel-btn--outline">primary‑outline</button>
+                    <button type="button" class="mel-btn mel-btn--success mel-btn--outline">success‑outline</button>
+                    <button type="button" class="mel-btn mel-btn--info mel-btn--outline">info‑outline</button>
+                    <button type="button" class="mel-btn mel-btn--warning mel-btn--outline">warning‑outline</button>
+                    <button type="button" class="mel-btn mel-btn--danger mel-btn--outline">danger‑outline</button>
+                </div>
+                <div style="margin-top:8px;">
+                    <span>朴素plain：</span>
+                    <button type="button" class="mel-btn mel-btn--default mel-btn--plain">default‑plain</button>
+                    <button type="button" class="mel-btn mel-btn--primary mel-btn--plain">primary‑plain</button>
+                    <button type="button" class="mel-btn mel-btn--success mel-btn--plain">success‑plain</button>
+                    <button type="button" class="mel-btn mel-btn--info mel-btn--plain">info‑plain</button>
+                    <button type="button" class="mel-btn mel-btn--warning mel-btn--plain">warning‑plain</button>
+                    <button type="button" class="mel-btn mel-btn--danger mel-btn--plain">danger‑plain</button>
+                </div>
+                <div style="margin-top:8px;">
+                    <span>胶囊round：</span>
+                    <button type="button" class="mel-btn mel-btn--default mel-btn--round">default‑round</button>
+                    <button type="button" class="mel-btn mel-btn--primary mel-btn--round">primary‑round</button>
+                    <button type="button" class="mel-btn mel-btn--success mel-btn--round">success‑round</button>
+                    <button type="button" class="mel-btn mel-btn--info mel-btn--round">info‑round</button>
+                    <button type="button" class="mel-btn mel-btn--warning mel-btn--round">warning‑round</button>
+                    <button type="button" class="mel-btn mel-btn--danger mel-btn--round">danger‑round</button>
+                </div>
+            </div>
+<pre><code class="language-html">&lt;!--填充按钮--&gt;
+&lt;button type="button" class="mel-btn mel-btn--default"&gt;default 默认&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--primary"&gt;primary 主要&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--success"&gt;success 成功&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--info"&gt;info 信息&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--warning"&gt;warning 警告&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--danger"&gt;danger 危险&lt;/button&gt;
+
+&lt;!--描线outline，透明背景hover淡蒙层--&gt;
+&lt;button type="button" class="mel-btn mel-btn--default mel-btn--outline"&gt;default‑outline&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--primary mel-btn--outline"&gt;primary‑outline&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--success mel-btn--outline"&gt;success‑outline&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--info mel-btn--outline"&gt;info‑outline&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--warning mel-btn--outline"&gt;warning‑outline&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--danger mel-btn--outline"&gt;danger‑outline&lt;/button&gt;
+
+&lt;!--朴素plain，浅底色hover实色反白--&gt;
+&lt;button type="button" class="mel-btn mel-btn--default mel-btn--plain"&gt;default‑plain&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--primary mel-btn--plain"&gt;primary‑plain&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--success mel-btn--plain"&gt;success‑plain&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--info mel-btn--plain"&gt;info‑plain&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--warning mel-btn--plain"&gt;warning‑plain&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--danger mel-btn--plain"&gt;danger‑plain&lt;/button&gt;
+
+&lt;!--胶囊圆角round--&gt;
+&lt;button type="button" class="mel-btn mel-btn--default mel-btn--round"&gt;default‑round&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--primary mel-btn--round"&gt;primary‑round&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--success mel-btn--round"&gt;success‑round&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--info mel-btn--round"&gt;info‑round&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--warning mel-btn--round"&gt;warning‑round&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--danger mel-btn--round"&gt;danger‑round&lt;/button&gt;
+
+</code></pre>
+        </div>
+    </div>
+
+    <h2>二、高级用法 </h2>
+    <div class="block-group">
+        <div class="block-group__title"></div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">
+                    1、尺寸 size
+                    large / default / small / mini
+                    不加尺寸修饰符为default默认尺寸。
+                </div>
+                <div class="demo-form-panel demo-btn-space">
+                    <button type="button" class="mel-btn mel-btn--primary mel-btn--large">large 大按钮</button>
+                    <button type="button" class="mel-btn mel-btn--primary">default 默认</button>
+                    <button type="button" class="mel-btn mel-btn--primary mel-btn--small">small 小按钮</button>
+                    <button type="button" class="mel-btn mel-btn--primary mel-btn--mini">mini 极小</button>
+                </div>
+<pre><code class="language-html">&lt;button type="button" class="mel-btn mel-btn--primary mel-btn--large"&gt;large 大按钮&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--primary"&gt;default 默认&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--primary mel-btn--small"&gt;small 小按钮&lt;/button&gt;
+&lt;button type="button" class="mel-btn mel-btn--primary mel-btn--mini"&gt;mini 极小&lt;/button&gt;</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">
+                    2、块级按钮 block
+                    mel-btn--block 宽度100%
+                    块级按钮占满父容器宽度，多个按钮会各自独占一行，常用于弹窗底部、移动端。</div>
+                <div class="demo-form-panel" style="width:320px;">
+                    <button type="button" class="mel-btn mel-btn--primary mel-btn--block">block 主要按钮</button>
+                    <br>
+                    <button type="button" class="mel-btn mel-btn--success mel-btn--block">block 成功按钮</button>
+                    <br>
+                    <button type="button" class="mel-btn mel-btn--info mel-btn--block">block 信息按钮</button>
+                </div>
+<pre><code class="language-html">&lt;div style="width:320px;"&gt;
+  &lt;button type="button" class="mel-btn mel-btn--primary mel-btn--block"&gt;block 主要按钮&lt;/button&gt;
+  &lt;button type="button" class="mel-btn mel-btn--success mel-btn--block"&gt;block 成功按钮&lt;/button&gt;
+  &lt;button type="button" class="mel-btn mel-btn--info mel-btn--block"&gt;block 信息按钮&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">
+                    3、禁用状态 disabled属性 + mel-btn--is-disabled
+                    组件输出：同时渲染原生 <span class="inline-code">disabled</span> 属性与 <span class="inline-code">mel-btn--is-disabled</span> class；实现原生不可点击 + hover显示not‑allowed光标。
+                </div>
+                <div class="demo-form-panel demo-btn-space">
+                    <button type="button" disabled class="mel-btn mel-btn--primary mel-btn--is-disabled">primary 禁用</button>
+                    <button type="button" disabled class="mel-btn mel-btn--primary mel-btn--outline mel-btn--is-disabled">outline 禁用</button>
+                    <button type="button" disabled class="mel-btn mel-btn--primary mel-btn--plain mel-btn--is-disabled">plain 禁用</button>
+                    <button type="button" disabled class="mel-btn mel-btn--info mel-btn--is-disabled">info 禁用</button>
+                </div>
+<pre><code class="language-html">&lt;button type="button" disabled class="mel-btn mel-btn--primary mel-btn--is-disabled"&gt;primary 禁用&lt;/button&gt;</code></pre>
+                <div class="block-tip">
+                    <strong>重要：</strong>必须带上原生disabled属性，仅class无法阻止点击。
+                </div>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">
+                    4、加载状态 mel-btn--loading
+                    mel-btn--loading仅为视觉样式，业务JS实现加载时，必须同步设置 <span class="inline-code">disabled</span> 属性，阻止重复点击。
+                </div>
+                <div class="demo-form-panel demo-btn-space">
+                    <button type="button" class="mel-btn mel-btn--primary mel-btn--loading">primary 加载中</button>
+                    <button type="button" class="mel-btn mel-btn--success mel-btn--loading">success 加载中</button>
+                    <button type="button" class="mel-btn mel-btn--info mel-btn--loading">info 加载中</button>
+                </div>
+<pre><code class="language-html">&lt;button type="button" disabled class="mel-btn mel-btn--primary mel-btn--loading"&gt;primary 加载中&lt;/button&gt;</code></pre>
+                <div class="block-tip">
+                    <strong>重要：</strong>业务实际使用，loading状态务必加上disabled属性。
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <h2>三、API 类名速查表</h2>
+    <div class="block-group">
+        <div class="block-group__title">1、按钮类名说明</div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>类名</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><span class="inline-code">mel-btn</span></td><td>按钮根基础类，必须存在</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--default</span></td><td>默认次要按钮（灰色）</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--primary</span></td><td>主要按钮（蓝色，主操作）</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--success</span></td><td>成功按钮（绿色）</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--info</span></td><td>信息按钮（灰蓝色）</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--warning</span></td><td>警告按钮（橙色）</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--danger</span></td><td>危险删除按钮（红色）</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--text</span></td><td>文本按钮，无边框背景</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--outline</span></td><td>描线变体，透明背景，hover淡蒙层，搭配主题类</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--plain</span></td><td>朴素变体，常态浅底色，hover实色反白，搭配主题类</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--round</span></td><td>胶囊大圆角按钮</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--large</span></td><td>大尺寸按钮 height:42px</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--small</span></td><td>小尺寸按钮 height:28px</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--mini</span></td><td>极小按钮 height:24px</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--block</span></td><td>块级按钮，width:100%</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--is-disabled</span></td><td>禁用配套class，配合disabled属性，提供not‑allowed光标</td></tr>
+                        <tr><td><span class="inline-code">mel-btn--loading</span></td><td>加载中视觉样式，仅UI，需配合disabled属性</td></tr>
+                    </tbody>
+                </table>
+                <div class="block-tip">
+                    <strong>HTML属性注意：</strong>
+                    <br>1、普通操作按钮：&lt;button <strong>type="button"</strong> class="mel-btn ..."&gt;xxx&lt;/button&gt;
+                    <br>2、表单真正提交：才使用 &lt;button <strong>type="submit"</strong>&gt;提交&lt;/button&gt;
+                    <br>3、禁用状态：组件同时输出disabled属性 + mel-btn--is-disabled类。
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+    if(window.hljs){
+        hljs.highlightAll();
+    }
+</script>
+</body>
+</html>
