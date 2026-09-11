@@ -1,0 +1,316 @@
+/*!
+ * MelUi Dialog v1.2.1
+ * 兼容 IE9‑11 PC/移动端
+ */
+ @charset "utf-8";
+
+ /* ========== 模态弹窗基础 ========== */
+ .mel-dialog-mask {
+     position: fixed;
+     top: 0;
+     left: 0;
+     right: 0;
+     bottom: 0;
+     background: rgba(0, 0, 0, 0.5);
+     z-index: 9998;
+ }
+ 
+ .mel-dialog-wrap {
+     position: fixed;
+     top: 50%;
+     left: 50%;
+     transform: translate(-50%, -50%);
+     width: 420px;
+     min-width: 320px;
+     max-width: 90%;
+     background: #ffffff;
+     border-radius: 6px;
+     overflow: hidden;
+     z-index: 9999;
+ }
+ .mel-dialog-wrap.is-fullscreen {
+     width: 100%;
+     height: 100%;
+     max-width: 100%;
+     border-radius: 0;
+     top: 0;
+     left: 0;
+     transform: none;
+ }
+ 
+ /* header 已移除分割border */
+ .mel-dialog-header {
+     padding: 14px 18px;
+     position: relative;
+     background: #fff;
+ }
+ .mel-dialog-title {
+     font-size: 16px;
+     color: #333;
+     text-align: left;
+ }
+ .mel-dialog-close {
+     position: absolute;
+     right: 16px;
+     top: 14px;
+     font-size: 18px;
+     color: #999;
+     cursor: pointer;
+ }
+ .mel-dialog-close:hover {
+     color: #409eff;
+ }
+ 
+ /* body，title为空时min‑height防止压扁；移除分割border */
+ .mel-dialog-body {
+     padding: 20px 18px;
+     font-size: 14px;
+     color: #333;
+     text-align: left;
+     min-height: 100px;
+ }
+ .mel-dialog-wrap.layout-center .mel-dialog-header,
+ .mel-dialog-wrap.layout-center .mel-dialog-body,
+ .mel-dialog-wrap.layout-center .mel-dialog-footer {
+     text-align: center;
+ }
+ .mel-dialog-wrap.text-center .mel-dialog-body {
+     text-align: center;
+ }
+ 
+ /* prompt输入框容器，unit单位absolute右侧定位 */
+ .mel-dialog-input-wrap {
+     margin-top: 14px;
+     position: relative;
+ }
+ .mel-dialog-input,
+ .mel-dialog-textarea {
+     width: 100%;
+     box-sizing: border-box;
+     padding: 9px 12px;
+     border: 1px solid #dcdfe6;
+     border-radius: 4px;
+     font-size: 14px;
+     outline: none;
+ }
+ .mel-dialog-textarea {
+     resize: vertical;
+     min-height: 80px;
+ }
+ .mel-dialog-input-unit {
+     position: absolute;
+     right: 4px;
+     top: 50%;
+     transform: translateY(-50%);
+     color: #606266;
+     font-size: 14px;
+     pointer-events: none;
+ }
+ 
+ /* footer按钮区域；移除分割border；默认按钮居右 */
+ .mel-dialog-footer {
+     padding: 14px 18px;
+     display: flex;
+     gap: 12px;
+     justify-content: flex-end;
+ }
+ .mel-dialog-footer-vert {
+     flex-direction: column;
+     gap: 10px;
+     align-items: flex-end;
+ }
+ .mel-dialog-footer-full {
+     justify-content: stretch;
+ }
+ .mel-dialog-footer-full .mel-dialog-btn {
+     width: 100%;
+ }
+ .mel-dialog-footer-vert.mel-dialog-footer-full {
+     align-items: stretch;
+ }
+ 
+ /* 弹窗按钮基础 */
+ .mel-dialog-btn {
+     padding: 8px 16px;
+     border: 1px solid #dcdfe6;
+     border-radius: 4px;
+     cursor: pointer;
+     font-size: 14px;
+     white-space: nowrap;
+ }
+ .mel-dialog-btn:disabled {
+     opacity: 0.6;
+     cursor: not-allowed;
+ }
+ /* 按钮主题 */
+ .mel-btn-default {
+     background: #fff;
+     color: #606266;
+ }
+ .mel-btn-info {
+     background: #409eff;
+     color: #fff;
+     border-color: #409eff;
+ }
+ .mel-btn-success {
+     background: #67c23a;
+     color: #fff;
+     border-color: #67c23a;
+ }
+ .mel-btn-warning {
+     background: #e6a23c;
+     color: #fff;
+     border-color: #e6a23c;
+ }
+ .mel-btn-danger {
+     background: #f56c6c;
+     color: #fff;
+     border-color: #f56c6c;
+ }
+ 
+ /* device="phone" 手机模式：仅隐藏关闭按钮、按钮改为文字样式；弹窗尺寸不变 */
+ .mel-dialog-wrap.is-phone .mel-dialog-close {
+     display: none;
+ }
+ .mel-dialog-wrap.is-phone .mel-dialog-btn {
+     background: transparent;
+     border: none;
+ }
+ .mel-dialog-wrap.is-phone .mel-btn-info { color: #409eff; }
+ .mel-dialog-wrap.is-phone .mel-btn-success { color: #67c23a; }
+ .mel-dialog-wrap.is-phone .mel-btn-warning { color: #e6a23c; }
+ .mel-dialog-wrap.is-phone .mel-btn-danger { color: #f56c6c; }
+ .mel-dialog-wrap.is-phone .mel-btn-default { color: #606266; }
+ 
+ /* ========== Tip消息提示(独立) fix：使用提供的白底配色 ========== */
+ .mel-tip-mask {
+     position: fixed;
+     top: 0;
+     left: 0;
+     right: 0;
+     bottom: 0;
+     background: rgba(0,0,0,0.5);
+     z-index: 9999;
+ }
+ .mel-tip-wrap {
+     position: fixed;
+     left: 50%;
+     transform: translateX(-50%);
+     z-index: 10000;
+ }
+ .mel-tip-inner {
+     box-sizing: border-box;
+     min-width: 300px;
+     max-width: 520px;
+     padding: 14px 44px 14px 16px;
+     border-radius: 4px;
+     font-size: 14px;
+     position: relative;
+ }
+ /* success */
+ .mel-tip-inner.success {
+     background-color: #f0f9eb;
+     border:1px solid #e1f3d8;
+     color:#67c23a;
+ }
+ /* warning(warn) */
+ .mel-tip-inner.warning,
+ .mel-tip-inner.warn {
+     background-color: #fdf6ec;
+     border:1px solid #faecd8;
+     color:#e6a23c;
+ }
+ /* error */
+ .mel-tip-inner.error {
+     background-color: #fef0f0;
+     border:1px solid #fde2e2;
+     color:#f56c6c;
+ }
+ /* info */
+ .mel-tip-inner.info {
+     background-color: #ffffff;
+     border:1px solid #ebeef5;
+     color:#909399;
+ }
+ .mel-tip-icon {
+     display: inline-block;
+     margin-right: 8px;
+ }
+ .mel-tip-close {
+     position: absolute;
+     right: 12px;
+     top: 50%;
+     transform: translateY(-50%);
+     cursor: pointer;
+     font-size: 16px;
+ }
+ 
+ /* ========== Toast轻提示(独立) fix：天猫风格白底提示 ========== */
+ .mel-toast-wrap {
+     position: fixed;
+     left: 50%;
+     transform: translateX(-50%);
+     z-index: 10001;
+ }
+ .mel-toast-inner {
+     box-sizing: border-box;
+     padding: 14px 20px;
+     border-radius: 6px;
+     font-size: 14px;
+ }
+ .mel-toast-inner.success {
+     background-color: #f0f9eb;
+     border:1px solid #e1f3d8;
+     color:#67c23a;
+ }
+ .mel-toast-inner.warning,
+ .mel-toast-inner.warn {
+     background-color: #fdf6ec;
+     border:1px solid #faecd8;
+     color:#e6a23c;
+ }
+ .mel-toast-inner.error {
+     background-color: #fef0f0;
+     border:1px solid #fde2e2;
+     color:#f56c6c;
+ }
+ .mel-toast-inner.info {
+     background-color: #ffffff;
+     border:1px solid #ebeef5;
+     color:#909399;
+ }
+ .mel-toast-icon {
+     display: inline-block;
+     margin-right: 8px;
+ }
+ 
+ /* 位置class */
+ .mel-pos-top { top: 20px; }
+ .mel-pos-bottom { bottom: 20px; }
+ .mel-pos-center { top: 50%; transform: translateX(-50%) translateY(-50%); }
+ 
+ /* 移动端媒体查询，仅尺寸微调 */
+ @media screen and (max-width: 576px) {
+     .mel-dialog-wrap {
+         width: 92%;
+         min-width: unset;
+     }
+     .mel-dialog-header {
+         padding: 12px 15px;
+     }
+     .mel-dialog-body {
+         padding: 16px 15px;
+     }
+     .mel-dialog-footer {
+         padding: 12px 15px;
+         gap: 10px;
+     }
+     .mel-dialog-btn {
+         padding: 10px 12px;
+     }
+     .mel-tip-inner {
+         min-width: 240px;
+         max-width: 92%;
+     }
+ }
+ 

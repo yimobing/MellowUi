@@ -82,9 +82,9 @@ h2 + .block-group {
 }
 .block-group__title {
     margin: 25px 0 15px 0;
-    font-size: 15px;
+    font-size: 28px;
     font-weight: 600;
-    color: #606266;
+    color: #2460ad;
 }
 .block-group__content {
     border: 1px solid #ebeef5;
@@ -101,12 +101,37 @@ h2 + .block-group {
     border-bottom: none;
 }
 .block-group__content_box_title {
-    font-size: 16px;
+    font-size: 22px;
     font-weight: 550;
-    color: #2196F3;
+    color: #2c3b47;
     margin-bottom: 12px;
     line-height: 1.5;
+    padding-left: 8px;
+    border-left: 5px solid #2196F3;
 }
+.block-group__content_box_describe {
+    margin: 5px 0 10px;
+    color: #343254;
+    font-size: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed #ebebeb;
+}
+.block-group__content_box_title  + button,
+.block-group__content_box_describe  + button {
+    background-color: #93669a;
+    border: 0;
+    color: #fff;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.block-group__content_box_title  + button:hover,
+.block-group__content_box_describe  + button:hover {
+    opacity: .8;
+    filter: alpha(opacity = 80);
+}
+
+
 /* 提示/注意框 */
 .block-tip {
     margin: 12px 0 0;

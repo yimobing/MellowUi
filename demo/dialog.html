@@ -12,7 +12,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta http-equiv="Cache-Control" content="no-transform">
     <meta http-equiv="Cache-Control" content="no-siteapp">
-    <title> MelUi Dialog v1.2.1 弹窗组件演示 </title>
+    <title> MelUi Dialog v1.2.3 beta 1.0.8 弹窗组件演示 </title>
     <meta name="keywords" content="">
     <meta name="description" content="">
     <link rel="stylesheet" href="../src/components/dialog/index.css">
@@ -28,64 +28,63 @@
 <body>
     <h1 class="page-title">MelUi Dialog 弹窗对话框组件</h1>
     <div class="version-desc">
-        版本：v1.2.1 | 兼容IE9~11、移动端自适应 | MelUi.xxx / melui.xxx 大小写均可调用
+        版本：v1.2.3 beta 1.0.8 | 兼容IE9~11、移动端自适应 | MelUi.xxx / melui.xxx 大小写均可调用
     </div>
-
     <h2>一、标准引入方式</h2>
 <pre><code class="language-html">
 &lt;link rel="stylesheet" href="../src/components/dialog/index.css"&gt;
 &lt;script src="../src/components/dialog/index.js"&gt;&lt;/script&gt;
 </code></pre>
-
     <h2>二、默认配置参数</h2>
 <pre><code class="language-js">
 var defaults = {
-    title: "", // 弹窗标题。空字符串不渲染标题栏。(可选)
-    theme: "info", // 按钮主题。值：info/success/warning/danger/default。(可选)
-    showClose: true, // 是否显示右上角关闭叉号。值：true是,false否。(可选)
-    mask: true, // 是否显示遮罩层。值：true是,false否。(可选)
-    maskClosable: true, // 点击遮罩是否关闭弹窗。值：true是,false否。(可选)
-
-    btnDirection: "horizontal", // 按钮排布方向。值：horizontal横向,vert竖向。(可选)
-    btnFullWidth: false, // 按钮是否通栏铺满整行。值：true是,false否。(可选)
-    btnDisabled: false, // 是否一键禁用全部底部按钮。值：true是,false否。(可选)
-    buttons: null, // 自定义按钮数组，优先级最高。(可选)
-
-    message: "", // 普通文本内容。dangerouslyUseHTMLString=true时该字段无效。(可选)
-    content: "", // HTML内容。仅dangerouslyUseHTMLString=true生效。(可选)
-    dangerouslyUseHTMLString: false, // 是否开启HTML解析。值：true是,false否。开启后使用content字段。(可选)
-
-    center: false, // 是否整体居中布局。值：true是,false否。true时header、body、footer全部内容水平居中。(可选)
-    textCenter: false, // 是否仅正文文本居中。值：true是,false否。优先级高于center。(可选)
-    fullScreen: false, // 是否全屏弹窗。值：true是,false否。(可选)
-    adaptive: true, // 是否自适应内容高度。值：true是,false否。(可选)
-    width: "auto", // 弹窗宽度。auto使用组件默认，支持px、百分比。(可选)
-    height: "auto", // 弹窗高度。auto使用组件默认，支持px、百分比。(可选)
-
-    device: "", // 一键移动端模式。值："phone"开启，空不开启；不自动UA检测。(可选)
-
-    prompt: { // prompt输入框专属配置；仅调用prompt()时生效(可选)
-        inputType: "input", // 输入框类型。值：input单行,textarea多行。(可选)
-        placeholder: "", // 输入框占位提示文字。(可选)
-        defaultValue: "", // 输入框默认值。(可选)
-        unit: "" // 输入框右侧单位文字，例：元、㎡。(可选)
+    title: "", // 弹窗标题(可选)。空字符串不渲染标题栏。
+    theme: "info", // 按钮主题(可选)。值：info/success/warning/danger/default。
+    type: "", // 内容警示图标类型(可选)。值：success/warning/error/info。空不显示图标。
+    showClose: true, // 是否显示右上角关闭叉号(可选)。值：true是,false否。
+    mask: true, // 是否显示遮罩层(可选)。值：true是,false否。
+    maskClosable: true, // 点击遮罩是否关闭弹窗(可选)。值：true是,false否。
+    btnDirection: "horizontal", // 按钮排布方向(可选)。值：horizontal横向,vert竖向。
+    btnFullWidth: false, // 按钮是否通栏铺满整行(可选)。值：true是,false否。横向时按钮在一行内等分，竖向时才垂直排列。
+    btnDisabled: false, // 是否一键禁用全部底部按钮(可选)。值：true是,false否。
+    buttons: null, // 自定义按钮数组，优先级最高(可选)。数组项格式：{ text: "按钮文字", type: "按钮类型" }，type值：info/success/warning/danger/default/primary；也支持字符串快捷写法：["取消","确定"]，最后一项自动用弹窗主题色。
+    message: "", // 普通文本内容(可选)。dangerouslyUseHTMLString=true时该字段无效。
+    content: "", // HTML内容(可选)。仅dangerouslyUseHTMLString=true生效。
+    dangerouslyUseHTMLString: false, // 是否开启HTML解析(可选)。值：true是,false否。开启后使用content字段。
+    center: false, // 是否整体居中布局(可选)。值：true是,false否。true时header、body、footer全部内容水平居中。
+    textCenter: false, // 是否仅正文文本居中(可选)。值：true是,false否。优先级高于center。
+    fullScreen: false, // 是否全屏弹窗(可选)。值：true是,false否。
+    width: "auto", // 弹窗宽度(可选)。auto使用组件默认，支持数字、px、百分比。
+    height: "auto", // 弹窗整体高度(可选)。auto使用组件默认，支持数字、px、百分比。
+    footerStickyBottom: true, // 设置height或fullScreen时，按钮是否固定在弹窗底部(可选)。值：true是,false否。
+    contentMaxHeight: "", // 内容区域最大高度(可选)。height生效时本参数失效。
+    fontSize: "", // 内容区文字大小(可选)。空则使用默认16px，支持数字、px。
+    device: "", // 一键移动端模式(可选)。值："phone"开启，空不开启；不自动UA检测。
+    prompt: { // prompt输入框专属配置(可选)。仅调用prompt()时生效
+        inputType: "input", // 输入框类型(可选)。值：input单行,textarea多行。
+        placeholder: "", // 输入框占位提示文字(可选)。
+        defaultValue: "", // 输入框默认值(可选)。
+        unit: "" // 输入框右侧单位文字，例：元、㎡(可选)。
     },
-
-    onClick: null, // 按钮点击回调。ret为按钮序号从1开始；prompt会附带输入框value。(可选)
-    onOpen: null, // 弹窗打开完成回调。DOM已挂载完成，入参为当前实例。(可选)
-    onClose: null // 弹窗关闭回调。所有关闭方式均触发；return false可阻止关闭，入参为当前实例。(可选)
+    onClick: null, // 按钮点击回调(可选)。ret为按钮序号从1开始；prompt会附带输入框value。
+    onOpen: null, // 弹窗打开完成回调(可选)。DOM已挂载完成，入参为当前实例。
+    onClose: null // 弹窗关闭回调(可选)。所有关闭方式均触发；return false可阻止关闭，入参为当前实例。
 };
 </code></pre>
     <div class="tips">
-        Tip：MelUi.Tip；Toast：MelUi.Toast；onClose返回false可拦截弹窗关闭。
+        <p>Tip：MelUi.Tip；Toast：MelUi.Toast；onClose返回false可拦截弹窗关闭；弹窗打开会自动锁定页面滚动，全部关闭后恢复。</p>
+        <p>dialog 与 alert：dialog 是通用弹窗入口，alert 等价于不传 buttons 的 dialog（默认一个"确定"按钮），二者底层都是 new MelUi.Dialog()，参数完全一致；confirm 默认"取消+确定"两个按钮，prompt 默认一个"确定"按钮。</p>
+        <p>buttons 字符串快捷写法：buttons: ["取消", "确定"] 等价于 [{ text: "取消", type: "default" }, { text: "确定", type: "弹窗主题色" }]，最后一项自动用 theme 颜色；只想全灰时用对象写法显式指定 type: "default"。</p>
     </div>
 
     <h2>三、调用示例</h2>
     <div class="block-group">
-        <div class="block-group__title">1、极简快捷弹窗 dialog / alert，仅传message参数</div>
+        <div class="block-group__title">1、弹窗快捷调用 dialog / alert</div>
         <div class="block-group__content">
             <div class="block-group__content_box">
-                <button>打开‑dialog极简</button>
+                <div class="block-group__content_box_title">dialog 极简调用</div>
+                <div class="block-group__content_box_describe">只传 message，其余全部使用默认参数</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.dialog({
     message: "保存配置完成"
@@ -93,22 +92,134 @@ melui.dialog({
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>打开‑alert极简</button>
+                <div class="block-group__content_box_title">alert 极简调用</div>
+                <div class="block-group__content_box_describe">只传 message，自动带一个"确定"按钮</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.alert({
     message: "操作已执行完毕"
 });
 </code></pre>
             </div>
+
             <div class="block-group__content_box">
-                <button>alert自定义按钮文本（修复bug）</button>
+                <div class="block-group__content_box_title">alert 无标题</div>
+                <div class="block-group__content_box_describe">无标题时 message 对齐弹窗整体垂直中心</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.alert({
-    title:"测试alert自定义按钮",
-    message:"alert现在支持自定义buttons",
-    buttons:[
-        {text:"好的我知道了",type:"success"}
+    message: "没有标题的弹窗"
+});
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">alert 有标题</div>
+                <div class="block-group__content_box_describe"> 有标题的情况，标题、内容默认居左显示 </div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.alert({
+    title: "提示",
+    message: "有标题的弹窗"
+});
+</code></pre>
+            </div>
+
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">alert 不同主题</div>
+                <div class="block-group__content_box_describe">theme: success，取消按钮也跟随绿色调</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.alert({
+    title: "成功提示",
+    message: "文件上传全部完成",
+    theme: "success"
+});
+</code></pre>
+            </div>
+            
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> alert 自定义按钮 - 字符串快捷写法</div>
+                <div class="block-group__content_box_describe">传入 buttons 不会被默认按钮覆盖</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.alert({
+    title: "测试alert自定义按钮",
+    message: "alert现在支持自定义buttons， 直接传入按钮显示文字即可",
+    buttons: ['取消1', '取消2', '确定']
+});
+</code></pre>
+            </div>
+
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title"> alert 自定义按钮 - 数组项格式 </div>
+                <div class="block-group__content_box_describe">传入 buttons 不会被默认按钮覆盖</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.alert({
+    title: "测试alert自定义按钮",
+    message: "alert现在支持自定义buttons，传入按钮文本和样式 ",
+    buttons: [
+        { text: "我不知道,别烦我", type: "warning" },
+        { text: "好的我知道了", type: "success" }
     ]
+});
+</code></pre>
+            </div>
+
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">type 警示图标</div>
+                <div class="block-group__content_box_describe">type: "warning"，图标显示在内容（message）前，type 与 theme 独立控制</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.alert({
+    title: "操作警告",
+    message: "检测到风险操作，请确认后继续执行",
+    type: "warning",
+    theme: "warning"
+});
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">title 为空，验证关闭按钮</div>
+                <div class="block-group__content_box_describe">标题为空时关闭按钮依然显示，message 对齐弹窗整体垂直中心</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.dialog({
+    title: "",
+    showClose: true,
+    message: "没有标题，右上角关闭按钮应当显示，内容垂直居中",
+    buttons: [
+        { text: "关闭", type: "info" }
+    ]
+});
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">width 传入纯数字</div>
+                <div class="block-group__content_box_describe">width: 500 自动补 px</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.dialog({
+    title: "数字宽度测试",
+    width: 500,
+    message: "width直接写数字500，自动补px"
+});
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">fontSize 内容字号</div>
+                <div class="block-group__content_box_describe">控制中间内容文字大小，默认16px，此处改为20px</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.dialog({
+    title: "内容字号测试",
+    message: "这段文字的字号是20px",
+    fontSize: 20
 });
 </code></pre>
             </div>
@@ -125,41 +236,60 @@ melui.alert({
 // 警告 MelUi.Tip.warn("消息")
 // 信息 MelUi.Tip.info("消息")
 // 错误 MelUi.Tip.error("消息")
+// 平实 MelUi.Tip.plain("消息")
 
 //（2）完全调用：传入object参数
 MelUi.Tip({
-    type: "error", // success成功 / warn警告 / info信息 / error错误
+    type: "error", // success成功 / warn警告 / info信息 / error错误 / plain平实
     message: "请求异常，请稍后重试", // 提示文本内容
     duration: 5000, // 自动关闭延时(毫秒)，0常驻
     position: "bottom" // 弹出位置 top / bottom
 });
 </code></pre>
             <div class="block-group__content_box">
-                <button>Tip‑success 成功主题</button>
+                <div class="block-group__content_box_title">Tip-success 成功</div>
+                <div class="block-group__content_box_describe">绿色系：背景 #f0f9eb，边框 #e1f3d8，文字 #67c23a</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Tip.success("操作执行成功");
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>Tip‑warn 警告主题</button>
+                <div class="block-group__content_box_title">Tip-warn 警告</div>
+                <div class="block-group__content_box_describe">黄色系：背景 #fdf6ec，边框 #faecd8，文字 #e6a23c</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Tip.warn("请注意填写必填项");
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>Tip‑error 错误主题</button>
+                <div class="block-group__content_box_title">Tip-error 错误</div>
+                <div class="block-group__content_box_describe">红色系：背景 #fef0f0，边框 #fde2e2，文字 #f56c6c</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Tip.error("接口调用失败");
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>Tip‑info 信息主题</button>
+                <div class="block-group__content_box_title">Tip-info 信息</div>
+                <div class="block-group__content_box_describe">灰色系，图标 ⓘ</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Tip.info("系统将于今晚维护");
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>Tip完整对象配置</button>
+                <div class="block-group__content_box_title">Tip-plain 平实（天猫风格）</div>
+                <div class="block-group__content_box_describe">白底黑字，无图标无主题色</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+MelUi.Tip.plain("普通平实提示文案");
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">Tip 完整对象配置</div>
+                <div class="block-group__content_box_describe">type + message + duration + position 组合使用</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Tip({
     type: "error",
@@ -170,7 +300,9 @@ MelUi.Tip({
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>Tip多条堆叠测试</button>
+                <div class="block-group__content_box_title">Tip 多条堆叠</div>
+                <div class="block-group__content_box_describe">多条同时出现自动垂直堆叠，不重叠</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Tip.info("第一条消息");
 MelUi.Tip.success("第二条消息");
@@ -178,13 +310,15 @@ MelUi.Tip.warn("第三条消息");
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>Tip开启mask遮罩（常驻0）</button>
+                <div class="block-group__content_box_title">Tip 开启 mask 遮罩</div>
+                <div class="block-group__content_box_describe">duration 设为0常驻，点击右上角×关闭</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Tip({
-    type:"info",
-    message:"带遮罩的Tip，点击右上角×关闭",
-    mask:true,
-    duration:0
+    type: "info",
+    message: "带遮罩的Tip，点击右上角×关闭",
+    mask: true,
+    duration: 0
 });
 </code></pre>
             </div>
@@ -192,7 +326,7 @@ MelUi.Tip({
     </div>
 
     <div class="block-group">
-        <div class="block-group__title">3、Toast轻提示（天猫风格白底提示）</div>
+        <div class="block-group__title">3、Toast轻提示</div>
         <div class="block-group__content">
             <div class="block-group__content_box_title">调用方式说明</div>
 <pre><code class="language-js">
@@ -201,46 +335,61 @@ MelUi.Tip({
 // 警告 MelUi.Toast.warn("消息")
 // 信息 MelUi.Toast.info("消息")
 // 错误 MelUi.Toast.error("消息")
+// 平实 MelUi.Toast.plain("消息")
 
 //（2）完全调用：传入object参数
 MelUi.Toast({
-    type: "success", // success成功 / warn警告 / info信息 / error错误
+    type: "success", // success成功 / warn警告 / info信息 / error错误 / plain平实
     message: "已加入购物车", // 提示文本内容
     duration: 2500, // 自动关闭延时(毫秒)，0常驻
     position: "center" // 弹出位置 center / top / bottom
 });
 </code></pre>
             <div class="block-group__content_box">
-                <button>Toast‑success成功</button>
+                <div class="block-group__content_box_title">Toast-success 成功</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Toast.success("已加入购物车");
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>Toast‑warn警告</button>
+                <div class="block-group__content_box_title">Toast-warn 警告</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Toast.warn("库存即将不足");
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>Toast‑error错误</button>
+                <div class="block-group__content_box_title">Toast-error 错误</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Toast.error("提交表单失败");
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>Toast‑info信息</button>
+                <div class="block-group__content_box_title">Toast-info 信息</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Toast.info("操作正在处理");
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>Toast完整配置自定义延时</button>
+                <div class="block-group__content_box_title">Toast-plain 平实（天猫风格）</div>
+                <div class="block-group__content_box_describe">白底黑字，无图标</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+MelUi.Toast.plain("已保存设置");
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">Toast 完整配置自定义延时</div>
+                <div class="block-group__content_box_describe">duration: 3500 毫秒后自动消失</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 MelUi.Toast({
-    type:"error",
-    message:"提交失败，请重试",
-    duration:3500
+    type: "error",
+    message: "提交失败，请重试",
+    duration: 3500
 });
 </code></pre>
             </div>
@@ -248,50 +397,12 @@ MelUi.Toast({
     </div>
 
     <div class="block-group">
-        <div class="block-group__title">4、Alert提示信息弹窗</div>
+        <div class="block-group__title">4、Confirm确认对话框</div>
         <div class="block-group__content">
             <div class="block-group__content_box">
-                <div class="block-group__content_box_title">不同主题alert</div>
-                <button>alert‑success主题</button>
-<pre><code class="language-js">
-melui.alert({
-    title: "成功提示",
-    message: "文件上传全部完成",
-    theme: "success"
-});
-</code></pre>
-            </div>
-            <div class="block-group__content_box">
-                <div class="block-group__content_box_title">无标题alert</div>
-                <button>alert无标题</button>
-<pre><code class="language-js">
-melui.alert({
-    message: "没有标题的弹窗"
-});
-</code></pre>
-            </div>
-            <div class="block-group__content_box">
-                <div class="block-group__content_box_title">自定义按钮名称alert</div>
-                <button>alert自定义按钮文字</button>
-<pre><code class="language-js">
-melui.alert({
-    title: "提示",
-    message: "自定义按钮文本",
-    buttons: [
-        { text: "我知道了", type: "primary" }
-    ]
-});
-</code></pre>
-            </div>
-        </div>
-    </div>
-
-    <div class="block-group">
-        <div class="block-group__title">5、Confirm确认对话框</div>
-        <div class="block-group__content">
-            <div class="block-group__content_box">
-                <div class="block-group__content_box_title">有标题confirm</div>
-                <button>confirm有标题</button>
+                <div class="block-group__content_box_title">confirm 有标题 + 嵌套弹窗</div>
+                <div class="block-group__content_box_describe">onClick 中再打开 alert，验证滚动锁不闪烁、页面不串滚动条</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.confirm({
     title: "删除确认",
@@ -306,8 +417,8 @@ melui.confirm({
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <div class="block-group__content_box_title">无标题confirm</div>
-                <button>confirm无标题</button>
+                <div class="block-group__content_box_title">confirm 无标题</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.confirm({
     message: "确定执行该操作吗？"
@@ -315,12 +426,14 @@ melui.confirm({
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <div class="block-group__content_box_title">自定义按钮名称</div>
-                <button>confirm自定义按钮</button>
+                <div class="block-group__content_box_title">confirm 自定义按钮</div>
+                <div class="block-group__content_box_describe">取消按钮 default 跟随弹窗主题（warning黄色调）</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.confirm({
     title: "操作选择",
     message: "请确认操作",
+    theme: "warning",
     buttons: [
         { text: "返回", type: "default" },
         { text: "执行", type: "warning" }
@@ -329,24 +442,39 @@ melui.confirm({
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <div class="block-group__content_box_title">按钮竖向排列 vert</div>
-                <button>confirm竖向按钮</button>
+                <div class="block-group__content_box_title">confirm 按钮竖向排列</div>
+                <div class="block-group__content_box_describe">btnDirection: vert + btnFullWidth: true，垂直铺满</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.confirm({
     title: "竖向排布",
     message: "按钮垂直排列",
-    btnDirection: "vert"
+    btnDirection: "vert",
+    btnFullWidth: true
 });
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <div class="block-group__content_box_title">按钮通栏铺满 btnFullWidth</div>
-                <button>confirm按钮通栏</button>
+                <div class="block-group__content_box_title">confirm 按钮通栏铺满（横向等分）</div>
+                <div class="block-group__content_box_describe">btnFullWidth: true，不传方向时按钮在一行内等分铺满</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.confirm({
     title: "通栏按钮",
-    message: "按钮铺满整行",
+    message: "按钮铺满整行，横向等分",
     btnFullWidth: true
+});
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">confirm 字符串快捷按钮</div>
+                <div class="block-group__content_box_describe">buttons: ["取消", "确定"]，最后一项自动用弹窗主题色</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.confirm({
+    title: "快捷按钮",
+    message: "字符串数组写法：取消灰色、确定主题色",
+    buttons: ["取消", "确定"]
 });
 </code></pre>
             </div>
@@ -354,11 +482,12 @@ melui.confirm({
     </div>
 
     <div class="block-group">
-        <div class="block-group__title">6、prompt输入弹窗（单行、多行textarea、带单位unit）</div>
+        <div class="block-group__title">5、prompt输入弹窗</div>
         <div class="block-group__content">
             <div class="block-group__content_box">
-                <div class="block-group__content_box_title">单行输入，带单位 元</div>
-                <button>prompt单行+单位</button>
+                <div class="block-group__content_box_title">prompt 单行输入 + 单位</div>
+                <div class="block-group__content_box_describe">默认只有一个"确定"按钮；unit 显示在输入框右侧</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.prompt({
     title: "输入金额",
@@ -369,7 +498,7 @@ melui.prompt({
         unit: "元"
     },
     onClick: function(ret, val) {
-        if(ret === 2) {
+        if(ret === 1) {
             melui.alert({ message: "输入：" + val });
         }
     }
@@ -377,11 +506,36 @@ melui.prompt({
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <div class="block-group__content_box_title">textarea多行输入</div>
-                <button>prompt多行文本域</button>
+                <div class="block-group__content_box_title">prompt 自定义双按钮</div>
+                <div class="block-group__content_box_describe">传入 buttons 自定义"取消+保存"，ret 从1开始</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.prompt({
+    title: "请输入昵称",
+    prompt: {
+        inputType: "input",
+        placeholder: "请输入昵称"
+    },
+    buttons: [
+        { text: "取消", type: "default" },
+        { text: "保存", type: "success" }
+    ],
+    onClick: function(ret, val) {
+        if(ret === 2) {
+            melui.alert({ message: "昵称：" + val });
+        }
+    }
+});
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">prompt textarea 多行 + 固定高度</div>
+                <div class="block-group__content_box_describe">height: 300，输入框自动占满中间内容高度，按钮固定在底部</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.prompt({
     title: "备注信息",
+    height: 300,
     prompt: {
         inputType: "textarea",
         placeholder: "请输入备注内容"
@@ -393,10 +547,12 @@ melui.prompt({
     </div>
 
     <div class="block-group">
-        <div class="block-group__title">7、自定义HTML内容弹窗</div>
+        <div class="block-group__title">6、自定义HTML内容弹窗</div>
         <div class="block-group__content">
             <div class="block-group__content_box">
-                <button>基础HTML片段</button>
+                <div class="block-group__content_box_title">基础 HTML 片段</div>
+                <div class="block-group__content_box_describe">dangerouslyUseHTMLString: true 时使用 content 字段</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.dialog({
     title: "自定义HTML内容",
@@ -406,7 +562,9 @@ melui.dialog({
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>自定义宽度width</button>
+                <div class="block-group__content_box_title">自定义宽度 width</div>
+                <div class="block-group__content_box_describe">width: "550px" 字符串形式</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.dialog({
     title: "自定义宽度",
@@ -416,31 +574,104 @@ melui.dialog({
 });
 </code></pre>
             </div>
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title">7、尺寸与布局</div>
+        <div class="block-group__content">
             <div class="block-group__content_box">
-                <button>fullScreen全屏弹窗</button>
+                <div class="block-group__content_box_title">contentMaxHeight 内容区限高</div>
+                <div class="block-group__content_box_describe">内容填充到超出180px（22行×30px行高），内容区内部滚动，弹窗整体高度自适应</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.dialog({
+    title: "contentMaxHeight测试",
+    dangerouslyUseHTMLString: true,
+    content: '&lt;div style="line-height:30px;font-size:16px"&gt;第1行测试内容&lt;br/&gt;第2行测试内容&lt;br/&gt;第3行测试内容&lt;br/&gt;第4行测试内容&lt;br/&gt;第5行测试内容&lt;br/&gt;第6行测试内容&lt;br/&gt;第7行测试内容&lt;br/&gt;第8行测试内容&lt;br/&gt;第9行测试内容&lt;br/&gt;第10行测试内容&lt;br/&gt;第11行测试内容&lt;br/&gt;第12行测试内容&lt;br/&gt;第13行测试内容&lt;br/&gt;第14行测试内容&lt;br/&gt;第15行测试内容&lt;br/&gt;第16行测试内容&lt;br/&gt;第17行测试内容&lt;br/&gt;第18行测试内容&lt;br/&gt;第19行测试内容&lt;br/&gt;第20行测试内容&lt;br/&gt;第21行测试内容&lt;br/&gt;第22行测试内容&lt;/div&gt;',
+    contentMaxHeight: 180,
+    buttons: [
+        { text: "关闭", type: "info" }
+    ]
+});
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">height 固定高度 + 按钮贴底</div>
+                <div class="block-group__content_box_describe">footerStickyBottom 默认 true，height 无论多大按钮都在底部，内容区占满中间</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.dialog({
+    title: "固定高度，按钮贴底",
+    height: 420,
+    message: "中间内容区自动撑满剩余高度&lt;br/&gt;按钮固定在底部&lt;br/&gt;内容超长内部滚动&lt;br/&gt;内容超长内部滚动&lt;br/&gt;内容超长内部滚动&lt;br/&gt;内容超长内部滚动&lt;br/&gt;内容超长内部滚动&lt;br/&gt;内容超长内部滚动&lt;br/&gt;内容超长内部滚动",
+    buttons: [
+        { text: "取消", type: "default" },
+        { text: "确定", type: "info" }
+    ]
+});
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">footerStickyBottom: false</div>
+                <div class="block-group__content_box_describe">按钮不贴底，跟随内容排列；内容超高时弹窗整体内部滚动</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.dialog({
+    title: "按钮不贴底部",
+    height: 420,
+    footerStickyBottom: false,
+    message: "按钮不固定在底部，紧跟内容排列&lt;br/&gt;内容超高时弹窗整体滚动&lt;br/&gt;内容超高时弹窗整体滚动&lt;br/&gt;内容超高时弹窗整体滚动&lt;br/&gt;内容超高时弹窗整体滚动&lt;br/&gt;内容超高时弹窗整体滚动",
+    buttons: [
+        { text: "取消", type: "default" },
+        { text: "确定", type: "info" }
+    ]
+});
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">fullScreen 全屏弹窗</div>
+                <div class="block-group__content_box_describe">全屏弹窗同样锁定页面滚动，按钮默认贴底部</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.dialog({
     title: "全屏弹窗",
     dangerouslyUseHTMLString: true,
     content: '&lt;p&gt;这是全屏弹窗内容&lt;/p&gt;',
-    fullScreen: true
+    fullScreen: true,
+    btnFullWidth: true
 });
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>固定高度，内容滚动</button>
+                <div class="block-group__content_box_title">center 整体居中布局</div>
+                <div class="block-group__content_box_describe">标题、正文、按钮全部水平居中</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.dialog({
-    title: "固定高度滚动",
-    dangerouslyUseHTMLString: true,
-    content: '&lt;p&gt;测试内容&lt;/p&gt;&lt;p&gt;测试内容&lt;/p&gt;&lt;p&gt;测试内容&lt;/p&gt;&lt;p&gt;测试内容&lt;/p&gt;&lt;p&gt;测试内容&lt;/p&gt;&lt;p&gt;测试内容&lt;/p&gt;',
-    adaptive: true,
-    height: "300px"
+    title: "整体全部居中",
+    center: true,
+    message: "标题、正文、按钮全部居中",
+    buttons: [
+        { text: "确定", type: "info" }
+    ]
 });
 </code></pre>
-                <div class="block-tip">
-                    <strong>安全警告：</strong>dangerouslyUseHTMLString开启时content直接渲染HTML，不要渲染不受信任的外部输入，防止XSS攻击。
-                </div>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">textCenter 仅正文居中</div>
+                <div class="block-group__content_box_describe">只居中正文文字，标题与按钮保持不变</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.dialog({
+    title: "标题居左，仅正文居中",
+    textCenter: true,
+    message: "只有这段正文文字居中，标题按钮不变",
+    buttons: [
+        { text: "确定", type: "info" }
+    ]
+});
+</code></pre>
             </div>
         </div>
     </div>
@@ -449,13 +680,14 @@ melui.dialog({
         <div class="block-group__title">8、特殊回调与特性演示</div>
         <div class="block-group__content">
             <div class="block-group__content_box">
-                <button>onOpen打开自动聚焦输入框</button>
+                <div class="block-group__content_box_title">onOpen 打开自动聚焦输入框</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.prompt({
     title: "onOpen自动聚焦",
     prompt: {
-        inputType:"input",
-        placeholder:"自动获得焦点"
+        inputType: "input",
+        placeholder: "自动获得焦点"
     },
     onOpen: function(ins) {
         if(ins.inputEl) ins.inputEl.focus();
@@ -464,7 +696,9 @@ melui.prompt({
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>onClose拦截关闭(return false)</button>
+                <div class="block-group__content_box_title">onClose 拦截关闭</div>
+                <div class="block-group__content_box_describe">onClose 返回 false，弹窗不会关闭</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.alert({
     title: "拦截关闭测试",
@@ -476,7 +710,8 @@ melui.alert({
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>btnDisabled全部按钮禁用</button>
+                <div class="block-group__content_box_title">btnDisabled 全部按钮禁用</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.confirm({
     title: "按钮禁用",
@@ -485,33 +720,48 @@ melui.confirm({
 });
 </code></pre>
             </div>
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title">9、移动端（手机）特性演示</div>
+        <div class="block-group__content">
             <div class="block-group__content_box">
-                <button>device:"phone"手机模式</button>
+                <div class="block-group__content_box_title">device: "phone" 提示弹窗</div>
+                <div class="block-group__content_box_describe">关闭按钮隐藏、纯文字内容垂直居中、按钮文字样式</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
-melui.confirm({
-    title: "phone模式",
-    message: "关闭按钮隐藏，按钮切换文字样式",
+melui.alert({
+    message: "弹出窗口，关闭按钮隐藏，纯文字垂直居中",
     device: "phone"
 });
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>center整体居中布局</button>
+                <div class="block-group__content_box_title">device: "phone" 确认对话框</div>
+                <div class="block-group__content_box_describe">btnFullWidth 默认 true（按钮横向等分），取消按钮固定灰色，按钮区上方有分隔线</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
-melui.alert({
-    title: "整体全部居中",
-    message: "header body footer全部居中",
-    center: true
+melui.confirm({
+    title: "phone模式",
+    message: "确认对话框，按钮横向等分，取消按钮灰色",
+    device: "phone"
 });
 </code></pre>
             </div>
             <div class="block-group__content_box">
-                <button>textCenter仅正文居中</button>
+                <div class="block-group__content_box_title">device: "phone" 输入弹窗</div>
+                <div class="block-group__content_box_describe">手机模式下 prompt 输入框场景</div>
+                <button type="button">点击打开</button>
 <pre><code class="language-js">
-melui.alert({
-    title: "标题居左，仅正文居中",
-    message: "只有这一段正文文字居中",
-    textCenter: true
+melui.prompt({
+    title: "手机端输入",
+    message: "请输入验证码",
+    device: "phone",
+    prompt: {
+        inputType: "input",
+        placeholder: "请输入验证码"
+    }
 });
 </code></pre>
             </div>
@@ -529,7 +779,7 @@ melui.alert({
                 var btn = wrap.querySelector("button");
                 var codeDom = wrap.querySelector("code");
                 if(!btn || !codeDom) return;
-                var codeText = codeDom.textContent.trim();
+                var codeText = codeDom.textContent.replace(/^\s+|\s+$/g, "");
                 btn.onclick = function(){
                     try{
                         eval(codeText);
