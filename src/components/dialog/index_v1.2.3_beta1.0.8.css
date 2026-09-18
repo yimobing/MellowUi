@@ -1,0 +1,474 @@
+/**
+ * MelUi 弹窗对话框组件
+ * 版本：v1.2.3 beta 1.0.8
+ * 创建日期：2026-08-10
+ * 更新日期：2026-09-11
+ * 兼容：IE9/10/11
+ * 调用方式：
+    构造创建：new MelUi.Dialog({配置参数})
+    快捷调用：MelUi.alert() / MelUi.confirm() / MelUi.prompt()
+ */
+ @charset "utf-8";
+
+ /* ========== 模态弹窗基础 ========== */
+ .mel-dialog-mask {
+     position: fixed;
+     top: 0;
+     left: 0;
+     right: 0;
+     bottom: 0;
+     background: rgba(0, 0, 0, 0.5);
+ }
+ 
+ .mel-dialog-wrap {
+     position: fixed;
+     top: 50%;
+     left: 50%;
+     -ms-transform: translate(-50%, -50%);
+     transform: translate(-50%, -50%);
+     width: 420px;
+     min-width: 320px;
+     max-width: 90%;
+     background: #fff;
+     border-radius: 6px;
+     overflow: hidden;
+ }
+ .mel-dialog-wrap.is-fullscreen {
+     width: 100%;
+     height: 100%;
+     max-width: 100%;
+     border-radius: 0;
+     top: 0;
+     left: 0;
+     -ms-transform: none;
+     transform: none;
+ }
+ 
+ /* header：有关闭按钮时右侧预留空间，避免标题被关闭按钮遮挡 */
+ .mel-dialog-header {
+     padding: 14px 18px;
+     background: #fff;
+ }
+ .mel-dialog-header.has-close {
+     padding-right: 42px;
+ }
+ .mel-dialog-title {
+     font-size: 16px;
+     color: #333;
+     text-align: left;
+ }
+ 
+ /* 警示图标（type参数）：渲染在内容（message）前 */
+ .mel-dialog-body-icon {
+     font-style: normal;
+     margin-right: 8px;
+ }
+ .mel-icon-success { color: #67c23a; }
+ .mel-icon-warning { color: #e6a23c; }
+ .mel-icon-error { color: #f56c6c; }
+ .mel-icon-info { color: #409eff; }
+ 
+ /* 关闭按钮：30px热区贴右上角，伪元素画叉（1px细线） */
+ .mel-dialog-close {
+     position: absolute;
+     z-index: 10;
+     top: 0;
+     right: 0;
+     width: 30px;
+     height: 30px;
+     background-color: #fff;
+     cursor: pointer;
+ }
+ .mel-dialog-close::before,
+ .mel-dialog-close::after {
+     content: '';
+     position: absolute;
+     left: 50%;
+     top: 50%;
+     width: 14px;
+     height: 1px;
+     background-color: #909399;
+ }
+ .mel-dialog-close::before {
+     -ms-transform: translate(-50%, -50%) rotate(45deg);
+     transform: translate(-50%, -50%) rotate(45deg);
+ }
+ .mel-dialog-close::after {
+     -ms-transform: translate(-50%, -50%) rotate(-45deg);
+     transform: translate(-50%, -50%) rotate(-45deg);
+ }
+ .mel-dialog-close:hover::before,
+ .mel-dialog-close:hover::after {
+     background-color: #409eff;
+ }
+ 
+ /* 内容区：默认16px；内容统一包裹在 inner 中 */
+ .mel-dialog-body {
+     padding: 16px 18px 20px;
+     font-size: 16px;
+     color: #333;
+     text-align: left;
+     min-height: 100px;
+     box-sizing: border-box;
+ }
+ 
+ /* 内容垂直居中：无标题弹窗、手机模式 message 共用 */
+ .mel-dialog-body.vert-center {
+     display: table;
+     width: 100%;
+     min-height: 130px;
+ }
+ .mel-dialog-body.vert-center .mel-dialog-body-inner {
+     display: table-cell;
+     vertical-align: middle;
+ }
+ 
+ /* 居中布局 */
+ .mel-dialog-wrap.layout-center .mel-dialog-title,
+ .mel-dialog-wrap.layout-center .mel-dialog-body {
+     text-align: center;
+ }
+ .mel-dialog-wrap.layout-center .mel-dialog-footer {
+     text-align: center;
+ }
+ .mel-dialog-wrap.text-center .mel-dialog-body {
+     text-align: center;
+ }
+ 
+ /* prompt 输入区 */
+ .mel-dialog-input-wrap {
+     margin-top: 14px;
+     position: relative;
+ }
+ .mel-dialog-input,
+ .mel-dialog-textarea {
+     width: 100%;
+     box-sizing: border-box;
+     padding: 9px 12px;
+     border: 1px solid #dcdfe6;
+     border-radius: 4px;
+     font-size: 14px;
+     outline: none;
+     background: #fff;
+ }
+ .mel-dialog-textarea {
+     resize: none;
+     min-height: 80px;
+ }
+ .mel-dialog-input-unit {
+     position: absolute;
+     right: 4px;
+     top: 50%;
+     -ms-transform: translateY(-50%);
+     transform: translateY(-50%);
+     color: #606266;
+     font-size: 14px;
+     pointer-events: none;
+ }
+ 
+ /* 底部按钮区：inline-block + text-align，兼容IE9无flex */
+ .mel-dialog-footer {
+     padding: 14px 18px;
+     text-align: right;
+ }
+ .mel-dialog-footer .mel-dialog-btn {
+     display: inline-block;
+     margin-left: 12px;
+ }
+ .mel-dialog-footer .mel-dialog-btn:first-child {
+     margin-left: 0;
+ }
+ .mel-dialog-footer-vert .mel-dialog-btn {
+     display: block;
+     margin-left: auto;
+ }
+ .mel-dialog-footer-vert .mel-dialog-btn + .mel-dialog-btn {
+     margin-top: 10px;
+ }
+ 
+ /* 通栏铺满：横向时每按钮宽度由JS按数量等分计算；竖向+通栏才垂直堆叠每按钮100% */
+ .mel-dialog-footer-full {
+     padding: 14px 18px;
+     text-align: center;
+ }
+ .mel-dialog-footer-full .mel-dialog-btn {
+     display: inline-block;
+     margin-left: 0;
+     vertical-align: middle;
+     box-sizing: border-box;
+ }
+ .mel-dialog-footer-vert.mel-dialog-footer-full .mel-dialog-btn {
+     display: block;
+     width: 100%;
+     margin-left: auto;
+ }
+ .mel-dialog-footer-vert.mel-dialog-footer-full .mel-dialog-btn + .mel-dialog-btn {
+     margin-top: 10px;
+ }
+ 
+ /* 按钮 */
+ .mel-dialog-btn {
+     padding: 8px 16px;
+     border: 1px solid #dcdfe6;
+     border-radius: 4px;
+     cursor: pointer;
+     font-size: 14px;
+     white-space: nowrap;
+     background: #fff;
+     color: #606266;
+     outline: none;
+ }
+ .mel-dialog-btn:disabled {
+     opacity: 0.6;
+     filter: alpha(opacity=60);
+     cursor: not-allowed;
+ }
+ .mel-btn-info,
+ .mel-btn-primary {
+     background: #409eff;
+     color: #fff;
+     border-color: #409eff;
+ }
+ .mel-btn-success {
+     background: #67c23a;
+     color: #fff;
+     border-color: #67c23a;
+ }
+ .mel-btn-warning {
+     background: #e6a23c;
+     color: #fff;
+     border-color: #e6a23c;
+ }
+ .mel-btn-danger {
+     background: #f56c6c;
+     color: #fff;
+     border-color: #f56c6c;
+ }
+ /* 实心主题按钮 hover：统一透明度（IE兼容写法） */
+ .mel-btn-info:hover,
+ .mel-btn-primary:hover,
+ .mel-btn-success:hover,
+ .mel-btn-warning:hover,
+ .mel-btn-danger:hover {
+     opacity: 0.8;
+     filter: alpha(opacity=80);
+ }
+ 
+ /* 取消按钮 plain 样式，颜色跟随弹窗主题（非phone模式） */
+ .mel-dialog-wrap.theme-info .mel-dialog-btn.mel-btn-default,
+ .mel-dialog-wrap.theme-primary .mel-dialog-btn.mel-btn-default {
+     border-color: #b3d8ff;
+     color: #409eff;
+ }
+ .mel-dialog-wrap.theme-info .mel-dialog-btn.mel-btn-default:hover,
+ .mel-dialog-wrap.theme-primary .mel-dialog-btn.mel-btn-default:hover {
+     background-color: #ecf5ff;
+     border-color: #409eff;
+ }
+ .mel-dialog-wrap.theme-success .mel-dialog-btn.mel-btn-default {
+     border-color: #b3e19d;
+     color: #67c23a;
+ }
+ .mel-dialog-wrap.theme-success .mel-dialog-btn.mel-btn-default:hover {
+     background-color: #f0f9eb;
+     border-color: #67c23a;
+ }
+ .mel-dialog-wrap.theme-warning .mel-dialog-btn.mel-btn-default {
+     border-color: #f3d19e;
+     color: #e6a23c;
+ }
+ .mel-dialog-wrap.theme-warning .mel-dialog-btn.mel-btn-default:hover {
+     background-color: #fdf6ec;
+     border-color: #e6a23c;
+ }
+ .mel-dialog-wrap.theme-danger .mel-dialog-btn.mel-btn-default {
+     border-color: #fbc4c4;
+     color: #f56c6c;
+ }
+ .mel-dialog-wrap.theme-danger .mel-dialog-btn.mel-btn-default:hover {
+     background-color: #fef0f0;
+     border-color: #f56c6c;
+ }
+ .mel-dialog-wrap.theme-default .mel-dialog-btn.mel-btn-default {
+     border-color: #d3d4d6;
+     color: #909399;
+ }
+ .mel-dialog-wrap.theme-default .mel-dialog-btn.mel-btn-default:hover {
+     background-color: #f4f4f5;
+     border-color: #909399;
+ }
+ 
+ /* phone 手机模式：关闭按钮隐藏、按钮文字样式、取消按钮固定灰色 */
+ .mel-dialog-wrap.is-phone .mel-dialog-close {
+     display: none;
+ }
+ .mel-dialog-wrap.is-phone .mel-dialog-btn {
+     background: transparent;
+     border: none;
+     font-size: 15px;
+ }
+ .mel-dialog-wrap.is-phone .mel-btn-info,
+ .mel-dialog-wrap.is-phone .mel-btn-primary {
+     color: #409eff;
+ }
+ .mel-dialog-wrap.is-phone .mel-btn-success {
+     color: #67c23a;
+ }
+ .mel-dialog-wrap.is-phone .mel-btn-warning {
+     color: #e6a23c;
+ }
+ .mel-dialog-wrap.is-phone .mel-btn-danger {
+     color: #f56c6c;
+ }
+ /* 取消按钮固定灰色：特异性需高于 theme 系列的 plain 配色规则 */
+ .mel-dialog-wrap.is-phone .mel-dialog-btn.mel-btn-default {
+     color: #909399;
+ }
+ .mel-dialog-wrap.is-phone .mel-dialog-footer {
+     border-top: 1px solid #ebeef5;
+     padding-top: 12px;
+ }
+ /* phone 通栏多按钮之间的分隔线（横向竖线、竖向横线） */
+ .mel-dialog-wrap.is-phone .mel-dialog-footer-full .mel-dialog-btn + .mel-dialog-btn {
+     border-left: 1px solid #ebeef5;
+ }
+ .mel-dialog-wrap.is-phone .mel-dialog-footer-vert.mel-dialog-footer-full .mel-dialog-btn + .mel-dialog-btn {
+     border-left: none;
+     border-top: 1px solid #ebeef5;
+ }
+ /* phone 纯文字（message）垂直居中：复用 vert-center 机制 */
+ 
+ /* ========== Tip 消息提示（独立组件） ========== */
+ .mel-tip-mask {
+     position: fixed;
+     top: 0;
+     left: 0;
+     right: 0;
+     bottom: 0;
+     background: rgba(0, 0, 0, 0.5);
+     z-index: 10000;
+ }
+ .mel-tip-wrap {
+     position: fixed;
+     left: 50%;
+     -ms-transform: translateX(-50%);
+     transform: translateX(-50%);
+     z-index: 10001;
+ }
+ .mel-tip-inner {
+     box-sizing: border-box;
+     min-width: 300px;
+     max-width: 520px;
+     padding: 14px 44px 14px 16px;
+     border-radius: 4px;
+     font-size: 14px;
+     position: relative;
+     background-color: #fff;
+     border: 1px solid #ebeef5;
+     color: #909399;
+ }
+ .mel-tip-inner.success {
+     background-color: #f0f9eb;
+     border: 1px solid #e1f3d8;
+     color: #67c23a;
+ }
+ .mel-tip-inner.warning {
+     background-color: #fdf6ec;
+     border: 1px solid #faecd8;
+     color: #e6a23c;
+ }
+ .mel-tip-inner.error {
+     background-color: #fef0f0;
+     border: 1px solid #fde2e2;
+     color: #f56c6c;
+ }
+ .mel-tip-inner.plain {
+     background-color: #fff;
+     border: 1px solid #ebeef5;
+     color: #303133;
+ }
+ .mel-tip-icon {
+     margin-right: 8px;
+ }
+ .mel-tip-close {
+     position: absolute;
+     right: 12px;
+     top: 50%;
+     -ms-transform: translateY(-50%);
+     transform: translateY(-50%);
+     cursor: pointer;
+     font-size: 16px;
+     color: inherit;
+ }
+ .mel-tip-close:hover {
+     opacity: 0.7;
+     filter: alpha(opacity=70);
+ }
+ 
+ /* ========== Toast 轻提示（独立组件） ========== */
+ .mel-toast-wrap {
+     position: fixed;
+     left: 50%;
+     -ms-transform: translateX(-50%);
+     transform: translateX(-50%);
+     z-index: 10002;
+ }
+ .mel-toast-inner {
+     box-sizing: border-box;
+     padding: 14px 20px;
+     border-radius: 6px;
+     font-size: 14px;
+     background-color: #fff;
+     border: 1px solid #ebeef5;
+     color: #909399;
+ }
+ .mel-toast-inner.success {
+     background-color: #f0f9eb;
+     border: 1px solid #e1f3d8;
+     color: #67c23a;
+ }
+ .mel-toast-inner.warning {
+     background-color: #fdf6ec;
+     border: 1px solid #faecd8;
+     color: #e6a23c;
+ }
+ .mel-toast-inner.error {
+     background-color: #fef0f0;
+     border: 1px solid #fde2e2;
+     color: #f56c6c;
+ }
+ .mel-toast-inner.plain {
+     background-color: #fff;
+     border: 1px solid #ebeef5;
+     color: #303133;
+ }
+ .mel-toast-icon {
+     margin-right: 8px;
+ }
+ 
+ /* 位置 */
+ .mel-pos-top {
+     top: 20px;
+ }
+ .mel-pos-bottom {
+     bottom: 20px;
+ }
+ .mel-pos-center {
+     top: 50%;
+     -ms-transform: translateX(-50%) translateY(-50%);
+     transform: translateX(-50%) translateY(-50%);
+ }
+ 
+ /* 移动端微调 */
+ @media screen and (max-width: 576px) {
+     .mel-dialog-wrap {
+         width: 90%;
+         max-width: 350px;
+         min-width: 0;
+     }
+     .mel-tip-inner {
+         min-width: 240px;
+         max-width: 92%;
+     }
+ }
+ 
