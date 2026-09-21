@@ -1,6 +1,6 @@
 /**
  * MelUi 弹窗对话框组件
- * 版本：v1.2.3 beta 1.0.8
+ * 版本：v1.2.3 beta 1.0.9
  * 创建日期：2026-08-10
  * 更新日期：2026-09-11
  * 兼容：IE9/10/11
@@ -23,6 +23,8 @@
             showClose: true, // 是否显示右上角关闭叉号(可选)。值：true是,false否。
             mask: true, // 是否显示遮罩层(可选)。值：true是,false否。
             maskClosable: true, // 点击遮罩是否关闭弹窗(可选)。值：true是,false否。
+            animate: false, // 打开弹窗前是否显示转圈(可选)。值：true无文字转圈，字符串作为转圈文字，false不显示。
+            delay: "auto", // 转圈显示时长(可选)。值：auto自动(500ms)，或数字毫秒。
             btnDirection: "horizontal", // 按钮排布方向(可选)。值：horizontal横向,vert竖向。
             btnFullWidth: false, // 按钮是否通栏铺满整行(可选)。值：true是,false否。横向时按钮在一行内等分，竖向时才垂直排列。
             btnDisabled: false, // 是否一键禁用全部底部按钮(可选)。值：true是,false否。
@@ -154,6 +156,58 @@
             }
         }
     
+        //==================== 打开前转圈（animate参数，组件私有） ====================
+        var spinnerEl = null;          // 转圈遮罩容器
+        var spinnerTimer = null;       // 旋转定时器
+        var spinnerDeg = 0;            // 当前旋转角度
+    
+        /**
+         * 显示转圈：全屏半透明遮罩 + 居中圆环 + 可选文字
+         * 旋转用JS定时器驱动，兼容IE9（IE9不支持CSS animation）
+         * @param {string} text 转圈下方文字，可为空
+         */
+        function showSpinner(text) {
+            destroySpinner();
+            var mask = document.createElement("div");
+            mask.className = "mel-animate-mask";
+            var box = document.createElement("div");
+            box.className = "mel-animate-box";
+            var circle = document.createElement("div");
+            circle.className = "mel-animate-circle";
+            box.appendChild(circle);
+            if (text) {
+                var textDom = document.createElement("div");
+                textDom.className = "mel-animate-text";
+                textDom.innerHTML = escapeHtml(text);
+                box.appendChild(textDom);
+            }
+            mask.appendChild(box);
+            document.body.appendChild(mask);
+            spinnerEl = mask;
+            spinnerDeg = 0;
+            spinnerTimer = setInterval(function () {
+                spinnerDeg = (spinnerDeg + 6) % 360;
+                if (circle.style) {
+                    circle.style.msTransform = "rotate(" + spinnerDeg + "deg)";
+                    circle.style.transform = "rotate(" + spinnerDeg + "deg)";
+                }
+            }, 16);
+        }
+    
+        /**
+         * 销毁转圈
+         */
+        function destroySpinner() {
+            if (spinnerTimer) {
+                clearInterval(spinnerTimer);
+                spinnerTimer = null;
+            }
+            if (spinnerEl && spinnerEl.parentNode) {
+                document.body.removeChild(spinnerEl);
+            }
+            spinnerEl = null;
+        }
+    
         /**
          * 锁定页面滚动（计数器：存在任意弹窗即锁定，全部关闭才恢复）
          */
@@ -208,6 +262,30 @@
             this.bodyDom = null;
             this.footerDom = null;
             this.inputEl = null;
+    
+            // animate：打开前先显示转圈（纯反馈特效），delay后创建弹窗并自动关闭转圈
+            if (opt.animate) {
+                var self = this;
+                var spinText = typeof opt.animate === "string" ? opt.animate : "";
+                showSpinner(spinText);
+                lockPageScroll(); // 转圈期间锁定页面滚动
+                var delayMs = parseInt(opt.delay, 10);
+                if (!delayMs || delayMs <= 0) {
+                    delayMs = 500; // auto/0/空 → 自动时长500ms
+                }
+                setTimeout(function () {
+                    self.create();
+                    self.bindEvent();
+                    lockPageScroll();   // 弹窗锁（spinner锁+弹窗锁）
+                    destroySpinner();   // 弹窗出现，转圈自动关闭
+                    unlockPageScroll(); // 释放spinner的锁，保留弹窗锁
+                    self.layoutFixed();
+                    if (typeof opt.onOpen === "function") {
+                        opt.onOpen(self);
+                    }
+                }, delayMs);
+                return;
+            }
     
             this.create();
             this.bindEvent();

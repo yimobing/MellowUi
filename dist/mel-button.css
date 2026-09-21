@@ -1,0 +1,321 @@
+/**
+ * MelUi 按钮组件
+ * 兼容：IE9/10/11
+ */
+ .mel-btn {
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+    display: inline-block;
+    border-radius: 4px;
+    padding: 0 16px;
+    height: 36px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    outline: none;
+    background: #fff;
+  }
+  
+  /* 胶囊圆角 */
+  .mel-btn.mel-btn--round {
+    border-radius: 999px;
+  }
+  
+  /* 焦点外框 */
+  .mel-btn:focus {
+    outline: 2px solid #b3d8ff;
+    outline-offset: 1px;
+  }
+  
+  /* -------- 尺寸 -------- */
+  .mel-btn--large {
+    height: 42px;
+    padding: 0 20px;
+    font-size: 15px;
+  }
+  .mel-btn--small {
+    height: 28px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  .mel-btn--mini {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+  
+  /* -------- 填充主题按钮 -------- */
+  .mel-btn--primary {
+    background-color: #409eff;
+    border: 1px solid #409eff;
+    color: #ffffff;
+  }
+  .mel-btn--primary:hover {
+    background-color: #66b1ff;
+    border-color: #66b1ff;
+  }
+  .mel-btn--primary:active {
+    background-color: #337ecc;
+    border-color: #337ecc;
+  }
+  
+  .mel-btn--success {
+    background-color: #67c23a;
+    border: 1px solid #67c23a;
+    color: #ffffff;
+  }
+  .mel-btn--success:hover {
+    background-color: #85ce61;
+    border-color: #85ce61;
+  }
+  .mel-btn--success:active {
+    background-color: #529b2e;
+    border-color: #529b2e;
+  }
+  
+  .mel-btn--warning {
+    background-color: #e6a23c;
+    border: 1px solid #e6a23c;
+    color: #ffffff;
+  }
+  .mel-btn--warning:hover {
+    background-color: #ebb563;
+    border-color: #ebb563;
+  }
+  .mel-btn--warning:active {
+    background-color: #b88230;
+    border-color: #b88230;
+  }
+  
+  .mel-btn--danger {
+    background-color: #f56c6c;
+    border: 1px solid #f56c6c;
+    color: #ffffff;
+  }
+  .mel-btn--danger:hover {
+    background-color: #f78989;
+    border-color: #f78989;
+  }
+  .mel-btn--danger:active {
+    background-color: #c45656;
+    border-color: #c45656;
+  }
+  
+  .mel-btn--default {
+    background-color: #ffffff;
+    border: 1px solid #dcdfe6;
+    color: #606266;
+  }
+  .mel-btn--default:hover {
+    background-color: #f5f7fa;
+    border-color: #c0c4cc;
+  }
+  .mel-btn--default:active {
+    background-color: #e6e8eb;
+    border-color: #dcdfe6;
+  }
+  
+  /* -------- mel-btn--outline 描线按钮：透明底色，仅边框文字，hover极淡蒙层 -------- */
+  .mel-btn--outline.mel-btn--primary {
+    background-color: transparent;
+    border: 1px solid #409eff;
+    color: #409eff;
+  }
+  .mel-btn--outline.mel-btn--primary:hover {
+    background-color: rgba(64, 158, 255, 0.08);
+    border-color: #409eff;
+    color: #409eff;
+  }
+  
+  .mel-btn--outline.mel-btn--success {
+    background-color: transparent;
+    border: 1px solid #67c23a;
+    color: #67c23a;
+  }
+  .mel-btn--outline.mel-btn--success:hover {
+    background-color: rgba(103, 194, 58, 0.08);
+    border-color: #67c23a;
+    color: #67c23a;
+  }
+  
+  .mel-btn--outline.mel-btn--warning {
+    background-color: transparent;
+    border: 1px solid #e6a23c;
+    color: #e6a23c;
+  }
+  .mel-btn--outline.mel-btn--warning:hover {
+    background-color: rgba(230, 162, 60, 0.08);
+    border-color: #e6a23c;
+    color: #e6a23c;
+  }
+  
+  .mel-btn--outline.mel-btn--danger {
+    background-color: transparent;
+    border: 1px solid #f56c6c;
+    color: #f56c6c;
+  }
+  .mel-btn--outline.mel-btn--danger:hover {
+    background-color: rgba(245, 108, 108, 0.08);
+    border-color: #f56c6c;
+    color: #f56c6c;
+  }
+  
+  .mel-btn--outline.mel-btn--default {
+    background-color: transparent;
+    border: 1px solid #dcdfe6;
+    color: #606266;
+  }
+  .mel-btn--outline.mel-btn--default:hover {
+    background-color: rgba(96, 98, 102, 0.06);
+    border-color: #c0c4cc;
+    color: #606266;
+  }
+  
+  /* -------- mel-btn--plain 朴素按钮：常态浅底色，hover变为实色背景+反白文字，对齐ElementUI plain -------- */
+  .mel-btn--plain.mel-btn--primary {
+    background-color: rgba(64, 158, 255, 0.1);
+    border: 1px solid rgba(64, 158, 255, 0.2);
+    color: #409eff;
+  }
+  .mel-btn--plain.mel-btn--primary:hover {
+    background-color: #409eff;
+    border-color: #409eff;
+    color: #fff;
+  }
+  
+  .mel-btn--plain.mel-btn--success {
+    background-color: rgba(103, 194, 58, 0.1);
+    border: 1px solid rgba(103, 194, 58, 0.2);
+    color: #67c23a;
+  }
+  .mel-btn--plain.mel-btn--success:hover {
+    background-color: #67c23a;
+    border-color: #67c23a;
+    color: #fff;
+  }
+  
+  .mel-btn--plain.mel-btn--warning {
+    background-color: rgba(230, 162, 60, 0.1);
+    border: 1px solid rgba(230, 162, 60, 0.2);
+    color: #e6a23c;
+  }
+  .mel-btn--plain.mel-btn--warning:hover {
+    background-color: #e6a23c;
+    border-color: #e6a23c;
+    color: #fff;
+  }
+  
+  .mel-btn--plain.mel-btn--danger {
+    background-color: rgba(245, 108, 108, 0.1);
+    border: 1px solid rgba(245, 108, 108, 0.2);
+    color: #f56c6c;
+  }
+  .mel-btn--plain.mel-btn--danger:hover {
+    background-color: #f56c6c;
+    border-color: #f56c6c;
+    color: #fff;
+  }
+  
+  .mel-btn--plain.mel-btn--default {
+    background-color: rgba(96, 98, 102, 0.08);
+    border: 1px solid rgba(192, 196, 204, 0.35);
+    color: #606266;
+  }
+  .mel-btn--plain.mel-btn--default:hover {
+    background-color: #dcdfe6;
+    border-color: #c0c4cc;
+    color: #606266;
+  }
+  
+  /* -------- text文本按钮，无边框 -------- */
+  .mel-btn--text {
+    background-color: transparent;
+    border: none;
+    color: #409eff;
+  }
+  .mel-btn--text:hover {
+    color: #66b1ff;
+    background-color: rgba(64, 158, 255, 0.08);
+  }
+  .mel-btn--text:active {
+    color: #337ecc;
+  }
+  
+  /* -------- 禁用状态 对齐ElementUI实现方式 -------- */
+  /* class类负责cursor:not‑allowed，权重高于浏览器UA默认cursor */
+  .mel-btn--is-disabled,
+  .mel-btn--is-disabled:hover,
+  .mel-btn--is-disabled:focus {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  /* 原生disabled属性：仅置灰，**禁止写pointer‑events:none**，保留hover能力；浏览器原生负责阻止点击 */
+  .mel-btn[disabled] {
+    opacity: 0.6;
+  }
+  
+  /* 组件逻辑说明：
+   * 当组件配置 disabled:true，输出：
+   *   <button disabled class="mel-btn mel-btn--xxx mel-btn--is-disabled">xxx</button>
+   * 1. html disabled 属性：浏览器原生禁止点击、表单不提交
+   * 2. mel-btn--is-disabled class：提供 hover 下 not‑allowed 光标
+   */
+
+   /* -------- 补充 mel-btn--block 块级按钮 -------- */
+.mel-btn--block {
+    width:100%;
+    display:block;
+  }
+  
+  /* -------- 补充 info信息主题：填充 -------- */
+  .mel-btn--info {
+    background-color: #909399;
+    border: 1px solid #909399;
+    color: #ffffff;
+  }
+  .mel-btn--info:hover {
+    background-color: #a6a9ad;
+    border-color: #a6a9ad;
+  }
+  .mel-btn--info:active {
+    background-color: #73767a;
+    border-color: #73767a;
+  }
+  
+  /* -------- info outline描线 -------- */
+  .mel-btn--outline.mel-btn--info {
+    background-color: transparent;
+    border: 1px solid #909399;
+    color: #909399;
+  }
+  .mel-btn--outline.mel-btn--info:hover {
+    background-color: rgba(144, 147, 153, 0.08);
+    border-color: #909399;
+    color: #909399;
+  }
+  
+  /* -------- info plain朴素 -------- */
+  .mel-btn--plain.mel-btn--info {
+    background-color: rgba(144, 147, 153, 0.1);
+    border: 1px solid rgba(144, 147, 153, 0.25);
+    color: #909399;
+  }
+  .mel-btn--plain.mel-btn--info:hover {
+    background-color: #909399;
+    border-color: #909399;
+    color: #fff;
+  }
+  
+  /* -------- loading基础占位（你可后续补旋转动画） -------- */
+  .mel-btn--loading {
+    position: relative;
+    pointer-events: none;
+  }
+  
+   

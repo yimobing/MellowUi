@@ -2,7 +2,7 @@
 
 /* =====================================================================
  * MelUi mel-layout.css  Layout 布局基础样式
- * 版本：v1.2.0
+ * 版本：v1.3.0
  * 创建时间：2026-08-31
  * 兼容：IE9/IE10/IE11/Edge
  * 定位：通过基础的 24 分栏，迅速简便地创建布局
@@ -14,11 +14,10 @@
  * 注意：
  *   1. 本文件为源码，构建后输出 dist/mel-layout.css / dist/mel-layout.min.css
  *   2. 全量打包 melui.css 由 rollup 通过 src/index.js import 本文件合并
- *   3. 列间距、行间距拆成两个独立修饰类：mel-row--col-gap / mel-row--row-gap
- *   4. 栅格默认自动换行，无需额外加 wrap 类
- *   5. mel-offset-N 建议在无 gap 的 mel-row 上使用，避免百分比偏移与px边距混合错位
- *   6. 不使用 CSS 变量（IE9 不支持 var()），常量以注释标注
- *   7. 必填星号位置由 HTML 书写顺序控制（前/后/输入框后），CSS 只统一样式
+ *   3. 主推 mel-row--type-* 一套类同时控制列间距、行间距、row之间间距
+ *   4. 备选独立修饰符 mel-row--col-gap / mel-row--row-gap / mel-row--space，不与type混用
+ *   5. 不使用 CSS 变量（IE9 不支持 var()），常量以注释标注
+ *   6. 必填星号位置由 HTML 书写顺序控制（前/后/输入框后），CSS 只统一样式
  ===================================================================== */
 
 /* =====================================================================
@@ -31,19 +30,6 @@
 *::after {
     -webkit-box-sizing: border-box;
             box-sizing: border-box;
-}
-
-/* 清除浏览器默认内外边距 */
-html,
-body,
-h1, h2, h3, h4, h5, h6,
-p,
-ul, ol, li,
-dl, dt, dd,
-form, fieldset, legend,
-figure, figcaption {
-    margin: 0;
-    padding: 0;
 }
 
 /* 列表取消默认圆点 */
@@ -135,18 +121,23 @@ table {
  * 兼容策略：
  *   现代浏览器 / IE10-11：display:flex（带-ms-前缀）
  *   IE9：float:left 降级（flex子项float自动失效，不影响现代浏览器）
- * 间距策略：
- *   列间距、行间距拆成两个独立修饰类，可叠加使用：
- *     mel-row--col-gap：列间距（行负margin + 列左右padding，常量20px）
- *     mel-row--row-gap：行间距（列padding-bottom + 行负margin，常量20px）
- * 用法：
- *   <div class="mel-row mel-row--col-gap mel-row--row-gap">
- *       <div class="mel-col mel-span-8">...</div>
- *       <div class="mel-col mel-span-16">...</div>
- *   </div>
+ * 间距策略（主推）：
+ *   mel-row--type-{value} 一套类同时控制：
+ *     1. 列间距（col左右padding + row负margin抵消）
+ *     2. 行间距（row内部col换行的垂直间距，col padding-bottom）
+ *     3. row之间间距（mel-row自身margin-bottom）
+ *   四套预设：
+ *     default  默认  20px（普通后台表单）
+ *     loose    宽松  15px（详情页、大卡片）
+ *     moderate 适中  10px（列表页、中等密度）
+ *     compact  紧凑  5px （工作台、弹窗内部、高密度查询栏）
+ * 间距策略（备选，不与type混用）：
+ *   mel-row--col-gap   仅列间距 20px
+ *   mel-row--row-gap   仅row内部col换行垂直间距 20px
+ *   mel-row--space     仅mel-row自身margin-bottom 20px
  ===================================================================== */
 
-/* 栅格行：默认flex，IE9降级block+float；默认自动换行，无需额外wrap类 */
+/* 栅格行：默认flex，IE9降级block+float；默认自动换行 */
 .mel-row {
     display: block;
     display: -ms-flexbox;
@@ -172,29 +163,6 @@ table {
     -webkit-box-sizing: border-box;
             box-sizing: border-box;
     min-height: 1px;
-}
-
-/* ---- 列间距 mel-row--col-gap（常量20px，每侧padding 10px） ----
- * row 左右负margin抵消col的padding，保证两侧与容器对齐
- */
-.mel-row--col-gap {
-    margin-left: -10px;
-    margin-right: -10px;
-}
-.mel-row--col-gap > .mel-col {
-    padding-left: 10px;
-    padding-right: 10px;
-}
-
-/* ---- 行间距 mel-row--row-gap（常量20px） ----
- * 用 col padding-bottom 实现行间距，现代flex和IE9 float下都稳定生效；
- * row 底部负margin抵消最后一行col的padding-bottom，不产生多余底部空白
- */
-.mel-row--row-gap {
-    margin-bottom: -20px;
-}
-.mel-row--row-gap > .mel-col {
-    padding-bottom: 20px;
 }
 
 /* ---- mel-span-N 占比：N/24 * 100% ---- */
@@ -224,8 +192,8 @@ table {
 .mel-span-24 { width: 100%; }
 
 /* ---- mel-offset-N 偏移：左侧 margin N/24*100% ----
- * 注意：建议在无 gap 的 mel-row 上使用；
- * 若叠加 col-gap（px padding），偏移百分比与固定px边距混合，视觉会有微小错位
+ * 注意：建议在无 type / 无 col-gap 的 mel-row 上使用；
+ * 若开启间距，col带padding，百分比margin-left的offset会出现对齐偏差
  */
 .mel-offset-0  { margin-left: 0; }
 .mel-offset-1  { margin-left: 4.16666667%; }
@@ -253,19 +221,111 @@ table {
 .mel-offset-23 { margin-left: 95.83333333%; }
 
 /* =====================================================================
+ * 主推：mel-row--type-{value} 一套类同时控制全套间距
+ * 实现原理（重要，避免间距叠加）：
+ *   列间距：row 左右负margin(col-gap/2) + col 左右padding(col-gap/2)
+ *   行间距 & row之间间距：统一由 col 的 padding-bottom 承担
+ *     - row 内部 col 换行的行间距 = 上一行 col 的 padding-bottom
+ *     - 多个 mel-row 连续堆叠时，row 之间间距 = 上一个 row 最后一行 col 的 padding-bottom
+ *     - 两者数值完全一致 = gap，无需再为 mel-row 单独设置 margin-bottom
+ *   注意：
+ *   1. type 不再设置 margin-bottom，避免与 col padding-bottom 叠加导致 row 之间间距翻倍
+ *   2. row 底部天然带 gap 的 padding-bottom（row 之间间距来源），若最后一个 row 后
+ *      跟按钮等其他元素且不需要此留白，业务可在外层容器自行清除
+ *   3. type 修饰符不要与独立 col-gap/row-gap/space 同时使用，避免样式叠加
+ ===================================================================== */
+
+/* ---- type-default 默认 20px（普通后台表单） ---- */
+.mel-row--type-default {
+    margin-left: -10px;
+    margin-right: -10px;
+}
+.mel-row--type-default > .mel-col {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 20px;
+}
+
+/* ---- type-loose 宽松 15px（详情页、大卡片） ---- */
+.mel-row--type-loose {
+    margin-left: -7.5px;
+    margin-right: -7.5px;
+}
+.mel-row--type-loose > .mel-col {
+    padding-left: 7.5px;
+    padding-right: 7.5px;
+    padding-bottom: 15px;
+}
+
+/* ---- type-moderate 适中 10px（列表页、中等密度） ---- */
+.mel-row--type-moderate {
+    margin-left: -5px;
+    margin-right: -5px;
+}
+.mel-row--type-moderate > .mel-col {
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 10px;
+}
+
+/* ---- type-compact 紧凑 5px（工作台、弹窗内部、高密度查询栏） ---- */
+.mel-row--type-compact {
+    margin-left: -2.5px;
+    margin-right: -2.5px;
+}
+.mel-row--type-compact > .mel-col {
+    padding-left: 2.5px;
+    padding-right: 2.5px;
+    padding-bottom: 5px;
+}
+
+/* =====================================================================
+ * 备选：独立间距修饰符（不与 type 同时使用）
+ * 适用于需要局部单独控制某一项间距的场景
+ ===================================================================== */
+
+/* 仅列间距 20px */
+.mel-row--col-gap {
+    margin-left: -10px;
+    margin-right: -10px;
+}
+.mel-row--col-gap > .mel-col {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* 仅row内部col换行垂直间距 20px */
+.mel-row--row-gap {
+    margin-bottom: -20px;
+}
+.mel-row--row-gap > .mel-col {
+    padding-bottom: 20px;
+}
+
+/* 仅mel-row自身margin-bottom 20px（多个mel-row兄弟之间间距） */
+.mel-row--space {
+    margin-bottom: 20px;
+}
+
+/* =====================================================================
  * 模块3：表单布局 mel-form-item
  * BEM命名：
  *   Block：mel-form-item（一个表单单元 = 标签区 + 控件区）
  *   Element：mel-form-item__hd（head，标签头部） / mel-form-item__bd（body，控件主体）
- *   Modifier：mel-form-item--edit（编辑模式，hd固定宽度右对齐） / mel-form-item--search（查询模式，hd自适应、与控件同一行）
+ *   Modifier：
+ *     mel-form-item--edit   编辑模式（hd固定宽度右对齐，bd margin-left占剩余）
+ *     mel-form-item--search 查询模式（hd自适应，默认与bd同行；小视口自动堆叠）
+ *     mel-form-item--stack  强制hd/bd上下堆叠（兜底，JS容器检测或业务手动）
  * 控件基类：mel-form-ctrl（input/select/textarea统一加此类）
  * 辅助：mel-form-item__required（必填星号） / mel-form-item__tip（校验提示）
  * 注意：
  *   1. mel-form-item自身不做多列换行，多列交给外层24栅格 mel-row/mel-col
  *   2. mel-form-ctrl只统一样式，不写死textarea高度，高度由业务style/class控制
  *   3. edit模式hd固定宽度常量：110px，bd margin-left:110px
- *   4. search模式：hd float:left宽度自适应，bd overflow:hidden触发BFC占剩余宽度，标签与控件同一行
- *   5. 必填星号位置由HTML书写顺序控制：
+ *   4. search模式：hd float:left宽度自适应，bd overflow:hidden触发BFC占剩余宽度
+ *   5. search模式响应式：@media(max-width:768px) 视口变小自动hd/bd上下堆叠
+ *   6. 引入 mel-layout.js 可实现基于form-item自身容器宽度的智能堆叠（IE9兼容）
+ *   7. 必填星号位置由HTML书写顺序控制：
  *      前置：<hd><span class="__required">*</span>文字</hd>
  *      后置：<hd>文字<span class="__required">*</span></hd>
  *      输入框后：<bd><input><span class="__required">*</span></bd>
@@ -273,7 +333,6 @@ table {
 
 /* 表单单元基础 */
 .mel-form-item {
-    margin-bottom: 16px;
     font-size: 14px;
     color: #303133;
 }
@@ -312,7 +371,7 @@ table {
     clear: both;
 }
 
-/* ---- 修饰符：search 查询模式（页面顶部条件区，标签与控件同一行，配合栅格自动换行） ---- */
+/* ---- 修饰符：search 查询模式（页面顶部条件区，标签与控件同一行，hd自适应） ---- */
 .mel-form-item--search .mel-form-item__hd {
     float: left;
     line-height: 34px;
@@ -325,6 +384,35 @@ table {
 /* search模式间距更小，适配密集查询区 */
 .mel-form-item--search {
     margin-bottom: 12px;
+}
+
+/* search模式响应式：视口小于768px，自动hd/bd上下堆叠
+ * 注意：受IE9约束，此断点基于浏览器视口宽度，非form-item自身容器宽度；
+ * 若需基于容器宽度智能堆叠，请引入可选增强脚本 mel-layout.js
+ */
+@media screen and (max-width: 768px) {
+    .mel-form-item--search .mel-form-item__hd {
+        float: none;
+        display: block;
+        margin-bottom: 6px;
+        line-height: 1.5;
+    }
+    .mel-form-item--search .mel-form-item__bd {
+        overflow: visible;
+        display: block;
+    }
+}
+
+/* ---- 修饰符：stack 强制hd/bd上下堆叠（兜底：JS容器检测自动追加，或业务手动添加） ---- */
+.mel-form-item--stack .mel-form-item__hd {
+    float: none;
+    display: block;
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+.mel-form-item--stack .mel-form-item__bd {
+    overflow: visible;
+    display: block;
 }
 
 /* ---- 修饰符：error 错误态（控件边框变红） ---- */

@@ -12,7 +12,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta http-equiv="Cache-Control" content="no-transform">
     <meta http-equiv="Cache-Control" content="no-siteapp">
-    <title> MelUi Dialog v1.2.3 beta 1.0.8 弹窗组件演示 </title>
+    <title> MelUi Dialog v1.2.3 beta 1.0.9 弹窗组件演示 </title>
     <meta name="keywords" content="">
     <meta name="description" content="">
     <link rel="stylesheet" href="../src/components/dialog/index.css">
@@ -28,7 +28,7 @@
 <body>
     <h1 class="page-title">MelUi Dialog 弹窗对话框组件</h1>
     <div class="version-desc">
-        版本：v1.2.3 beta 1.0.8 | 兼容IE9~11、移动端自适应 | MelUi.xxx / melui.xxx 大小写均可调用
+        版本：v1.2.3 beta 1.0.9 | 兼容IE9~11、移动端自适应 | MelUi.xxx / melui.xxx 大小写均可调用
     </div>
     <h2>一、标准引入方式</h2>
 <pre><code class="language-html">
@@ -44,6 +44,8 @@ var defaults = {
     showClose: true, // 是否显示右上角关闭叉号(可选)。值：true是,false否。
     mask: true, // 是否显示遮罩层(可选)。值：true是,false否。
     maskClosable: true, // 点击遮罩是否关闭弹窗(可选)。值：true是,false否。
+    animate: false, // 打开弹窗前是否显示转圈(可选)。值：true无文字转圈，字符串作为转圈文字，false不显示。
+    delay: "auto", // 转圈显示时长(可选)。值：auto自动(500ms)，或数字毫秒。
     btnDirection: "horizontal", // 按钮排布方向(可选)。值：horizontal横向,vert竖向。
     btnFullWidth: false, // 按钮是否通栏铺满整行(可选)。值：true是,false否。横向时按钮在一行内等分，竖向时才垂直排列。
     btnDisabled: false, // 是否一键禁用全部底部按钮(可选)。值：true是,false否。
@@ -717,6 +719,30 @@ melui.confirm({
     title: "按钮禁用",
     message: "底部按钮全部禁用不可点击",
     btnDisabled: true
+});
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">animate 打开前转圈特效</div>
+                <div class="block-group__content_box_describe">animate: "正在加载" + delay: 800，弹窗出现后转圈自动关闭</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.alert({
+    title: "转圈特效",
+    message: "弹窗出现前先显示转圈，出现后自动关闭",
+    animate: "正在加载",
+    delay: 800
+});
+</code></pre>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">animate 无文字转圈</div>
+                <div class="block-group__content_box_describe">animate: true，无文字，自动500ms</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.alert({
+    message: "无文字转圈特效",
+    animate: true
 });
 </code></pre>
             </div>

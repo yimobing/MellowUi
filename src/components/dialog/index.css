@@ -1,6 +1,6 @@
 /**
  * MelUi 弹窗对话框组件
- * 版本：v1.2.3 beta 1.0.8
+ * 版本：v1.2.3 beta 1.0.9
  * 创建日期：2026-08-10
  * 更新日期：2026-09-11
  * 兼容：IE9/10/11
@@ -337,6 +337,38 @@
      border-top: 1px solid #ebeef5;
  }
  /* phone 纯文字（message）垂直居中：复用 vert-center 机制 */
+ 
+ /* ========== 打开前转圈（animate参数，组件私有） ========== */
+ .mel-animate-mask {
+     position: fixed;
+     top: 0;
+     left: 0;
+     right: 0;
+     bottom: 0;
+     background: rgba(255, 255, 255, 0.7);
+     z-index: 10000;
+ }
+ .mel-animate-box {
+     position: absolute;
+     top: 50%;
+     left: 50%;
+     -ms-transform: translate(-50%, -50%);
+     transform: translate(-50%, -50%);
+     text-align: center;
+ }
+ .mel-animate-circle {
+     width: 36px;
+     height: 36px;
+     border: 3px solid #dcdfe6;
+     border-top-color: #409eff;
+     border-radius: 50%;
+     margin: 0 auto;
+ }
+ .mel-animate-text {
+     margin-top: 12px;
+     font-size: 14px;
+     color: #606266;
+ }
  
  /* ========== Tip 消息提示（独立组件） ========== */
  .mel-tip-mask {

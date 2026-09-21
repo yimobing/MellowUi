@@ -2,7 +2,7 @@
 
 /* =====================================================================
  * MelUi mel-layout.css  Layout 布局基础样式
- * 版本：v1.2.0
+ * 版本：v1.3.0
  * 创建时间：2026-08-31
  * 兼容：IE9/IE10/IE11/Edge
  * 定位：通过基础的 24 分栏，迅速简便地创建布局
@@ -14,11 +14,10 @@
  * 注意：
  *   1. 本文件为源码，构建后输出 dist/mel-layout.css / dist/mel-layout.min.css
  *   2. 全量打包 melui.css 由 rollup 通过 src/index.js import 本文件合并
- *   3. 列间距、行间距拆成两个独立修饰类：mel-row--col-gap / mel-row--row-gap
- *   4. 栅格默认自动换行，无需额外加 wrap 类
- *   5. mel-offset-N 建议在无 gap 的 mel-row 上使用，避免百分比偏移与px边距混合错位
- *   6. 不使用 CSS 变量（IE9 不支持 var()），常量以注释标注
- *   7. 必填星号位置由 HTML 书写顺序控制（前/后/输入框后），CSS 只统一样式
+ *   3. 主推 mel-row--type-* 一套类同时控制列间距、行间距、row之间间距
+ *   4. 备选独立修饰符 mel-row--col-gap / mel-row--row-gap / mel-row--space，不与type混用
+ *   5. 不使用 CSS 变量（IE9 不支持 var()），常量以注释标注
+ *   6. 必填星号位置由 HTML 书写顺序控制（前/后/输入框后），CSS 只统一样式
  ===================================================================== */
 
 /* =====================================================================
@@ -31,19 +30,6 @@
 *::after {
     -webkit-box-sizing: border-box;
             box-sizing: border-box;
-}
-
-/* 清除浏览器默认内外边距 */
-html,
-body,
-h1, h2, h3, h4, h5, h6,
-p,
-ul, ol, li,
-dl, dt, dd,
-form, fieldset, legend,
-figure, figcaption {
-    margin: 0;
-    padding: 0;
 }
 
 /* 列表取消默认圆点 */
@@ -135,18 +121,23 @@ table {
  * 兼容策略：
  *   现代浏览器 / IE10-11：display:flex（带-ms-前缀）
  *   IE9：float:left 降级（flex子项float自动失效，不影响现代浏览器）
- * 间距策略：
- *   列间距、行间距拆成两个独立修饰类，可叠加使用：
- *     mel-row--col-gap：列间距（行负margin + 列左右padding，常量20px）
- *     mel-row--row-gap：行间距（列padding-bottom + 行负margin，常量20px）
- * 用法：
- *   <div class="mel-row mel-row--col-gap mel-row--row-gap">
- *       <div class="mel-col mel-span-8">...</div>
- *       <div class="mel-col mel-span-16">...</div>
- *   </div>
+ * 间距策略（主推）：
+ *   mel-row--type-{value} 一套类同时控制：
+ *     1. 列间距（col左右padding + row负margin抵消）
+ *     2. 行间距（row内部col换行的垂直间距，col padding-bottom）
+ *     3. row之间间距（mel-row自身margin-bottom）
+ *   四套预设：
+ *     default  默认  20px（普通后台表单）
+ *     loose    宽松  15px（详情页、大卡片）
+ *     moderate 适中  10px（列表页、中等密度）
+ *     compact  紧凑  5px （工作台、弹窗内部、高密度查询栏）
+ * 间距策略（备选，不与type混用）：
+ *   mel-row--col-gap   仅列间距 20px
+ *   mel-row--row-gap   仅row内部col换行垂直间距 20px
+ *   mel-row--space     仅mel-row自身margin-bottom 20px
  ===================================================================== */
 
-/* 栅格行：默认flex，IE9降级block+float；默认自动换行，无需额外wrap类 */
+/* 栅格行：默认flex，IE9降级block+float；默认自动换行 */
 .mel-row {
     display: block;
     display: -ms-flexbox;
@@ -172,29 +163,6 @@ table {
     -webkit-box-sizing: border-box;
             box-sizing: border-box;
     min-height: 1px;
-}
-
-/* ---- 列间距 mel-row--col-gap（常量20px，每侧padding 10px） ----
- * row 左右负margin抵消col的padding，保证两侧与容器对齐
- */
-.mel-row--col-gap {
-    margin-left: -10px;
-    margin-right: -10px;
-}
-.mel-row--col-gap > .mel-col {
-    padding-left: 10px;
-    padding-right: 10px;
-}
-
-/* ---- 行间距 mel-row--row-gap（常量20px） ----
- * 用 col padding-bottom 实现行间距，现代flex和IE9 float下都稳定生效；
- * row 底部负margin抵消最后一行col的padding-bottom，不产生多余底部空白
- */
-.mel-row--row-gap {
-    margin-bottom: -20px;
-}
-.mel-row--row-gap > .mel-col {
-    padding-bottom: 20px;
 }
 
 /* ---- mel-span-N 占比：N/24 * 100% ---- */
@@ -224,8 +192,8 @@ table {
 .mel-span-24 { width: 100%; }
 
 /* ---- mel-offset-N 偏移：左侧 margin N/24*100% ----
- * 注意：建议在无 gap 的 mel-row 上使用；
- * 若叠加 col-gap（px padding），偏移百分比与固定px边距混合，视觉会有微小错位
+ * 注意：建议在无 type / 无 col-gap 的 mel-row 上使用；
+ * 若开启间距，col带padding，百分比margin-left的offset会出现对齐偏差
  */
 .mel-offset-0  { margin-left: 0; }
 .mel-offset-1  { margin-left: 4.16666667%; }
@@ -253,19 +221,111 @@ table {
 .mel-offset-23 { margin-left: 95.83333333%; }
 
 /* =====================================================================
+ * 主推：mel-row--type-{value} 一套类同时控制全套间距
+ * 实现原理（重要，避免间距叠加）：
+ *   列间距：row 左右负margin(col-gap/2) + col 左右padding(col-gap/2)
+ *   行间距 & row之间间距：统一由 col 的 padding-bottom 承担
+ *     - row 内部 col 换行的行间距 = 上一行 col 的 padding-bottom
+ *     - 多个 mel-row 连续堆叠时，row 之间间距 = 上一个 row 最后一行 col 的 padding-bottom
+ *     - 两者数值完全一致 = gap，无需再为 mel-row 单独设置 margin-bottom
+ *   注意：
+ *   1. type 不再设置 margin-bottom，避免与 col padding-bottom 叠加导致 row 之间间距翻倍
+ *   2. row 底部天然带 gap 的 padding-bottom（row 之间间距来源），若最后一个 row 后
+ *      跟按钮等其他元素且不需要此留白，业务可在外层容器自行清除
+ *   3. type 修饰符不要与独立 col-gap/row-gap/space 同时使用，避免样式叠加
+ ===================================================================== */
+
+/* ---- type-default 默认 20px（普通后台表单） ---- */
+.mel-row--type-default {
+    margin-left: -10px;
+    margin-right: -10px;
+}
+.mel-row--type-default > .mel-col {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 20px;
+}
+
+/* ---- type-loose 宽松 15px（详情页、大卡片） ---- */
+.mel-row--type-loose {
+    margin-left: -7.5px;
+    margin-right: -7.5px;
+}
+.mel-row--type-loose > .mel-col {
+    padding-left: 7.5px;
+    padding-right: 7.5px;
+    padding-bottom: 15px;
+}
+
+/* ---- type-moderate 适中 10px（列表页、中等密度） ---- */
+.mel-row--type-moderate {
+    margin-left: -5px;
+    margin-right: -5px;
+}
+.mel-row--type-moderate > .mel-col {
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 10px;
+}
+
+/* ---- type-compact 紧凑 5px（工作台、弹窗内部、高密度查询栏） ---- */
+.mel-row--type-compact {
+    margin-left: -2.5px;
+    margin-right: -2.5px;
+}
+.mel-row--type-compact > .mel-col {
+    padding-left: 2.5px;
+    padding-right: 2.5px;
+    padding-bottom: 5px;
+}
+
+/* =====================================================================
+ * 备选：独立间距修饰符（不与 type 同时使用）
+ * 适用于需要局部单独控制某一项间距的场景
+ ===================================================================== */
+
+/* 仅列间距 20px */
+.mel-row--col-gap {
+    margin-left: -10px;
+    margin-right: -10px;
+}
+.mel-row--col-gap > .mel-col {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* 仅row内部col换行垂直间距 20px */
+.mel-row--row-gap {
+    margin-bottom: -20px;
+}
+.mel-row--row-gap > .mel-col {
+    padding-bottom: 20px;
+}
+
+/* 仅mel-row自身margin-bottom 20px（多个mel-row兄弟之间间距） */
+.mel-row--space {
+    margin-bottom: 20px;
+}
+
+/* =====================================================================
  * 模块3：表单布局 mel-form-item
  * BEM命名：
  *   Block：mel-form-item（一个表单单元 = 标签区 + 控件区）
  *   Element：mel-form-item__hd（head，标签头部） / mel-form-item__bd（body，控件主体）
- *   Modifier：mel-form-item--edit（编辑模式，hd固定宽度右对齐） / mel-form-item--search（查询模式，hd自适应、与控件同一行）
+ *   Modifier：
+ *     mel-form-item--edit   编辑模式（hd固定宽度右对齐，bd margin-left占剩余）
+ *     mel-form-item--search 查询模式（hd自适应，默认与bd同行；小视口自动堆叠）
+ *     mel-form-item--stack  强制hd/bd上下堆叠（兜底，JS容器检测或业务手动）
  * 控件基类：mel-form-ctrl（input/select/textarea统一加此类）
  * 辅助：mel-form-item__required（必填星号） / mel-form-item__tip（校验提示）
  * 注意：
  *   1. mel-form-item自身不做多列换行，多列交给外层24栅格 mel-row/mel-col
  *   2. mel-form-ctrl只统一样式，不写死textarea高度，高度由业务style/class控制
  *   3. edit模式hd固定宽度常量：110px，bd margin-left:110px
- *   4. search模式：hd float:left宽度自适应，bd overflow:hidden触发BFC占剩余宽度，标签与控件同一行
- *   5. 必填星号位置由HTML书写顺序控制：
+ *   4. search模式：hd float:left宽度自适应，bd overflow:hidden触发BFC占剩余宽度
+ *   5. search模式响应式：@media(max-width:768px) 视口变小自动hd/bd上下堆叠
+ *   6. 引入 mel-layout.js 可实现基于form-item自身容器宽度的智能堆叠（IE9兼容）
+ *   7. 必填星号位置由HTML书写顺序控制：
  *      前置：<hd><span class="__required">*</span>文字</hd>
  *      后置：<hd>文字<span class="__required">*</span></hd>
  *      输入框后：<bd><input><span class="__required">*</span></bd>
@@ -273,7 +333,6 @@ table {
 
 /* 表单单元基础 */
 .mel-form-item {
-    margin-bottom: 16px;
     font-size: 14px;
     color: #303133;
 }
@@ -312,7 +371,7 @@ table {
     clear: both;
 }
 
-/* ---- 修饰符：search 查询模式（页面顶部条件区，标签与控件同一行，配合栅格自动换行） ---- */
+/* ---- 修饰符：search 查询模式（页面顶部条件区，标签与控件同一行，hd自适应） ---- */
 .mel-form-item--search .mel-form-item__hd {
     float: left;
     line-height: 34px;
@@ -325,6 +384,35 @@ table {
 /* search模式间距更小，适配密集查询区 */
 .mel-form-item--search {
     margin-bottom: 12px;
+}
+
+/* search模式响应式：视口小于768px，自动hd/bd上下堆叠
+ * 注意：受IE9约束，此断点基于浏览器视口宽度，非form-item自身容器宽度；
+ * 若需基于容器宽度智能堆叠，请引入可选增强脚本 mel-layout.js
+ */
+@media screen and (max-width: 768px) {
+    .mel-form-item--search .mel-form-item__hd {
+        float: none;
+        display: block;
+        margin-bottom: 6px;
+        line-height: 1.5;
+    }
+    .mel-form-item--search .mel-form-item__bd {
+        overflow: visible;
+        display: block;
+    }
+}
+
+/* ---- 修饰符：stack 强制hd/bd上下堆叠（兜底：JS容器检测自动追加，或业务手动添加） ---- */
+.mel-form-item--stack .mel-form-item__hd {
+    float: none;
+    display: block;
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+.mel-form-item--stack .mel-form-item__bd {
+    overflow: visible;
+    display: block;
 }
 
 /* ---- 修饰符：error 错误态（控件边框变红） ---- */
@@ -410,167 +498,849 @@ select.mel-form-ctrl {
     color: #f56c6c;
 }
 
-/*
-MelUi Dialog 弹窗组件样式
-版本：v1.0.6
-创建时间：2026-08-10
-更新时间：2026-08-10
-兼容：IE9/10/11、移动端自适应
-*/
-@charset "utf-8";
-.melui-dialog-mask {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 9998;
-}
-.melui-dialog-wrap {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-        -ms-transform: translate(-50%, -50%);
-            transform: translate(-50%, -50%);
-    width: 420px;
-    min-width: 320px;
-    max-width: 90%;
-    background: #ffffff;
-    border-radius: 6px;
-    overflow: hidden;
-    z-index: 9999;
-}
-.melui-dialog-header {
-    padding: 14px 18px;
-    border-bottom: 1px solid #eeeeee;
-    position: relative;
-    background: #fff;
-}
-.melui-dialog-title {
-    font-size: 16px;
-    color: #333;
-}
-.melui-dialog-close {
-    position: absolute;
-    right: 16px;
-    top: 14px;
-    font-size: 18px;
-    color: #999;
+/**
+ * MelUi 按钮组件
+ * 兼容：IE9/10/11
+ */
+ .mel-btn {
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+    display: inline-block;
+    border-radius: 4px;
+    padding: 0 16px;
+    height: 36px;
+    font-size: 14px;
+    font-family: inherit;
     cursor: pointer;
-}
-.melui-dialog-body {
-    padding: 20px 18px;
+    -webkit-transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
     text-align: center;
-    font-size: 14px;
-    color: #333;
-}
-/* 输入框容器 */
-.melui-dialog-input-box {
-    margin-top: 14px;
-}
-.melui-dialog-input {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    font-size: 14px;
-    outline: none;
-}
-/* 按钮容器默认横向 */
-.melui-dialog-footer {
-    padding: 14px 18px;
-    border-top: 1px solid #eee;
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    gap: 12px;
-    -webkit-box-pack: center;
-        -ms-flex-pack: center;
-            justify-content: center;
-}
-/* 竖向布局修复：按钮自适应内容宽度，不再默认铺满 */
-.melui-dialog-footer-vert {
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-        -ms-flex-direction: column;
-            flex-direction: column;
-    gap: 10px;
-    -webkit-box-align: center;
-        -ms-flex-align: center;
-            align-items: center;
-}
-/* 开启通栏铺满才拉伸100% */
-.melui-dialog-footer-full {
-    -webkit-box-pack: stretch;
-        -ms-flex-pack: stretch;
-            justify-content: stretch;
-}
-.melui-dialog-footer-full .melui-dialog-btn {
-    width: 100%;
-}
-/* 竖向+通栏铺满：撑满整行 */
-.melui-dialog-footer-vert.melui-dialog-footer-full {
-    -webkit-box-align: stretch;
-        -ms-flex-align: stretch;
-            align-items: stretch;
-}
-/* 按钮基础 */
-.melui-dialog-btn {
-    padding: 8px 16px;
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
     white-space: nowrap;
-}
-/* 主题色 */
-.melui-btn-default {
+    vertical-align: middle;
+    outline: none;
     background: #fff;
+  }
+  
+  /* 胶囊圆角 */
+  .mel-btn.mel-btn--round {
+    border-radius: 999px;
+  }
+  
+  /* 焦点外框 */
+  .mel-btn:focus {
+    outline: 2px solid #b3d8ff;
+    outline-offset: 1px;
+  }
+  
+  /* -------- 尺寸 -------- */
+  .mel-btn--large {
+    height: 42px;
+    padding: 0 20px;
+    font-size: 15px;
+  }
+  .mel-btn--small {
+    height: 28px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  .mel-btn--mini {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+  
+  /* -------- 填充主题按钮 -------- */
+  .mel-btn--primary {
+    background-color: #409eff;
+    border: 1px solid #409eff;
+    color: #ffffff;
+  }
+  .mel-btn--primary:hover {
+    background-color: #66b1ff;
+    border-color: #66b1ff;
+  }
+  .mel-btn--primary:active {
+    background-color: #337ecc;
+    border-color: #337ecc;
+  }
+  
+  .mel-btn--success {
+    background-color: #67c23a;
+    border: 1px solid #67c23a;
+    color: #ffffff;
+  }
+  .mel-btn--success:hover {
+    background-color: #85ce61;
+    border-color: #85ce61;
+  }
+  .mel-btn--success:active {
+    background-color: #529b2e;
+    border-color: #529b2e;
+  }
+  
+  .mel-btn--warning {
+    background-color: #e6a23c;
+    border: 1px solid #e6a23c;
+    color: #ffffff;
+  }
+  .mel-btn--warning:hover {
+    background-color: #ebb563;
+    border-color: #ebb563;
+  }
+  .mel-btn--warning:active {
+    background-color: #b88230;
+    border-color: #b88230;
+  }
+  
+  .mel-btn--danger {
+    background-color: #f56c6c;
+    border: 1px solid #f56c6c;
+    color: #ffffff;
+  }
+  .mel-btn--danger:hover {
+    background-color: #f78989;
+    border-color: #f78989;
+  }
+  .mel-btn--danger:active {
+    background-color: #c45656;
+    border-color: #c45656;
+  }
+  
+  .mel-btn--default {
+    background-color: #ffffff;
+    border: 1px solid #dcdfe6;
     color: #606266;
-}
-.melui-btn-info {
-    background: #409eff;
-    color: #fff;
+  }
+  .mel-btn--default:hover {
+    background-color: #f5f7fa;
+    border-color: #c0c4cc;
+  }
+  .mel-btn--default:active {
+    background-color: #e6e8eb;
+    border-color: #dcdfe6;
+  }
+  
+  /* -------- mel-btn--outline 描线按钮：透明底色，仅边框文字，hover极淡蒙层 -------- */
+  .mel-btn--outline.mel-btn--primary {
+    background-color: transparent;
+    border: 1px solid #409eff;
+    color: #409eff;
+  }
+  .mel-btn--outline.mel-btn--primary:hover {
+    background-color: rgba(64, 158, 255, 0.08);
     border-color: #409eff;
-}
-.melui-btn-success {
-    background: #67c23a;
-    color: #fff;
+    color: #409eff;
+  }
+  
+  .mel-btn--outline.mel-btn--success {
+    background-color: transparent;
+    border: 1px solid #67c23a;
+    color: #67c23a;
+  }
+  .mel-btn--outline.mel-btn--success:hover {
+    background-color: rgba(103, 194, 58, 0.08);
     border-color: #67c23a;
-}
-.melui-btn-warning {
-    background: #e6a23c;
-    color: #fff;
+    color: #67c23a;
+  }
+  
+  .mel-btn--outline.mel-btn--warning {
+    background-color: transparent;
+    border: 1px solid #e6a23c;
+    color: #e6a23c;
+  }
+  .mel-btn--outline.mel-btn--warning:hover {
+    background-color: rgba(230, 162, 60, 0.08);
     border-color: #e6a23c;
-}
-.melui-btn-danger {
-    background: #f56c6c;
-    color: #fff;
+    color: #e6a23c;
+  }
+  
+  .mel-btn--outline.mel-btn--danger {
+    background-color: transparent;
+    border: 1px solid #f56c6c;
+    color: #f56c6c;
+  }
+  .mel-btn--outline.mel-btn--danger:hover {
+    background-color: rgba(245, 108, 108, 0.08);
     border-color: #f56c6c;
-}
+    color: #f56c6c;
+  }
+  
+  .mel-btn--outline.mel-btn--default {
+    background-color: transparent;
+    border: 1px solid #dcdfe6;
+    color: #606266;
+  }
+  .mel-btn--outline.mel-btn--default:hover {
+    background-color: rgba(96, 98, 102, 0.06);
+    border-color: #c0c4cc;
+    color: #606266;
+  }
+  
+  /* -------- mel-btn--plain 朴素按钮：常态浅底色，hover变为实色背景+反白文字，对齐ElementUI plain -------- */
+  .mel-btn--plain.mel-btn--primary {
+    background-color: rgba(64, 158, 255, 0.1);
+    border: 1px solid rgba(64, 158, 255, 0.2);
+    color: #409eff;
+  }
+  .mel-btn--plain.mel-btn--primary:hover {
+    background-color: #409eff;
+    border-color: #409eff;
+    color: #fff;
+  }
+  
+  .mel-btn--plain.mel-btn--success {
+    background-color: rgba(103, 194, 58, 0.1);
+    border: 1px solid rgba(103, 194, 58, 0.2);
+    color: #67c23a;
+  }
+  .mel-btn--plain.mel-btn--success:hover {
+    background-color: #67c23a;
+    border-color: #67c23a;
+    color: #fff;
+  }
+  
+  .mel-btn--plain.mel-btn--warning {
+    background-color: rgba(230, 162, 60, 0.1);
+    border: 1px solid rgba(230, 162, 60, 0.2);
+    color: #e6a23c;
+  }
+  .mel-btn--plain.mel-btn--warning:hover {
+    background-color: #e6a23c;
+    border-color: #e6a23c;
+    color: #fff;
+  }
+  
+  .mel-btn--plain.mel-btn--danger {
+    background-color: rgba(245, 108, 108, 0.1);
+    border: 1px solid rgba(245, 108, 108, 0.2);
+    color: #f56c6c;
+  }
+  .mel-btn--plain.mel-btn--danger:hover {
+    background-color: #f56c6c;
+    border-color: #f56c6c;
+    color: #fff;
+  }
+  
+  .mel-btn--plain.mel-btn--default {
+    background-color: rgba(96, 98, 102, 0.08);
+    border: 1px solid rgba(192, 196, 204, 0.35);
+    color: #606266;
+  }
+  .mel-btn--plain.mel-btn--default:hover {
+    background-color: #dcdfe6;
+    border-color: #c0c4cc;
+    color: #606266;
+  }
+  
+  /* -------- text文本按钮，无边框 -------- */
+  .mel-btn--text {
+    background-color: transparent;
+    border: none;
+    color: #409eff;
+  }
+  .mel-btn--text:hover {
+    color: #66b1ff;
+    background-color: rgba(64, 158, 255, 0.08);
+  }
+  .mel-btn--text:active {
+    color: #337ecc;
+  }
+  
+  /* -------- 禁用状态 对齐ElementUI实现方式 -------- */
+  /* class类负责cursor:not‑allowed，权重高于浏览器UA默认cursor */
+  .mel-btn--is-disabled,
+  .mel-btn--is-disabled:hover,
+  .mel-btn--is-disabled:focus {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  /* 原生disabled属性：仅置灰，**禁止写pointer‑events:none**，保留hover能力；浏览器原生负责阻止点击 */
+  .mel-btn[disabled] {
+    opacity: 0.6;
+  }
+  
+  /* 组件逻辑说明：
+   * 当组件配置 disabled:true，输出：
+   *   <button disabled class="mel-btn mel-btn--xxx mel-btn--is-disabled">xxx</button>
+   * 1. html disabled 属性：浏览器原生禁止点击、表单不提交
+   * 2. mel-btn--is-disabled class：提供 hover 下 not‑allowed 光标
+   */
 
-/* 移动端适配 */
-@media screen and (max-width: 576px) {
-    .melui-dialog-wrap {
-        width: 92%;
-        min-width: unset;
-    }
-    .melui-dialog-header {
-        padding: 12px 15px;
-    }
-    .melui-dialog-body {
-        padding: 16px 15px;
-    }
-    .melui-dialog-footer {
-        padding: 12px 15px;
-        gap: 10px;
-    }
-    .melui-dialog-btn {
-        padding: 10px 12px;
-    }
-}
+   /* -------- 补充 mel-btn--block 块级按钮 -------- */
+.mel-btn--block {
+    width:100%;
+    display:block;
+  }
+  
+  /* -------- 补充 info信息主题：填充 -------- */
+  .mel-btn--info {
+    background-color: #909399;
+    border: 1px solid #909399;
+    color: #ffffff;
+  }
+  .mel-btn--info:hover {
+    background-color: #a6a9ad;
+    border-color: #a6a9ad;
+  }
+  .mel-btn--info:active {
+    background-color: #73767a;
+    border-color: #73767a;
+  }
+  
+  /* -------- info outline描线 -------- */
+  .mel-btn--outline.mel-btn--info {
+    background-color: transparent;
+    border: 1px solid #909399;
+    color: #909399;
+  }
+  .mel-btn--outline.mel-btn--info:hover {
+    background-color: rgba(144, 147, 153, 0.08);
+    border-color: #909399;
+    color: #909399;
+  }
+  
+  /* -------- info plain朴素 -------- */
+  .mel-btn--plain.mel-btn--info {
+    background-color: rgba(144, 147, 153, 0.1);
+    border: 1px solid rgba(144, 147, 153, 0.25);
+    color: #909399;
+  }
+  .mel-btn--plain.mel-btn--info:hover {
+    background-color: #909399;
+    border-color: #909399;
+    color: #fff;
+  }
+  
+  /* -------- loading基础占位（你可后续补旋转动画） -------- */
+  .mel-btn--loading {
+    position: relative;
+    pointer-events: none;
+  }
+  
+   
+
+/**
+ * MelUi 弹窗对话框组件
+ * 版本：v1.2.3 beta 1.0.9
+ * 创建日期：2026-08-10
+ * 更新日期：2026-09-11
+ * 兼容：IE9/10/11
+ * 调用方式：
+    构造创建：new MelUi.Dialog({配置参数})
+    快捷调用：MelUi.alert() / MelUi.confirm() / MelUi.prompt()
+ */
+ @charset "utf-8";
+
+ /* ========== 模态弹窗基础 ========== */
+ .mel-dialog-mask {
+     position: fixed;
+     top: 0;
+     left: 0;
+     right: 0;
+     bottom: 0;
+     background: rgba(0, 0, 0, 0.5);
+ }
+ 
+ .mel-dialog-wrap {
+     position: fixed;
+     top: 50%;
+     left: 50%;
+     -ms-transform: translate(-50%, -50%);
+     -webkit-transform: translate(-50%, -50%);
+             transform: translate(-50%, -50%);
+     width: 420px;
+     min-width: 320px;
+     max-width: 90%;
+     background: #fff;
+     border-radius: 6px;
+     overflow: hidden;
+ }
+ .mel-dialog-wrap.is-fullscreen {
+     width: 100%;
+     height: 100%;
+     max-width: 100%;
+     border-radius: 0;
+     top: 0;
+     left: 0;
+     -ms-transform: none;
+     -webkit-transform: none;
+             transform: none;
+ }
+ 
+ /* header：有关闭按钮时右侧预留空间，避免标题被关闭按钮遮挡 */
+ .mel-dialog-header {
+     padding: 14px 18px;
+     background: #fff;
+ }
+ .mel-dialog-header.has-close {
+     padding-right: 42px;
+ }
+ .mel-dialog-title {
+     font-size: 16px;
+     color: #333;
+     text-align: left;
+ }
+ 
+ /* 警示图标（type参数）：渲染在内容（message）前 */
+ .mel-dialog-body-icon {
+     font-style: normal;
+     margin-right: 8px;
+ }
+ .mel-icon-success { color: #67c23a; }
+ .mel-icon-warning { color: #e6a23c; }
+ .mel-icon-error { color: #f56c6c; }
+ .mel-icon-info { color: #409eff; }
+ 
+ /* 关闭按钮：30px热区贴右上角，伪元素画叉（1px细线） */
+ .mel-dialog-close {
+     position: absolute;
+     z-index: 10;
+     top: 0;
+     right: 0;
+     width: 30px;
+     height: 30px;
+     background-color: #fff;
+     cursor: pointer;
+ }
+ .mel-dialog-close::before,
+ .mel-dialog-close::after {
+     content: '';
+     position: absolute;
+     left: 50%;
+     top: 50%;
+     width: 14px;
+     height: 1px;
+     background-color: #909399;
+ }
+ .mel-dialog-close::before {
+     -ms-transform: translate(-50%, -50%) rotate(45deg);
+     -webkit-transform: translate(-50%, -50%) rotate(45deg);
+             transform: translate(-50%, -50%) rotate(45deg);
+ }
+ .mel-dialog-close::after {
+     -ms-transform: translate(-50%, -50%) rotate(-45deg);
+     -webkit-transform: translate(-50%, -50%) rotate(-45deg);
+             transform: translate(-50%, -50%) rotate(-45deg);
+ }
+ .mel-dialog-close:hover::before,
+ .mel-dialog-close:hover::after {
+     background-color: #409eff;
+ }
+ 
+ /* 内容区：默认16px；内容统一包裹在 inner 中 */
+ .mel-dialog-body {
+     padding: 16px 18px 20px;
+     font-size: 16px;
+     color: #333;
+     text-align: left;
+     min-height: 100px;
+     -webkit-box-sizing: border-box;
+             box-sizing: border-box;
+ }
+ 
+ /* 内容垂直居中：无标题弹窗、手机模式 message 共用 */
+ .mel-dialog-body.vert-center {
+     display: table;
+     width: 100%;
+     min-height: 130px;
+ }
+ .mel-dialog-body.vert-center .mel-dialog-body-inner {
+     display: table-cell;
+     vertical-align: middle;
+ }
+ 
+ /* 居中布局 */
+ .mel-dialog-wrap.layout-center .mel-dialog-title,
+ .mel-dialog-wrap.layout-center .mel-dialog-body {
+     text-align: center;
+ }
+ .mel-dialog-wrap.layout-center .mel-dialog-footer {
+     text-align: center;
+ }
+ .mel-dialog-wrap.text-center .mel-dialog-body {
+     text-align: center;
+ }
+ 
+ /* prompt 输入区 */
+ .mel-dialog-input-wrap {
+     margin-top: 14px;
+     position: relative;
+ }
+ .mel-dialog-input,
+ .mel-dialog-textarea {
+     width: 100%;
+     -webkit-box-sizing: border-box;
+             box-sizing: border-box;
+     padding: 9px 12px;
+     border: 1px solid #dcdfe6;
+     border-radius: 4px;
+     font-size: 14px;
+     outline: none;
+     background: #fff;
+ }
+ .mel-dialog-textarea {
+     resize: none;
+     min-height: 80px;
+ }
+ .mel-dialog-input-unit {
+     position: absolute;
+     right: 4px;
+     top: 50%;
+     -ms-transform: translateY(-50%);
+     -webkit-transform: translateY(-50%);
+             transform: translateY(-50%);
+     color: #606266;
+     font-size: 14px;
+     pointer-events: none;
+ }
+ 
+ /* 底部按钮区：inline-block + text-align，兼容IE9无flex */
+ .mel-dialog-footer {
+     padding: 14px 18px;
+     text-align: right;
+ }
+ .mel-dialog-footer .mel-dialog-btn {
+     display: inline-block;
+     margin-left: 12px;
+ }
+ .mel-dialog-footer .mel-dialog-btn:first-child {
+     margin-left: 0;
+ }
+ .mel-dialog-footer-vert .mel-dialog-btn {
+     display: block;
+     margin-left: auto;
+ }
+ .mel-dialog-footer-vert .mel-dialog-btn + .mel-dialog-btn {
+     margin-top: 10px;
+ }
+ 
+ /* 通栏铺满：横向时每按钮宽度由JS按数量等分计算；竖向+通栏才垂直堆叠每按钮100% */
+ .mel-dialog-footer-full {
+     padding: 14px 18px;
+     text-align: center;
+ }
+ .mel-dialog-footer-full .mel-dialog-btn {
+     display: inline-block;
+     margin-left: 0;
+     vertical-align: middle;
+     -webkit-box-sizing: border-box;
+             box-sizing: border-box;
+ }
+ .mel-dialog-footer-vert.mel-dialog-footer-full .mel-dialog-btn {
+     display: block;
+     width: 100%;
+     margin-left: auto;
+ }
+ .mel-dialog-footer-vert.mel-dialog-footer-full .mel-dialog-btn + .mel-dialog-btn {
+     margin-top: 10px;
+ }
+ 
+ /* 按钮 */
+ .mel-dialog-btn {
+     padding: 8px 16px;
+     border: 1px solid #dcdfe6;
+     border-radius: 4px;
+     cursor: pointer;
+     font-size: 14px;
+     white-space: nowrap;
+     background: #fff;
+     color: #606266;
+     outline: none;
+ }
+ .mel-dialog-btn:disabled {
+     opacity: 0.6;
+     filter: alpha(opacity=60);
+     cursor: not-allowed;
+ }
+ .mel-btn-info,
+ .mel-btn-primary {
+     background: #409eff;
+     color: #fff;
+     border-color: #409eff;
+ }
+ .mel-btn-success {
+     background: #67c23a;
+     color: #fff;
+     border-color: #67c23a;
+ }
+ .mel-btn-warning {
+     background: #e6a23c;
+     color: #fff;
+     border-color: #e6a23c;
+ }
+ .mel-btn-danger {
+     background: #f56c6c;
+     color: #fff;
+     border-color: #f56c6c;
+ }
+ /* 实心主题按钮 hover：统一透明度（IE兼容写法） */
+ .mel-btn-info:hover,
+ .mel-btn-primary:hover,
+ .mel-btn-success:hover,
+ .mel-btn-warning:hover,
+ .mel-btn-danger:hover {
+     opacity: 0.8;
+     filter: alpha(opacity=80);
+ }
+ 
+ /* 取消按钮 plain 样式，颜色跟随弹窗主题（非phone模式） */
+ .mel-dialog-wrap.theme-info .mel-dialog-btn.mel-btn-default,
+ .mel-dialog-wrap.theme-primary .mel-dialog-btn.mel-btn-default {
+     border-color: #b3d8ff;
+     color: #409eff;
+ }
+ .mel-dialog-wrap.theme-info .mel-dialog-btn.mel-btn-default:hover,
+ .mel-dialog-wrap.theme-primary .mel-dialog-btn.mel-btn-default:hover {
+     background-color: #ecf5ff;
+     border-color: #409eff;
+ }
+ .mel-dialog-wrap.theme-success .mel-dialog-btn.mel-btn-default {
+     border-color: #b3e19d;
+     color: #67c23a;
+ }
+ .mel-dialog-wrap.theme-success .mel-dialog-btn.mel-btn-default:hover {
+     background-color: #f0f9eb;
+     border-color: #67c23a;
+ }
+ .mel-dialog-wrap.theme-warning .mel-dialog-btn.mel-btn-default {
+     border-color: #f3d19e;
+     color: #e6a23c;
+ }
+ .mel-dialog-wrap.theme-warning .mel-dialog-btn.mel-btn-default:hover {
+     background-color: #fdf6ec;
+     border-color: #e6a23c;
+ }
+ .mel-dialog-wrap.theme-danger .mel-dialog-btn.mel-btn-default {
+     border-color: #fbc4c4;
+     color: #f56c6c;
+ }
+ .mel-dialog-wrap.theme-danger .mel-dialog-btn.mel-btn-default:hover {
+     background-color: #fef0f0;
+     border-color: #f56c6c;
+ }
+ .mel-dialog-wrap.theme-default .mel-dialog-btn.mel-btn-default {
+     border-color: #d3d4d6;
+     color: #909399;
+ }
+ .mel-dialog-wrap.theme-default .mel-dialog-btn.mel-btn-default:hover {
+     background-color: #f4f4f5;
+     border-color: #909399;
+ }
+ 
+ /* phone 手机模式：关闭按钮隐藏、按钮文字样式、取消按钮固定灰色 */
+ .mel-dialog-wrap.is-phone .mel-dialog-close {
+     display: none;
+ }
+ .mel-dialog-wrap.is-phone .mel-dialog-btn {
+     background: transparent;
+     border: none;
+     font-size: 15px;
+ }
+ .mel-dialog-wrap.is-phone .mel-btn-info,
+ .mel-dialog-wrap.is-phone .mel-btn-primary {
+     color: #409eff;
+ }
+ .mel-dialog-wrap.is-phone .mel-btn-success {
+     color: #67c23a;
+ }
+ .mel-dialog-wrap.is-phone .mel-btn-warning {
+     color: #e6a23c;
+ }
+ .mel-dialog-wrap.is-phone .mel-btn-danger {
+     color: #f56c6c;
+ }
+ /* 取消按钮固定灰色：特异性需高于 theme 系列的 plain 配色规则 */
+ .mel-dialog-wrap.is-phone .mel-dialog-btn.mel-btn-default {
+     color: #909399;
+ }
+ .mel-dialog-wrap.is-phone .mel-dialog-footer {
+     border-top: 1px solid #ebeef5;
+     padding-top: 12px;
+ }
+ /* phone 通栏多按钮之间的分隔线（横向竖线、竖向横线） */
+ .mel-dialog-wrap.is-phone .mel-dialog-footer-full .mel-dialog-btn + .mel-dialog-btn {
+     border-left: 1px solid #ebeef5;
+ }
+ .mel-dialog-wrap.is-phone .mel-dialog-footer-vert.mel-dialog-footer-full .mel-dialog-btn + .mel-dialog-btn {
+     border-left: none;
+     border-top: 1px solid #ebeef5;
+ }
+ /* phone 纯文字（message）垂直居中：复用 vert-center 机制 */
+ 
+ /* ========== 打开前转圈（animate参数，组件私有） ========== */
+ .mel-animate-mask {
+     position: fixed;
+     top: 0;
+     left: 0;
+     right: 0;
+     bottom: 0;
+     background: rgba(255, 255, 255, 0.7);
+     z-index: 10000;
+ }
+ .mel-animate-box {
+     position: absolute;
+     top: 50%;
+     left: 50%;
+     -ms-transform: translate(-50%, -50%);
+     -webkit-transform: translate(-50%, -50%);
+             transform: translate(-50%, -50%);
+     text-align: center;
+ }
+ .mel-animate-circle {
+     width: 36px;
+     height: 36px;
+     border: 3px solid #dcdfe6;
+     border-top-color: #409eff;
+     border-radius: 50%;
+     margin: 0 auto;
+ }
+ .mel-animate-text {
+     margin-top: 12px;
+     font-size: 14px;
+     color: #606266;
+ }
+ 
+ /* ========== Tip 消息提示（独立组件） ========== */
+ .mel-tip-mask {
+     position: fixed;
+     top: 0;
+     left: 0;
+     right: 0;
+     bottom: 0;
+     background: rgba(0, 0, 0, 0.5);
+     z-index: 10000;
+ }
+ .mel-tip-wrap {
+     position: fixed;
+     left: 50%;
+     -ms-transform: translateX(-50%);
+     -webkit-transform: translateX(-50%);
+             transform: translateX(-50%);
+     z-index: 10001;
+ }
+ .mel-tip-inner {
+     -webkit-box-sizing: border-box;
+             box-sizing: border-box;
+     min-width: 300px;
+     max-width: 520px;
+     padding: 14px 44px 14px 16px;
+     border-radius: 4px;
+     font-size: 14px;
+     position: relative;
+     background-color: #fff;
+     border: 1px solid #ebeef5;
+     color: #909399;
+ }
+ .mel-tip-inner.success {
+     background-color: #f0f9eb;
+     border: 1px solid #e1f3d8;
+     color: #67c23a;
+ }
+ .mel-tip-inner.warning {
+     background-color: #fdf6ec;
+     border: 1px solid #faecd8;
+     color: #e6a23c;
+ }
+ .mel-tip-inner.error {
+     background-color: #fef0f0;
+     border: 1px solid #fde2e2;
+     color: #f56c6c;
+ }
+ .mel-tip-inner.plain {
+     background-color: #fff;
+     border: 1px solid #ebeef5;
+     color: #303133;
+ }
+ .mel-tip-icon {
+     margin-right: 8px;
+ }
+ .mel-tip-close {
+     position: absolute;
+     right: 12px;
+     top: 50%;
+     -ms-transform: translateY(-50%);
+     -webkit-transform: translateY(-50%);
+             transform: translateY(-50%);
+     cursor: pointer;
+     font-size: 16px;
+     color: inherit;
+ }
+ .mel-tip-close:hover {
+     opacity: 0.7;
+     filter: alpha(opacity=70);
+ }
+ 
+ /* ========== Toast 轻提示（独立组件） ========== */
+ .mel-toast-wrap {
+     position: fixed;
+     left: 50%;
+     -ms-transform: translateX(-50%);
+     -webkit-transform: translateX(-50%);
+             transform: translateX(-50%);
+     z-index: 10002;
+ }
+ .mel-toast-inner {
+     -webkit-box-sizing: border-box;
+             box-sizing: border-box;
+     padding: 14px 20px;
+     border-radius: 6px;
+     font-size: 14px;
+     background-color: #fff;
+     border: 1px solid #ebeef5;
+     color: #909399;
+ }
+ .mel-toast-inner.success {
+     background-color: #f0f9eb;
+     border: 1px solid #e1f3d8;
+     color: #67c23a;
+ }
+ .mel-toast-inner.warning {
+     background-color: #fdf6ec;
+     border: 1px solid #faecd8;
+     color: #e6a23c;
+ }
+ .mel-toast-inner.error {
+     background-color: #fef0f0;
+     border: 1px solid #fde2e2;
+     color: #f56c6c;
+ }
+ .mel-toast-inner.plain {
+     background-color: #fff;
+     border: 1px solid #ebeef5;
+     color: #303133;
+ }
+ .mel-toast-icon {
+     margin-right: 8px;
+ }
+ 
+ /* 位置 */
+ .mel-pos-top {
+     top: 20px;
+ }
+ .mel-pos-bottom {
+     bottom: 20px;
+ }
+ .mel-pos-center {
+     top: 50%;
+     -ms-transform: translateX(-50%) translateY(-50%);
+     -webkit-transform: translateX(-50%) translateY(-50%);
+             transform: translateX(-50%) translateY(-50%);
+ }
+ 
+ /* 移动端微调 */
+ @media screen and (max-width: 576px) {
+     .mel-dialog-wrap {
+         width: 90%;
+         max-width: 350px;
+         min-width: 0;
+     }
+     .mel-tip-inner {
+         min-width: 240px;
+         max-width: 92%;
+     }
+ }
+ 
 /**
  * ============================================================================
  * MelDatePicker 样式文件
