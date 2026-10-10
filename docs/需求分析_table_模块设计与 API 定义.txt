@@ -1,0 +1,474 @@
+# MelUi.Table 模块设计与 API 定义
+
+## 一、整体架构
+
+```
+┌──────────────────────────────────────────────────────┐
+│                    MelUi.Table                         │
+├──────────────────────────────────────────────────────┤
+│  插件层（Plugins，按需启用，全部打包在一个JS里）       │
+│  SerialNo / Checkbox / Sort / Pagination / Summary   │
+│  StateColumn / Export                                 │
+├──────────────────────────────────────────────────────┤
+│  核心层（Core，固定不变）                              │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │
+│  │DataStore │ │ Renderer │ │ EventBus │ │ Layout │ │
+│  │数据管理   │ │DOM渲染   │ │事件调度  │ │布局测量│ │
+│  └──────────┘ └──────────┘ └──────────┘ └────────┘ │
+├──────────────────────────────────────────────────────┤
+│  DOM层（原生 table）                                   │
+│  <table><thead>…</thead><tbody>…</tbody></table>     │
+└──────────────────────────────────────────────────────┘
+```
+
+**依赖关系单向向下**：插件 → 核心 → DOM。插件之间不直接通信，通过 EventBus 解耦。
+
+---
+
+## 二、文件划分
+
+**开发时内部拆分**（方便维护），**发布时 Rollup 打包成 1 个 js + 1 个 css**：
+
+```
+src/components/table/
+├── index.js              // 入口，挂载 MelUi.Table
+├── index.css             // 基础样式
+├── core/
+│   ├── table.js          // TableCore 主类
+│   ├── data-store.js     // DataStore 数据存储
+│   ├── renderer.js       // Renderer 渲染器
+│   ├── event-bus.js      // EventBus 事件总线
+│   └── layout.js         // Layout 布局（固定列、表头对齐）
+├── plugins/
+│   ├── plugin-base.js    // 插件基类
+│   ├── serial-no.js      // 序号列
+│   ├── checkbox.js       // 多选列
+│   ├── sort.js           // 排序
+│   ├── pagination.js     // 分页
+│   ├── summary.js        // 合计行/小计行
+│   ├── state-column.js   // 状态列
+│   └── export.js        // 导出Excel
+└── cell-renderers/
+    ├── text.js           // 纯文本
+    ├── input.js          // 单行输入
+    ├── textarea.js       // 多行输入
+    ├── radio.js          // 单选
+    ├── checkbox-cell.js   // 复选单元格
+    └── button.js         // 按钮
+demo/
+└── table-demo.html                   # 演示页面
+
+> 
+> 业务方只引入两个文件：`melui-table.js` + `melui-table.css`，所有插件都在里面。用不用某个插件，通过配置控制。
+
+---
+
+## 三、核心类设计
+
+### 3.1 构造方式
+
+```
+var table = new MelUi.Table(options);
+```
+
+### 3.2 配置项 options
+
+```
+{
+    // 必填
+    el: '#table-box',           // 容器选择器或DOM节点
+    columns: [],                // 列配置，见3.3
+    data: [],                   // 初始数据数组
+
+    // 外观
+    rowHeight: 40,              // 行高px，默认40
+    headerHeight: 40,            // 表头高度px，默认40
+    fixedLeftColumns: 0,        // 左侧固定列数，默认0（不固定）
+    bordered: true,             // 单元格边框，默认true
+    stripe: false,               // 隔行变色，默认false
+    hoverHighlight: true,        // 行hover高亮，默认true
+
+    // 插件
+    plugins: [],                 // 插件实例数组，见第六节
+
+    // 事件
+    events: {}                   // 事件回调，见第五节
+}
+```
+
+### 3.3 columns 列配置
+
+每一列是一个对象：
+
+```
+{
+    // ----- 基础 -----
+    field: 'mj',                 // 字段名（必填，唯一标识）
+    title: '面积',               // 列标题（必填）
+    subtitle: '(㎡)',            // 副标题（可选，显示在标题下方）
+    width: 100,                  // 列宽px（必填，固定值）
+    renderer: 'input',           // 渲染器类型（必填）
+                                 // 'text'      纯文本
+                                 // 'input'     单行输入框
+                                 // 'textarea'  多行输入框
+                                 // 'radio'     单选按钮组
+                                 // 'checkbox'  复选框
+                                 // 'button'    按钮
+                                 // 'custom'    自定义（需配render函数）
+    align: 'center',             // 对齐：'left'/'center'/'right'，默认'center'
+
+    // ----- 数据校验 -----
+    type: 'float',               // 数据类型（可选）
+                                 // 'string' 默认
+                                 // 'int' 正整数
+                                 // 'int[negative]' 正负整数
+                                 // 'float' 正小数
+                                 // 'float[negative]' 正负小数
+                                 // 'date' 日期
+    required: false,              // 是否必填，默认false
+    unique: false,                // 是否唯一值，默认false
+    digit: 2,                     // 小数位数（type为float时有效）
+
+    // ----- 编辑控制 -----
+    readonly: false,              // 是否只读，默认false
+    disabled: false,              // 是否禁用，默认false
+    defaultValue: '',             // 新增行时的默认值
+
+    // ----- 显示格式化 -----
+    formatter: function(value, rowData) {
+        // 自定义显示格式化，return 显示的文本
+        // 比如 value=1 显示成 '是'
+        return value == 1 ? '是' : '否';
+    },
+
+    // ----- 自定义渲染 -----
+    render: function(value, rowData, cellNode) {
+        // renderer='custom'时的自定义渲染函数
+        // return HTML字符串或DOM节点
+    },
+
+    // ----- renderer='button' 专用 -----
+    buttonText: '保存',           // 按钮文字
+    buttonIcon: 'save',            // 按钮图标（font-awesome类名，可选）
+
+    // ----- renderer='radio' 专用 -----
+    radioOptions: {yes: '是', no: '否'},  // 单选选项
+
+    // ----- 单元格点击回调 -----
+    onCellClick: function(rowData, cell) {
+        // 单元格点击（可选）
+    }
+}
+```
+
+---
+
+## 四、实例方法 API
+
+### 4.1 数据读取
+
+```
+// 获取整表数据
+// return: Array，每一项是一行数据对象
+//   [{xh_self: 'B1001', mj: 110.5, _status: 's'}, ...]
+table.getData();
+
+// 获取指定行数据
+// rowIndex: 行索引（从0开始）
+table.getRowData(rowIndex);
+
+// 获取选中行数据（需配合Checkbox插件）
+table.getSelectedData();
+
+// 获取有变动的行（新增 + 修改的行）
+// return: Array
+table.getDirtyData();
+```
+
+### 4.2 数据写入
+
+```
+// 设置某行某列的值
+table.setCellValue(rowIndex, field, value);
+
+// 批量设置某行多个列的值
+// data: {field1: val1, field2: val2}
+table.setRowData(rowIndex, data);
+
+// 新增一行
+// data: 行数据对象（可选，不传则用defaultValue生成空行）
+// position: 'last'（默认，追加到最后）/ 'first'（插入最前面）
+table.addRow(data, position);
+
+// 删除一行
+table.deleteRow(rowIndex);
+
+// 清空所有数据
+table.clearData();
+```
+
+### 4.3 状态操作
+
+```
+// 标记某行为已保存
+// rowIndex: 行索引，传 'all' 表示全部
+table.markSaved(rowIndex);
+
+// 设置某行某列为只读/可写
+table.setCellReadonly(rowIndex, field, readonly);
+
+// 全选/全不选/反选（需Checkbox插件）
+table.selectAll();
+table.selectNone();
+table.invertSelect();
+```
+
+### 4.4 校验
+
+```
+// 校验指定行必填项
+// rowIndex: 行索引，传 'all' 校验全部
+// return: String 错误提示文字，空字符串表示通过
+table.validate(rowIndex);
+
+// 校验唯一值列
+// return: String 错误提示文字，空字符串表示通过
+table.validateUnique();
+```
+
+### 4.5 渲染控制
+
+```
+// 重新渲染整个表格
+table.render();
+
+// 只重绘指定行（数据变了用这个，性能好）
+table.renderRow(rowIndex);
+
+// 只重绘指定单元格
+table.renderCell(rowIndex, field);
+
+// 销毁表格，解绑事件，清空DOM
+table.destroy();
+```
+
+### 4.6 事件绑定
+
+```
+// 绑定事件
+table.on(eventName, handler);
+
+// 解绑事件
+table.off(eventName, handler);
+```
+
+---
+
+## 五、事件系统
+
+事件通过 `table.on()` 绑定，或在 `options.events` 里配置：
+
+```
+events: {
+    // 单元格点击
+    onCellClick: function(rowData, cell) {
+        // rowData: 当前行数据
+        // cell: {rowIndex, field, value, element}
+    },
+
+    // 单元格值变化（用户输入时触发）
+    onCellChange: function(rowIndex, field, newValue, oldValue) {
+    },
+
+    // 行点击
+    onRowClick: function(rowData, rowIndex) {
+    },
+
+    // 行选中变化（需Checkbox插件）
+    onSelectChange: function(selectedRows) {
+    },
+
+    // 新增行后
+    onRowAdd: function(rowData, rowIndex) {
+    },
+
+    // 删除行后
+    onRowDelete: function(rowIndex, rowData) {
+    },
+
+    // 排序变化（需Sort插件）
+    onSort: function(field, order) {
+        // order: 'asc' / 'desc'
+    },
+
+    // 分页变化（需Pagination插件）
+    onPageChange: function(curpage, pagesize) {
+    }
+}
+```
+
+---
+
+## 六、插件机制
+
+### 6.1 使用方式
+
+```
+var table = new MelUi.Table({
+    el: '#table-box',
+    columns: columnsConfig,
+    data: dataList,
+    plugins: [
+        new MelUi.Table.plugins.SerialNo(),
+        new MelUi.Table.plugins.Checkbox(),
+        new MelUi.Table.plugins.Sort(),
+        new MelUi.Table.plugins.Pagination({
+            pageSize: 30,
+            pageMode: 'select'
+        }),
+        new MelUi.Table.plugins.Summary({
+            columns: ['mj', 'scjj']   // 需要合计的字段
+        }),
+        new MelUi.Table.plugins.StateColumn(),
+        new MelUi.Table.plugins.Export({
+            filename: '数据导出'
+        })
+    ]
+});
+```
+
+### 6.2 内置插件清单
+
+表格
+
+| 插件名 | 作用 | 关键配置 |
+| --- | --- | --- |
+| SerialNo | 序号列 | `width: 50` 序号列宽 |
+| Checkbox | 多选列 | `width: 40` 复选列宽 |
+| Sort | 表头排序 | `defaultField` 默认排序列 |
+| Pagination | 分页 | `pageSize`、`pageMode`、`pageListSize` |
+| Summary | 合计行 / 小计行 | `columns` 合计字段数组、`showSubtotal` 是否分组小计 |
+| StateColumn | 状态列 | `newText`、`unsaveText`、`savedText` |
+| Export | 导出 Excel | `filename`、`extension` |
+
+---
+
+## 七、DataStore 内部结构（核心层内部，业务方不用直接操作）
+
+```
+DataStore = {
+    // 列配置（只读）
+    columns: [],
+
+    // 行数据（核心，所有变更都改这里）
+    rows: [
+        {
+            // 业务字段
+            xh_self: 'B1001',
+            mj: 110.5,
+            area: '泉州',
+
+            // 内部字段（下划线开头）
+            _rowIndex: 0,        // 行索引
+            _status: 's',        // 'i'=新增 'u'=修改 's'=已保存
+            _selected: false,    // 是否选中
+            _node: null          // 对应DOM节点引用
+        }
+    ],
+
+    // UI状态
+    sortField: '',
+    sortOrder: '',
+    selectedRowIndexes: [],
+
+    // 内部方法
+    getRow: function(rowIndex) {},
+    setCell: function(rowIndex, field, value) {},
+    addRow: function(data, position) {},
+    removeRow: function(rowIndex) {},
+    getDirtyRows: function() {}
+}
+```
+
+---
+
+## 八、完整使用示例（业务方视角）
+
+```
+<div id="table-box"></div>
+
+<script>
+var columns = [
+    {field: 'xh_self', title: '编号', width: 80, renderer: 'text'},
+    {field: 'mj', title: '面积', subtitle: '(㎡)', width: 100,
+     renderer: 'input', type: 'float', digit: 2, required: true},
+    {field: 'area', title: '省市区', width: 150, renderer: 'input', readonly: true},
+    {field: 'scjj', title: '楼盘均价', width: 100,
+     renderer: 'input', type: 'float', required: true},
+    {field: 'check_wc', title: '是否完成', width: 80,
+     renderer: 'radio', radioOptions: {yes: '1', no: '0'},
+     formatter: function(v) { return v == '1' ? '是' : '否'; }},
+    {field: 'operation', title: '操作', width: 100,
+     renderer: 'button', buttonText: '保存',
+     onCellClick: function(rowData) {
+         alert('保存行：' + rowData.xh_self);
+     }}
+];
+
+var data = [
+    {xh_self: 'B1001', mj: 110.5, area: '泉州', scjj: 11000, check_wc: '1'},
+    {xh_self: 'B1002', mj: 150.47, area: '泉州', scjj: 12000, check_wc: '0'}
+];
+
+var table = new MelUi.Table({
+    el: '#table-box',
+    columns: columns,
+    data: data,
+    rowHeight: 40,
+    fixedLeftColumns: 1,
+    plugins: [
+        new MelUi.Table.plugins.SerialNo(),
+        new MelUi.Table.plugins.Checkbox(),
+        new MelUi.Table.plugins.StateColumn(),
+        new MelUi.Table.plugins.Summary({columns: ['mj', 'scjj']})
+    ],
+    events: {
+        onCellChange: function(rowIndex, field, newValue) {
+            console.log('单元格变了：', rowIndex, field, newValue);
+        }
+    }
+});
+
+// 保存按钮
+document.getElementById('btn-save').onclick = function() {
+    var dirtyData = table.getDirtyData();
+    console.log('需要保存的数据：', dirtyData);
+};
+</script>
+```
+
+---
+
+## 九、代码规范约束（写代码时遵守）
+
+1. 全部用 `var`，不用 `let`/`const`/ 箭头函数 / 模板字符串
+2. 不用 `Promise`/`async/await`
+3. 不用 `class`，用构造函数 + `prototype`
+4. 不用 `dataset`，用 `getAttribute`/`setAttribute`
+5. 不用 `classList`，用 `className` 字符串操作
+6. 事件全部委托到表格根节点，不逐个绑定
+7. 数据变更只改 DataStore，DOM 更新由 Renderer 负责
+8. HTML 字符串用数组 `join('\r\n')` 拼接
+9. 兼容 IE9 / IE10 / IE11 / Edge
+
+---
+
+## 十、第一版不做的功能（避免过度设计）
+
+- 虚拟滚动（第一版全部渲染，每页数据量可控）
+- 列宽拖拽（后续版本加）
+- 列显示 / 隐藏（后续版本加）
+- 行拖拽排序
+- Excel 复制粘贴
+- 树形表格
+- 任意位置固定列（只做左侧连续 N 列）

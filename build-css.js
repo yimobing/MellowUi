@@ -7,8 +7,8 @@ const cssnano = require('cssnano');
 // 公共基础样式数组，可以多个，后续扩展直接往数组追加
 // --------------------------
 const baseStyles = [
-  { name: 'mel-layout', src: 'src/styles/layout.css', outDir: 'dist' },
-  { name: 'mel-button', src: 'src/styles/button.css', outDir: 'dist' }
+  { name: 'layout', src: 'src/styles/layout.css', outDir: 'dist/common' },
+  { name: 'button', src: 'src/styles/button.css', outDir: 'dist/common' }
 ];
 
 // --------------------------

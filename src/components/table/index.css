@@ -1,0 +1,221 @@
+/**
+ * MelUi Table 表格组件 - 基础样式
+ * 兼容性：IE9 / IE10 / IE11 / Edge
+ * @Version：v1.2.0
+ * @Date：2026-10-10
+ * @Pubdate：2026-10-10
+ */
+
+/* ===== 容器 ===== */
+.mel-table-container {
+    position: relative;
+    width: 100%;
+    font-size: 13px;
+    color: #333;
+    font-family: "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+}
+
+/* ===== 表头 ===== */
+.mel-table-header-wrapper {
+    overflow: hidden;
+    background-color: #f5f7fa;
+    border-bottom: 1px solid #e4e7ed;
+    box-sizing: border-box;
+}
+
+.mel-table-header {
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.mel-table-header th {
+    padding: 10px 8px;
+    font-weight: 600;
+    text-align: center;
+    border-right: 1px solid #e4e7ed;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+}
+
+.mel-table-header th:last-child {
+    border-right: 0;
+}
+
+.mel-th-inner {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1.4;
+}
+
+.mel-th-title {
+    display: block;
+}
+
+.mel-th-subtitle {
+    display: block;
+    font-size: 11px;
+    color: #999;
+    font-style: normal;
+    margin-top: 2px;
+}
+
+/* ===== 表身 ===== */
+.mel-table-body-wrapper {
+    overflow: auto;
+    /* 高度由 bodyHeight 配置控制，不写死 */
+    box-sizing: border-box;
+}
+
+.mel-table-body {
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.mel-table-body td {
+    padding: 8px;
+    border-right: 1px solid #ebeef5;
+    border-bottom: 1px solid #ebeef5;
+    text-align: center;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.mel-table-body td:last-child {
+    border-right: 0;
+}
+
+.mel-table-body tr:last-child td {
+    border-bottom: 0;
+}
+
+/* ===== 对齐方式 ===== */
+.mel-align-left {
+    text-align: left !important;
+}
+
+.mel-align-center {
+    text-align: center !important;
+}
+
+.mel-align-right {
+    text-align: right !important;
+}
+
+/* ===== 边框 ===== */
+.mel-table-bordered .mel-table-header,
+.mel-table-bordered .mel-table-body {
+    border: 1px solid #ebeef5;
+}
+
+/* ===== 隔行变色 ===== */
+.mel-table-stripe .mel-table-body tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+/* ===== Hover高亮 ===== */
+.mel-table-hover .mel-table-body tr:hover {
+    background-color: #f5f7fa;
+}
+
+/* ===== 单元格内容 ===== */
+.mel-cell-text {
+    display: inline-block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+/* ===== 输入框 ===== */
+.mel-cell-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 5px 6px;
+    border: 1px solid #dcdfe6;
+    border-radius: 2px;
+    font-size: 13px;
+    outline: none;
+}
+
+.mel-cell-input:focus {
+    border-color: #409eff;
+}
+
+.mel-cell-input[readonly] {
+    background-color: #f5f7fa;
+    border-color: #e4e7ed;
+}
+
+.mel-cell-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 5px 6px;
+    border: 1px solid #dcdfe6;
+    border-radius: 2px;
+    font-size: 13px;
+    outline: none;
+    resize: vertical;
+    min-height: 30px;
+}
+
+.mel-cell-textarea:focus {
+    border-color: #409eff;
+}
+
+/* ===== 按钮 ===== */
+.mel-cell-button {
+    padding: 5px 10px;
+    border: 1px solid #dcdfe6;
+    border-radius: 2px;
+    background-color: #fff;
+    color: #606266;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.mel-cell-button:hover {
+    color: #409eff;
+    border-color: #c6e2ff;
+    background-color: #ecf5ff;
+}
+
+.mel-cell-button[disabled] {
+    cursor: not-allowed;
+    color: #c0c4cc;
+    border-color: #ebeef5;
+}
+
+/* ===== Radio 单选 ===== */
+.mel-radio-item {
+    display: inline-block;
+    margin-right: 10px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.mel-radio-item input[type="radio"] {
+    margin-right: 3px;
+    vertical-align: middle;
+}
+
+.mel-radio-item span {
+    vertical-align: middle;
+}
+
+/* ===== Checkbox 复选 ===== */
+.mel-cell-checkbox {
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+/* ===== 合计行 ===== */
+.mel-summary-row td {
+    background-color: #f5f7fa !important;
+    border-top: 2px solid #e4e7ed;
+}

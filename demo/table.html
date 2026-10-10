@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>MelUi Table 演示</title>
+    <link rel="stylesheet" href="../src/components/table/index.css">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 15px;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f0f2f5;
+        }
+        .toolbar {
+            margin-bottom: 15px;
+        }
+        .toolbar button {
+            margin-right: 8px;
+            margin-bottom: 8px;
+            padding: 6px 14px;
+            border: 1px solid #dcdfe6;
+            border-radius: 3px;
+            background-color: #fff;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .toolbar button:hover {
+            color: #409eff;
+            border-color: #c6e2ff;
+            background-color: #ecf5ff;
+        }
+        /* testing3 */
+        #table-box {
+            height: 800px;
+
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 4px;
+            font-size: 12px;
+            max-height: 200px;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+
+        /* 分页栏样式 */
+        .mel-pagination {
+            margin-top: 10px;
+            padding: 8px 0;
+            text-align: right;
+            font-size: 12px;
+            color: #606266;
+        }
+        .mel-page-info {
+            margin-right: 15px;
+        }
+        .mel-page-btn,
+        .mel-page-num {
+            display: inline-block;
+            padding: 4px 10px;
+            margin: 0 2px;
+            border: 1px solid #dcdfe6;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+        .mel-page-btn:hover,
+        .mel-page-num:hover {
+            color: #409eff;
+            border-color: #c6e2ff;
+        }
+        .mel-page-num.active {
+            color: #fff;
+            background-color: #409eff;
+            border-color: #409eff;
+        }
+        .mel-page-select {
+            padding: 4px 6px;
+            border: 1px solid #dcdfe6;
+            border-radius: 2px;
+        }
+
+        /* 合计行样式 */
+        .mel-summary-row td {
+            background-color: #f5f7fa !important;
+            border-top: 2px solid #e4e7ed;
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <button onclick="addRow()">新增一行</button>
+    <button onclick="saveData()">保存（只提交修改过的）</button>
+    <button onclick="saveAllData()">保存（保存所有行数据）</button>
+    <button onclick="selectAll()">全选</button>
+    <button onclick="selectNone()">全不选</button>
+    <button onclick="invertSelect()">反选</button>
+    <button onclick="exportData()">导出Excel</button>
+</div>
+
+<div id="table-box"></div>
+
+<div class="result" id="result"></div>
+
+<!-- 单元格渲染器 -->
+<script src="../src/components/table/cell-renderers/text.js"></script>
+<script src="../src/components/table/cell-renderers/input.js"></script>
+<script src="../src/components/table/cell-renderers/textarea.js"></script>
+<script src="../src/components/table/cell-renderers/radio.js"></script>
+<script src="../src/components/table/cell-renderers/checkbox-cell.js"></script>
+<script src="../src/components/table/cell-renderers/button.js"></script>
+
+<!-- 核心层 -->
+<script src="../src/components/table/core/data-store.js"></script>
+<script src="../src/components/table/core/event-bus.js"></script>
+<script src="../src/components/table/core/renderer.js"></script>
+<script src="../src/components/table/core/layout.js"></script>
+<script src="../src/components/table/core/table.js"></script>
+
+<!-- 插件 -->
+<script src="../src/components/table/plugins/plugin-base.js"></script>
+<script src="../src/components/table/plugins/serial-no.js"></script>
+<script src="../src/components/table/plugins/checkbox.js"></script>
+<script src="../src/components/table/plugins/state-column.js"></script>
+<script src="../src/components/table/plugins/sort.js"></script>
+<script src="../src/components/table/plugins/pagination.js"></script>
+<script src="../src/components/table/plugins/summary.js"></script>
+<script src="../src/components/table/plugins/export.js"></script>
+
+<!-- 入口 -->
+<script src="../src/components/table/index.js"></script>
+
+<script>
+    var table = null;
+
+    // 列配置
+    var columns = [
+        {field: 'xh_self', title: '编号', width: 80, renderer: 'text', align: 'center'},
+        {field: 'mj', title: '面积', subtitle: '(㎡)', width: 100, renderer: 'input', type: 'float', digit: 2, required: true, align: 'center'},
+        {field: 'area', title: '省市区', width: 200, renderer: 'input', readonly: true, align: 'left'},
+        {field: 'scjj', title: '楼盘均价', width: 200, renderer: 'input', type: 'float', required: true, align: 'right'},
+        {field: 'zje', title: '总金额', width: 120, renderer: 'input', type: 'float', digit: 2, align: 'right'},
+        {field: 'check_wc', title: '是否完成', width: 150, renderer: 'radio', radioOptions: {yes: '1', no: '0'}, formatter: function(v) { return v == '1' ? '是' : '否'; }, align: 'center'},
+        {field: 'remark', title: '备注', width: 150, renderer: 'textarea', align: 'left'},
+        {field: 'operation', title: '操作', width: 80, renderer: 'button', buttonText: '保存', align: 'center'}
+    ];
+
+    // 初始数据
+    var data = [];
+    for (var i = 1; i <= 25; i++) {
+        data.push({
+            xh_self: 'B10' + (100 + i),
+            mj: (80 + Math.random() * 100).toFixed(2),
+            area: '福建省-泉州市-丰泽区',
+            scjj: (9000 + Math.random() * 5000).toFixed(0),
+            zje: '',
+            check_wc: i % 2 === 0 ? '1' : '0',
+            remark: ''
+        });
+    }
+
+    // 初始化表格
+    table = MelUi.Table({
+        el: '#table-box',
+        fixedLeftColumns: 1,
+        headerHeight: 40,
+        rowHeight: 40,
+
+        // testing3
+        bodyHeight: 0, // 表身高度，0表示不限制，由el节点控制
+        showSelectAll: true,     // 多选列表头是否显示全选checkbox
+
+        bordered: true,
+        stripe: true,
+        hoverHighlight: true,
+        columns: columns,
+        data: data,
+        plugins: [
+            'SerialNo',
+            // 'Checkbox',
+            {name: 'Checkbox', width: 60 },
+            'StateColumn',
+            {name: 'Sort', defaultField: 'xh_self', defaultOrder: 'asc'},
+
+            /* testing3 */
+            {
+                name: 'Pagination', 
+                pageSize: 20, 
+                pageMode: 'list', 
+                position: 'fixed', // 'bottom'/'top'/'fixed'
+                align: 'center' // 'left'/'center'/'right'
+            },
+            {name: 'Summary', columns: ['mj', 'scjj', 'zje'], title: '合计', titleColumn: 2},
+            'Export'
+        ],
+        events: {
+            onCellChange: function(data) {
+                console.log('单元格变化：', data);
+            },
+            onCellClick: function(data) {
+                console.log('单元格点击：', data);
+            },
+            onPageChange: function(data) {
+                console.log('分页变化：', data);
+            },
+            onSort: function(data) {
+                console.log('排序变化：', data);
+            }
+        }
+    });
+
+    // 新增一行
+    function addRow() {
+        table.addRow({
+            xh_self: 'B20' + Math.floor(Math.random() * 900 + 100),
+            mj: '',
+            area: '福建省-泉州市-丰泽区',
+            scjj: '',
+            zje: '',
+            check_wc: '0',
+            remark: ''
+        }, 'last');
+    }
+
+    // 保存数据(只保存有修改过的数据)
+    function saveData() {
+        var dirtyData = table.getDirtyData();
+        document.getElementById('result').innerHTML =
+            '需要保存的数据（共' + dirtyData.length + '条）：\n' +
+            JSON.stringify(dirtyData, null, 2);
+
+        // 标记为已保存
+        table.markSaved('all');
+    }
+
+    // 保存数据(保存所有数据)
+    function saveAllData() {
+        var allData = table.getData();
+        document.getElementById('result').innerHTML =
+            '需要保存的数据（共' + allData.length + '条）：\n' +
+            JSON.stringify(allData, null, 2);
+
+        // 标记为已保存
+        table.markSaved('all');
+    }
+
+
+    // 全选
+    function selectAll() {
+        table.selectAll();
+    }
+
+    // 全不选
+    function selectNone() {
+        table.selectNone();
+    }
+
+    // 反选
+    function invertSelect() {
+        table.invertSelect();
+    }
+
+    // 导出Excel
+    function exportData() {
+        table._pluginInstances.forEach(function(plugin) {
+            if (plugin instanceof MelUi.Table.plugins.Export) {
+                plugin.export();
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
