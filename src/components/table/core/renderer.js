@@ -2,7 +2,7 @@
  * MelUi Table 表格组件 - 核心渲染器
  * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.2.1
+ * @Version：v1.4.2
  * @Date：2026-10-10
  * @Pubdate：2026-10-10
  */
@@ -78,7 +78,13 @@
         // 延迟等浏览器完成布局，再调整宽度和高度
         setTimeout(function() {
             self._adjustWrapperWidth(self._getTotalWidth());
-            self._adjustBodyHeight();
+
+            // fitViewport=true：自动适配视口，占满页面剩余高度
+            if (self.options.fitViewport) {
+                self._fitViewport();
+            } else {
+                self._adjustBodyHeight();
+            }
         }, 0);
 
         this.isRenderComplete = true;
@@ -191,7 +197,8 @@
     Renderer.prototype._adjustWrapperWidth = function(totalWidth) {
         if (!this.el) return;
 
-        var containerWidth = this.el.clientWidth;  // 用 clientWidth，不用 offsetWidth
+        // 用content区域宽度（减去padding）
+        var containerWidth = this._getContentWidth(this.el);
         var scrollbarWidth = this._getScrollbarWidth();
 
         if (totalWidth + scrollbarWidth <= containerWidth) {
@@ -255,13 +262,152 @@
     };
 
     /**
-     * 调整表身高度（等表头渲染完后调用）
-     * bodyHeight > 0：固定高度
-     * bodyHeight = 0/不设置，el 有高度：自动计算 = el内容高度 - 表头实际高度 - 分页栏高度
+     * 获取元素content区域高度（减去padding，兼容IE9）
+     */
+    Renderer.prototype._getContentHeight = function(el) {
+        if (!el) return 0;
+        var clientHeight = el.clientHeight;
+
+        // 获取padding
+        var paddingTop = 0;
+        var paddingBottom = 0;
+        if (window.getComputedStyle) {
+            var style = window.getComputedStyle(el);
+            paddingTop = parseInt(style.paddingTop, 10) || 0;
+            paddingBottom = parseInt(style.paddingBottom, 10) || 0;
+        } else if (el.currentStyle) {
+            paddingTop = parseInt(el.currentStyle.paddingTop, 10) || 0;
+            paddingBottom = parseInt(el.currentStyle.paddingBottom, 10) || 0;
+        }
+
+        return clientHeight - paddingTop - paddingBottom;
+    };
+
+    /**
+     * 获取元素content区域宽度（减去padding，兼容IE9）
+     */
+    Renderer.prototype._getContentWidth = function(el) {
+        if (!el) return 0;
+        var clientWidth = el.clientWidth;
+
+        var paddingLeft = 0;
+        var paddingRight = 0;
+        if (window.getComputedStyle) {
+            var style = window.getComputedStyle(el);
+            paddingLeft = parseInt(style.paddingLeft, 10) || 0;
+            paddingRight = parseInt(style.paddingRight, 10) || 0;
+        } else if (el.currentStyle) {
+            paddingLeft = parseInt(el.currentStyle.paddingLeft, 10) || 0;
+            paddingRight = parseInt(el.currentStyle.paddingRight, 10) || 0;
+        }
+
+        return clientWidth - paddingLeft - paddingRight;
+    };
+
+    /**
+     * 适配视口：自动计算el高度并占满视口剩余空间，监听窗口大小变化实时重新计算
+     */
+    Renderer.prototype._fitViewport = function() {
+        var self = this;
+
+        // 先计算一次
+        this._doFitViewport();
+
+        // 监听窗口大小变化（只绑定一次）
+        if (!this._resizeBound) {
+            this._resizeBound = true;
+            if (window.addEventListener) {
+                window.addEventListener('resize', function() {
+                    self._doFitViewport();
+                }, false);
+            } else if (window.attachEvent) {
+                window.attachEvent('onresize', function() {
+                    self._doFitViewport();
+                });
+            }
+        }
+    };
+
+    /**
+     * 实际执行视口适配
+     * 1.算出el应该多高 2.设置el高度 3.计算表身高度
+     */
+    Renderer.prototype._doFitViewport = function() {
+        if (!this.el) return;
+
+        // el距离视口顶部的距离（getBoundingClientRect IE9支持top）
+        var rect = this.el.getBoundingClientRect();
+        var top = rect.top;
+
+        // 视口高度
+        var winHeight = window.innerHeight || document.documentElement.clientHeight;
+
+        // el应该的总高度 = 视口高度 - 顶部距离 - 底部余量
+        var elTotalHeight = winHeight - top - 10;
+        if (elTotalHeight <= 0) return;
+
+        // 获取el的padding和border，根据box-sizing决定怎么设置height
+        var boxSizing = '';
+        var paddingTop = 0;
+        var paddingBottom = 0;
+        var borderTop = 0;
+        var borderBottom = 0;
+
+        if (window.getComputedStyle) {
+            var style = window.getComputedStyle(this.el);
+            boxSizing = style.boxSizing;
+            paddingTop = parseInt(style.paddingTop, 10) || 0;
+            paddingBottom = parseInt(style.paddingBottom, 10) || 0;
+            borderTop = parseInt(style.borderTopWidth, 10) || 0;
+            borderBottom = parseInt(style.borderBottomWidth, 10) || 0;
+        } else if (this.el.currentStyle) {
+            boxSizing = this.el.currentStyle.boxSizing;
+            paddingTop = parseInt(this.el.currentStyle.paddingTop, 10) || 0;
+            paddingBottom = parseInt(this.el.currentStyle.paddingBottom, 10) || 0;
+            borderTop = parseInt(this.el.currentStyle.borderTopWidth, 10) || 0;
+            borderBottom = parseInt(this.el.currentStyle.borderBottomWidth, 10) || 0;
+        }
+
+        if (boxSizing === 'border-box') {
+            // border-box：height已经包含padding和border，直接设置总高度
+            this.el.style.height = elTotalHeight + 'px';
+        } else {
+            // content-box（默认）：height只是content，要减去padding和border
+            var contentHeight = elTotalHeight - paddingTop - paddingBottom - borderTop - borderBottom;
+            this.el.style.height = contentHeight + 'px';
+        }
+
+        // el高度设置好后，延迟等浏览器完成reflow，再计算表身高度
+        var self = this;
+        setTimeout(function() {
+            self._doCalcBodyHeight();
+        }, 0);
+    };
+
+    /**
+     * 判断元素有没有明确设置高度（不是auto）
+     */
+    Renderer.prototype._hasExplicitHeight = function(el) {
+        if (!el) return false;
+
+        if (el.style.height && el.style.height !== 'auto') return true;
+
+        var height = '';
+        if (window.getComputedStyle) {
+            height = window.getComputedStyle(el).height;
+        } else if (el.currentStyle) {
+            height = el.currentStyle.height;
+        }
+
+        return height && height !== 'auto' && height !== '';
+    };
+
+    /**
+     * 调整表身高度入口
+     * 优先级：bodyHeight配置 > el明确高度 > 自然展开
      */
     Renderer.prototype._adjustBodyHeight = function() {
         var opts = this.options;
-        var self = this;
 
         // bodyHeight传了就固定高度
         if (opts.bodyHeight && opts.bodyHeight > 0) {
@@ -272,25 +418,35 @@
             return;
         }
 
+        // el有明确高度：自动计算
+        if (this._hasExplicitHeight(this.el)) {
+            this._doCalcBodyHeight();
+            return;
+        }
+
+        // el高度auto：不设置固定高度，自然展开
+    };
+
+    /**
+     * 实际计算并设置表身高度（统一方法，不重复代码）
+     * 公式：bodyHeight = el的content高度 - 表头高度 - 分页栏高度
+     */
+    Renderer.prototype._doCalcBodyHeight = function() {
         if (!this.el || !this.bodyWrapper) return;
 
-        // 用setTimeout延迟，等浏览器完成布局、分页栏渲染完，再计算
-        setTimeout(function() {
-            var elHeight = self.el.clientHeight;
-            if (elHeight <= 0) return;
+        var elHeight = this._getContentHeight(this.el);
+        if (elHeight <= 0) return;
 
-            var headerHeight = self.headerWrapper ? self.headerWrapper.offsetHeight : 40;
+        var headerHeight = this.headerWrapper ? this.headerWrapper.offsetHeight : 40;
 
-            // 读取分页栏实际高度（如果有）
-            var paginationDom = self.el.querySelector('.mel-pagination');
-            var paginationHeight = paginationDom ? paginationDom.offsetHeight : 0;
+        var paginationDom = this.el.querySelector('.mel-pagination');
+        var paginationHeight = paginationDom ? paginationDom.offsetHeight : 0;
 
-            var bodyHeight = elHeight - headerHeight - paginationHeight;
-            if (bodyHeight > 0) {
-                self.bodyWrapper.style.height = bodyHeight + 'px';
-                self.bodyWrapper.style.overflow = 'auto';
-            }
-        }, 0);
+        var bodyHeight = elHeight - headerHeight - paginationHeight;
+        if (bodyHeight > 0) {
+            this.bodyWrapper.style.height = bodyHeight + 'px';
+            this.bodyWrapper.style.overflow = 'auto';
+        }
     };
 
     /**

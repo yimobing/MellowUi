@@ -2,7 +2,7 @@
  * MelUi Table 表格组件 - 主类
  * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.1.0
+ * @Version：v1.3.0
  * @Date：2026-10-10
  * @Pubdate：2026-10-10
  */
@@ -21,7 +21,8 @@
             data: [],
             rowHeight: 40,
             headerHeight: 40,
-            bodyHeight: 0,          // 表身高度，0表示不限制，由el节点控制
+            bodyHeight: 0,          // 表身高度，默认0表示不限(可选)
+            fitViewport: false,     // 是否适配视口，true=自动占满页面剩余高度，页面不出现垂直滚动条(可选)
             fitWidth: false,         // 是否拉伸占满容器，false=列宽多少就多少
             fixedLeftColumns: 0,
             bordered: true,

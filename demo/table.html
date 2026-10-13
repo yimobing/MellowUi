@@ -12,6 +12,8 @@
             padding: 15px;
             font-family: "Microsoft YaHei", Arial, sans-serif;
             background-color: #f0f2f5;
+            overflow-y: hidden; 
+            /* testing3 */
         }
         .toolbar {
             margin-bottom: 15px;
@@ -33,9 +35,10 @@
         }
         /* testing3 */
         #table-box {
-            height: 800px;
+            /* height: 900px; */
 
             background-color: #fff;
+            border: 1px solid blue;
             padding: 10px;
             border-radius: 4px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -174,9 +177,12 @@
         headerHeight: 40,
         rowHeight: 40,
 
+        showSelectAll: false,     // 多选列表头是否显示全选checkbox
+
         // testing3
-        bodyHeight: 0, // 表身高度，0表示不限制，由el节点控制
-        showSelectAll: true,     // 多选列表头是否显示全选checkbox
+        bodyHeight: 900, // 表身高度，0表示不限制，由el节点控制
+        fitViewport: false,     // 是否适配视口，true=自动占满页面剩余高度，页面不出现垂直滚动条(可选)
+        fitWidth: false,         // 是否拉伸占满容器，false=列宽多少就多少
 
         bordered: true,
         stripe: true,
