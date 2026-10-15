@@ -2,7 +2,7 @@
  * MelUi Table 表格组件 - 核心渲染器
  * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.4.2
+ * @Version：v1.5.2
  * @Date：2026-10-10
  * @Pubdate：2026-10-10
  */
@@ -330,58 +330,106 @@
 
     /**
      * 实际执行视口适配
-     * 1.算出el应该多高 2.设置el高度 3.计算表身高度
+     * el目标高度 = 视口高度 - 顶部内容高度(el到视口顶) - 底部内容高度(el后续兄弟元素)
+     * 全程不读取el现有高度，同步计算准确
      */
     Renderer.prototype._doFitViewport = function() {
         if (!this.el) return;
 
-        // el距离视口顶部的距离（getBoundingClientRect IE9支持top）
-        var rect = this.el.getBoundingClientRect();
-        var top = rect.top;
-
         // 视口高度
         var winHeight = window.innerHeight || document.documentElement.clientHeight;
 
-        // el应该的总高度 = 视口高度 - 顶部距离 - 底部余量
-        var elTotalHeight = winHeight - top - 10;
-        if (elTotalHeight <= 0) return;
+        // 顶部内容高度 = el到视口顶部的距离
+        var top = this.el.getBoundingClientRect().top;
 
-        // 获取el的padding和border，根据box-sizing决定怎么设置height
-        var boxSizing = '';
-        var paddingTop = 0;
-        var paddingBottom = 0;
-        var borderTop = 0;
-        var borderBottom = 0;
+        // 底部内容高度 = el后面所有兄弟元素的高度(含margin)
+        var bottom = 0;
+        var sib = this.el.nextSibling;
+        while (sib) {
+            if (sib.nodeType === 1) {
+                bottom += sib.offsetHeight;
+                var s = window.getComputedStyle ? window.getComputedStyle(sib) : sib.currentStyle;
+                if (s) {
+                    bottom += parseInt(s.marginTop, 10) || 0;
+                    bottom += parseInt(s.marginBottom, 10) || 0;
+                }
+            }
+            sib = sib.nextSibling;
+        }
 
+        // el目标border-box总高度 = 视口高度 - 顶部 - 底部
+        var elTargetBox = winHeight - top - bottom;
+
+        this._applyLayout(elTargetBox);
+    };
+
+    /**
+     * 统一布局推算（唯一一套推算逻辑，不重复）
+     * 传入el目标border-box高度，依次推算container和bodyWrapper高度
+     * el高度保持auto，由container和分页栏自然撑开
+     */
+    Renderer.prototype._applyLayout = function(elTargetBox) {
+        if (!this.el || !this.container || !this.bodyWrapper) return;
+        if (elTargetBox <= 0) return;
+
+        // 读取el的padding和border
+        var es = this._getBoxInfo(this.el);
+
+        // el的content区域高度
+        var elContent = elTargetBox - es.paddingTop - es.paddingBottom - es.borderTop - es.borderBottom;
+
+        // 读取分页栏高度（已渲染好）
+        var paginationDom = this.el.querySelector('.mel-pagination');
+        var paginationHeight = paginationDom ? paginationDom.offsetHeight : 0;
+
+        // container目标border-box高度 = el content高度 - 分页栏高度
+        var containerTargetBox = elContent - paginationHeight;
+        if (containerTargetBox <= 0) return;
+
+        this.container.style.boxSizing = 'border-box';
+        this.container.style.height = containerTargetBox + 'px';
+
+        // 读取container自己的border
+        var cs = this._getBoxInfo(this.container);
+
+        // 表头实际高度
+        var headerHeight = this.headerWrapper ? this.headerWrapper.offsetHeight : 40;
+
+        // bodyWrapper目标border-box高度 = container高度 - container border上下 - 表头高度
+        var bodyHeight = containerTargetBox - cs.borderTop - cs.borderBottom - headerHeight;
+        if (bodyHeight > 0) {
+            this.bodyWrapper.style.height = bodyHeight + 'px';
+            this.bodyWrapper.style.overflow = 'auto';
+        }
+    };
+
+    /**
+     * 获取元素的padding和border尺寸（兼容IE9，用currentStyle）
+     */
+    Renderer.prototype._getBoxInfo = function(el) {
+        var info = {
+            paddingTop: 0, paddingBottom: 0, borderTop: 0, borderBottom: 0,
+            paddingLeft: 0, paddingRight: 0, borderLeft: 0, borderRight: 0
+        };
+
+        var s = null;
         if (window.getComputedStyle) {
-            var style = window.getComputedStyle(this.el);
-            boxSizing = style.boxSizing;
-            paddingTop = parseInt(style.paddingTop, 10) || 0;
-            paddingBottom = parseInt(style.paddingBottom, 10) || 0;
-            borderTop = parseInt(style.borderTopWidth, 10) || 0;
-            borderBottom = parseInt(style.borderBottomWidth, 10) || 0;
-        } else if (this.el.currentStyle) {
-            boxSizing = this.el.currentStyle.boxSizing;
-            paddingTop = parseInt(this.el.currentStyle.paddingTop, 10) || 0;
-            paddingBottom = parseInt(this.el.currentStyle.paddingBottom, 10) || 0;
-            borderTop = parseInt(this.el.currentStyle.borderTopWidth, 10) || 0;
-            borderBottom = parseInt(this.el.currentStyle.borderBottomWidth, 10) || 0;
+            s = window.getComputedStyle(el);
+        } else if (el.currentStyle) {
+            s = el.currentStyle;
         }
+        if (!s) return info;
 
-        if (boxSizing === 'border-box') {
-            // border-box：height已经包含padding和border，直接设置总高度
-            this.el.style.height = elTotalHeight + 'px';
-        } else {
-            // content-box（默认）：height只是content，要减去padding和border
-            var contentHeight = elTotalHeight - paddingTop - paddingBottom - borderTop - borderBottom;
-            this.el.style.height = contentHeight + 'px';
-        }
+        info.paddingTop = parseInt(s.paddingTop, 10) || 0;
+        info.paddingBottom = parseInt(s.paddingBottom, 10) || 0;
+        info.borderTop = parseInt(s.borderTopWidth, 10) || 0;
+        info.borderBottom = parseInt(s.borderBottomWidth, 10) || 0;
+        info.paddingLeft = parseInt(s.paddingLeft, 10) || 0;
+        info.paddingRight = parseInt(s.paddingRight, 10) || 0;
+        info.borderLeft = parseInt(s.borderLeftWidth, 10) || 0;
+        info.borderRight = parseInt(s.borderRightWidth, 10) || 0;
 
-        // el高度设置好后，延迟等浏览器完成reflow，再计算表身高度
-        var self = this;
-        setTimeout(function() {
-            self._doCalcBodyHeight();
-        }, 0);
+        return info;
     };
 
     /**
@@ -418,35 +466,13 @@
             return;
         }
 
-        // el有明确高度：自动计算
+        // el有明确高度：el目标高度=el实际border-box高度，交给统一方法推算
         if (this._hasExplicitHeight(this.el)) {
-            this._doCalcBodyHeight();
+            this._applyLayout(this.el.offsetHeight);
             return;
         }
 
         // el高度auto：不设置固定高度，自然展开
-    };
-
-    /**
-     * 实际计算并设置表身高度（统一方法，不重复代码）
-     * 公式：bodyHeight = el的content高度 - 表头高度 - 分页栏高度
-     */
-    Renderer.prototype._doCalcBodyHeight = function() {
-        if (!this.el || !this.bodyWrapper) return;
-
-        var elHeight = this._getContentHeight(this.el);
-        if (elHeight <= 0) return;
-
-        var headerHeight = this.headerWrapper ? this.headerWrapper.offsetHeight : 40;
-
-        var paginationDom = this.el.querySelector('.mel-pagination');
-        var paginationHeight = paginationDom ? paginationDom.offsetHeight : 0;
-
-        var bodyHeight = elHeight - headerHeight - paginationHeight;
-        if (bodyHeight > 0) {
-            this.bodyWrapper.style.height = bodyHeight + 'px';
-            this.bodyWrapper.style.overflow = 'auto';
-        }
     };
 
     /**
