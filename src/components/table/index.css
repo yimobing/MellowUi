@@ -1,9 +1,9 @@
 /**
  * MelUi Table 表格组件 - 基础样式
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.2.0
+ * @Version：v1.3.0
  * @Date：2026-10-10
- * @Pubdate：2026-10-10
+ * @PubDate：2026-11-02
  */
 
 /* ===== 容器 ===== */
@@ -218,4 +218,58 @@
 .mel-summary-row td {
     background-color: #f5f7fa !important;
     border-top: 2px solid #e4e7ed;
+}
+
+/* ===== 分页 ===== */
+.mel-pagination {
+    padding: 10px 0;
+    font-size: 13px;
+    color: #606266;
+    background-color: #fff;
+}
+
+.mel-pagination-align-left {
+    text-align: left;
+}
+
+.mel-pagination-align-center {
+    text-align: center;
+}
+
+.mel-pagination-align-right {
+    text-align: right;
+}
+
+.mel-pagination-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+}
+
+.mel-pagination-total {
+    margin-right: 15px;
+}
+
+.mel-page-btn,
+.mel-page-num {
+    display: inline-block;
+    padding: 3px 8px;
+    margin: 0 2px;
+    border: 1px solid #dcdfe6;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.mel-page-num.active {
+    background-color: #409eff;
+    color: #fff;
+    border-color: #409eff;
+}
+
+.mel-page-select {
+    padding: 3px 6px;
+    border: 1px solid #dcdfe6;
+    border-radius: 2px;
 }

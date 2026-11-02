@@ -2,12 +2,12 @@
  * MelUi Table 表格组件 - 核心渲染器
  * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.5.2
+ * @Version：v1.7.3
  * @Date：2026-10-10
  * @Pubdate：2026-10-10
  */
 
-(function(MelUi) {
+ (function(MelUi) {
 
     /**
      * Renderer 构造函数
@@ -78,6 +78,9 @@
         // 延迟等浏览器完成布局，再调整宽度和高度
         setTimeout(function() {
             self._adjustWrapperWidth(self._getTotalWidth());
+
+            // 统一绑定窗口resize（所有模式都刷新水平宽度；fitViewport额外刷新垂直高度）
+            self._bindResize();
 
             // fitViewport=true：自动适配视口，占满页面剩余高度
             if (self.options.fitViewport) {
@@ -192,23 +195,80 @@
     };
 
     /**
-     * 动态调整 wrapper 宽度
+     * 动态调整 wrapper 宽度（接入 fitWidth 参数）
+     * fitWidth=false：固定列宽模式，使用columns配置的固定px列宽
+     * fitWidth=true ：弹性自适应模式，以各列width为权重，按容器宽度分配百分比填满容器
      */
     Renderer.prototype._adjustWrapperWidth = function(totalWidth) {
         if (!this.el) return;
 
+        var opts = this.options;
+
+        // fitWidth=true：弹性自适应，始终填满容器（不看列总宽与容器的比较）
+        if (opts.fitWidth) {
+            if (this.headerWrapper) this.headerWrapper.style.width = '100%';
+            if (this.bodyWrapper) this.bodyWrapper.style.width = '100%';
+            if (this.headerTable) this.headerTable.style.width = '100%';
+            if (this.bodyTable) this.bodyTable.style.width = '100%';
+            // 各列按原列宽比例分配百分比，填满容器
+            this._applyFitWidthCols(totalWidth);
+            return;
+        }
+
+        // fitWidth=false：固定列宽模式，使用columns配置的固定px列宽
         // 用content区域宽度（减去padding）
         var containerWidth = this._getContentWidth(this.el);
         var scrollbarWidth = this._getScrollbarWidth();
 
         if (totalWidth + scrollbarWidth <= containerWidth) {
-            // 加2px安全余量，防止边框/padding/滚动条误差导致出现水平滚动条
+            // 列总宽不足容器宽度：wrapper=列总宽+滚动条宽+2px安全余量，表格右侧留白，不出水平滚动条
             var wrapperWidth = totalWidth + scrollbarWidth + 2;
             if (this.headerWrapper) this.headerWrapper.style.width = wrapperWidth + 'px';
             if (this.bodyWrapper) this.bodyWrapper.style.width = wrapperWidth + 'px';
+            if (this.headerTable) this.headerTable.style.width = totalWidth + 'px';
+            if (this.bodyTable) this.bodyTable.style.width = totalWidth + 'px';
         } else {
+            // 列总宽超过容器宽度：wrapper撑满容器，表格保持列总宽，出现水平滚动
             if (this.headerWrapper) this.headerWrapper.style.width = '100%';
             if (this.bodyWrapper) this.bodyWrapper.style.width = '100%';
+            if (this.headerTable) this.headerTable.style.width = totalWidth + 'px';
+            if (this.bodyTable) this.bodyTable.style.width = totalWidth + 'px';
+        }
+    };
+
+    /**
+     * fitWidth=true 时，把每列宽度改为按原列宽比例分配百分比，填满容器
+     */
+    Renderer.prototype._applyFitWidthCols = function(totalWidth) {
+        if (totalWidth <= 0) return;
+
+        var columns = this.dataStore.columns;
+        var percents = [];
+        for (var i = 0; i < columns.length; i++) {
+            var w = columns[i].width || 100;
+            percents.push((w / totalWidth * 100) + '%');
+        }
+
+        // 表头 colgroup
+        if (this.headerTable) {
+            var hcg = this.headerTable.querySelector('colgroup');
+            if (hcg) {
+                var cols = hcg.children;
+                for (var j = 0; j < cols.length && j < percents.length; j++) {
+                    cols[j].style.width = percents[j];
+                }
+            }
+        }
+
+        // 表身 colgroup
+        if (this.bodyTable) {
+            var bcg = this.bodyTable.querySelector('colgroup');
+            if (bcg) {
+                var cols2 = bcg.children;
+                for (var k = 0; k < cols2.length && k < percents.length; k++) {
+                    cols2[k].style.width = percents[k];
+                }
+            }
         }
     };
 
@@ -305,36 +365,93 @@
     };
 
     /**
-     * 适配视口：自动计算el高度并占满视口剩余空间，监听窗口大小变化实时重新计算
+     * 强制 el 高度为 auto!important（兼容IE9）
+     * 场景：fitViewport=true 或 (fitViewport=false && bodyHeight>0)
+     * 作用：忽略外部CSS给el写死的固定高度，让el由内部内容(表头+表身+分页)自然撑开
+     */
+    Renderer.prototype._forceElAutoHeight = function() {
+        if (!this.el) return;
+
+        var css = this.el.style.cssText;
+        if (css && css.indexOf('height') === -1) {
+            // 用 cssText 拼上 auto!important，兼容IE9（IE9 不认 style.height='auto!important'）
+            this.el.style.cssText = css + ';height:auto!important';
+        } else if (!css) {
+            this.el.style.height = 'auto';
+        }
+    };
+
+    /**
+     * 适配视口：接管body垂直滚动，自动计算el高度并占满视口剩余空间
      */
     Renderer.prototype._fitViewport = function() {
         var self = this;
 
+        // 接管body垂直滚动：保存原始值，强制hidden，保证页面不出现垂直滚动条、表格在一屏内展示
+        if (this._bodyOverflow === undefined) {
+            this._bodyOverflow = document.body.style.overflowY || document.body.style.overflow || '';
+            document.body.style.overflowY = 'hidden';
+        }
+
         // 先计算一次
         this._doFitViewport();
+    };
 
-        // 监听窗口大小变化（只绑定一次）
-        if (!this._resizeBound) {
-            this._resizeBound = true;
-            if (window.addEventListener) {
-                window.addEventListener('resize', function() {
-                    self._doFitViewport();
-                }, false);
-            } else if (window.attachEvent) {
-                window.attachEvent('onresize', function() {
-                    self._doFitViewport();
-                });
-            }
+    /**
+     * 统一绑定窗口resize（节流）
+     * 所有模式都刷新水平宽度(_adjustWrapperWidth)；fitViewport=true时额外刷新垂直高度(_doFitViewport)
+     */
+    Renderer.prototype._bindResize = function() {
+        if (this._resizeBound) return;
+        this._resizeBound = true;
+
+        var self = this;
+        var timer = null;
+
+        var handler = function() {
+            if (timer) return;
+            timer = setTimeout(function() {
+                timer = null;
+                self._handleResize();
+            }, 60);
+        };
+
+        this._resizeHandler = handler;
+
+        if (window.addEventListener) {
+            window.addEventListener('resize', handler, false);
+        } else if (window.attachEvent) {
+            window.attachEvent('onresize', handler);
+        }
+    };
+
+    /**
+     * 窗口resize实际刷新
+     */
+    Renderer.prototype._handleResize = function() {
+        if (!this.el || !this.bodyWrapper) return;
+
+        // 水平布局刷新（所有模式都需要）
+        this._adjustWrapperWidth(this._getTotalWidth());
+
+        // 垂直高度刷新：仅fitViewport=true需要重新按视口计算
+        if (this.options.fitViewport) {
+            this._doFitViewport();
         }
     };
 
     /**
      * 实际执行视口适配
-     * el目标高度 = 视口高度 - 顶部内容高度(el到视口顶) - 底部内容高度(el后续兄弟元素)
-     * 全程不读取el现有高度，同步计算准确
+     * el目标高度 = 视口高度 - 顶部内容高度(el到视口顶) - 底部预留间隙(viewportBottomGap)
+     * 【关键】fitViewport只负责把整套表格组件(表头+表身+组件内分页)放进视口；
+     * el后续的外部兄弟元素(result等)不属于表格，不参与高度扣除，由页面正常滚动访问。
+     * 同时强制el高度auto!important，忽略外部CSS固定高度，由内容自然撑开。
      */
     Renderer.prototype._doFitViewport = function() {
         if (!this.el) return;
+
+        // 强制 el 高度 auto!important，忽略外部CSS固定高度（如 el{height:300px}）
+        this._forceElAutoHeight();
 
         // 视口高度
         var winHeight = window.innerHeight || document.documentElement.clientHeight;
@@ -342,23 +459,12 @@
         // 顶部内容高度 = el到视口顶部的距离
         var top = this.el.getBoundingClientRect().top;
 
-        // 底部内容高度 = el后面所有兄弟元素的高度(含margin)
-        var bottom = 0;
-        var sib = this.el.nextSibling;
-        while (sib) {
-            if (sib.nodeType === 1) {
-                bottom += sib.offsetHeight;
-                var s = window.getComputedStyle ? window.getComputedStyle(sib) : sib.currentStyle;
-                if (s) {
-                    bottom += parseInt(s.marginTop, 10) || 0;
-                    bottom += parseInt(s.marginBottom, 10) || 0;
-                }
-            }
-            sib = sib.nextSibling;
-        }
+        // 底部预留间隙 = viewportBottomGap（fitViewport模式下el与视口底边之间的空隙，露出body背景色）
+        var gap = this.options.viewportBottomGap || 0;
 
-        // el目标border-box总高度 = 视口高度 - 顶部 - 底部
-        var elTargetBox = winHeight - top - bottom;
+        // el目标border-box总高度 = 视口高度 - 顶部内容高度 - 底部预留间隙
+        // 说明：只把"el顶部到视口底部"这段空间分给表格整套组件；el后续外部元素不在视口配额内扣除
+        var elTargetBox = winHeight - top - gap;
 
         this._applyLayout(elTargetBox);
     };
@@ -367,6 +473,9 @@
      * 统一布局推算（唯一一套推算逻辑，不重复）
      * 传入el目标border-box高度，依次推算container和bodyWrapper高度
      * el高度保持auto，由container和分页栏自然撑开
+     * @param {Number} elTargetBox el目标border-box总高度
+     * 分页扣除逻辑：只要分页不是fixed定位(在普通文档流、与container同级)，都要在el可用高度里预留分页位置；
+     * 只有分页fixed(脱离文档流)才不扣除分页高度。
      */
     Renderer.prototype._applyLayout = function(elTargetBox) {
         if (!this.el || !this.container || !this.bodyWrapper) return;
@@ -378,9 +487,21 @@
         // el的content区域高度
         var elContent = elTargetBox - es.paddingTop - es.paddingBottom - es.borderTop - es.borderBottom;
 
-        // 读取分页栏高度（已渲染好）
-        var paginationDom = this.el.querySelector('.mel-pagination');
-        var paginationHeight = paginationDom ? paginationDom.offsetHeight : 0;
+        // 分页扣除逻辑：
+        // fitViewport=true：无论分页top/bottom/fixed，一律扣除分页高度。
+        //   - top/bottom：分页在视口内普通文档流，需要预留位置占位；
+        //   - fixed：分页悬浮覆盖视口底部，需为表身底部预留避让高度，否则表身底部行会被fixed分页遮挡。
+        // fitViewport=false：仅非fixed分页(top/bottom，与container同级普通流)才扣高度预留位置；fixed脱离文档流不扣。
+        // 分页位置由Pagination插件的position参数控制，插件init时已回填到 options._paginationPos
+        var fitViewport = this.options.fitViewport;
+        var paginationPos = this.options._paginationPos || 'bottom';
+        var needSubPagination = fitViewport ? true : (paginationPos !== 'fixed');
+
+        var paginationHeight = 0;
+        if (needSubPagination) {
+            var paginationDom = this.el.querySelector('.mel-pagination');
+            paginationHeight = paginationDom ? paginationDom.offsetHeight : 0;
+        }
 
         // container目标border-box高度 = el content高度 - 分页栏高度
         var containerTargetBox = elContent - paginationHeight;
@@ -392,8 +513,8 @@
         // 读取container自己的border
         var cs = this._getBoxInfo(this.container);
 
-        // 表头实际高度
-        var headerHeight = this.headerWrapper ? this.headerWrapper.offsetHeight : 40;
+        // 表头实际高度：读配置(headerHeight)，不写死数字；配置来自defaults合并结果
+        var headerHeight = this.options.headerHeight || 0;
 
         // bodyWrapper目标border-box高度 = container高度 - container border上下 - 表头高度
         var bodyHeight = containerTargetBox - cs.borderTop - cs.borderBottom - headerHeight;
@@ -459,6 +580,8 @@
 
         // bodyHeight传了就固定高度
         if (opts.bodyHeight && opts.bodyHeight > 0) {
+            // bodyHeight固定表身时，el高度由表头+表身+分页撑开，强制auto!important，忽略外部固定高度
+            this._forceElAutoHeight();
             if (this.bodyWrapper) {
                 this.bodyWrapper.style.height = opts.bodyHeight + 'px';
                 this.bodyWrapper.style.overflow = 'auto';
@@ -477,18 +600,22 @@
 
     /**
      * 初始化布局（固定列、滚动同步）
+     * 无条件绑定表身滚动事件：表身横向滚动时同步表头scrollLeft；
+     * fixedLeft>0时额外平移固定列。用事件监听注册，避免onscroll直接赋值被覆盖。
      */
     Renderer.prototype._initLayout = function() {
-        var fixedLeft = this.options.fixedLeftColumns || 0;
-        if (fixedLeft <= 0 || !this.bodyWrapper) return;
+        if (!this.bodyWrapper) return;
 
         var self = this;
+        var fixedLeft = this.options.fixedLeftColumns || 0;
 
-        this.bodyWrapper.onscroll = function() {
+        var onScroll = function() {
+            // 同步表头横向滚动
             if (self.headerWrapper) {
                 self.headerWrapper.scrollLeft = this.scrollLeft;
             }
 
+            // 固定列平移（左侧连续N列）
             if (fixedLeft > 0) {
                 var offset = -this.scrollLeft;
                 var trs = self.tbody ? self.tbody.children : [];
@@ -509,6 +636,15 @@
                 }
             }
         };
+
+        // 保存handler引用，destroy时移除
+        this._bodyScrollHandler = onScroll;
+
+        if (this.bodyWrapper.addEventListener) {
+            this.bodyWrapper.addEventListener('scroll', onScroll, false);
+        } else if (this.bodyWrapper.attachEvent) {
+            this.bodyWrapper.attachEvent('onscroll', onScroll);
+        }
     };
 
     /**
@@ -555,6 +691,13 @@
 
         this.theadTr.innerHTML = html;
 
+        // 表头高度由配置 headerHeight 控制（不写死数字，读defaults合并后的配置）
+        if (this.headerWrapper) {
+            var headerH = this.options.headerHeight || 0;
+            this.headerWrapper.style.height = headerH + 'px';
+            this.headerWrapper.style.boxSizing = 'border-box';
+        }
+
         // 绑定表头全选 checkbox 事件
         var headerCheckbox = this.theadTr.querySelector('.mel-header-checkbox');
         if (headerCheckbox) {
@@ -595,7 +738,9 @@
      */
     Renderer.prototype._renderRowHtml = function(rowData) {
         var columns = this.dataStore.columns;
-        var html = '<tr data-row-index="' + rowData._rowIndex + '">';
+        // 行高由配置 rowHeight 控制（不写死数字，读defaults合并后的配置）
+        var rowH = this.options.rowHeight || 0;
+        var html = '<tr data-row-index="' + rowData._rowIndex + '" style="height:' + rowH + 'px;">';
 
         for (var i = 0; i < columns.length; i++) {
             var col = columns[i];
@@ -606,7 +751,7 @@
             var renderer = this._renderers[col.renderer] || this._renderers.text;
             var cellContent = renderer(value, col, rowData);
 
-            html += '<td class="' + alignClass + '" data-field="' + (col.field || '') + '" data-row-index="' + rowData._rowIndex + '">';
+            html += '<td class="' + alignClass + '" data-field="' + (col.field || '') + '" data-row-index="' + rowData._rowIndex + '" style="height:' + rowH + 'px;">';
             html += cellContent;
             html += '</td>';
         }
@@ -876,6 +1021,43 @@
             }
         }
         return value;
+    };
+
+    /**
+     * 销毁清理：移除window.resize、表身scroll监听，恢复body overflow-y，清空容器DOM
+     */
+    Renderer.prototype._destroy = function() {
+        // 移除window.resize监听
+        if (this._resizeBound && this._resizeHandler) {
+            if (window.removeEventListener) {
+                window.removeEventListener('resize', this._resizeHandler);
+            } else if (window.detachEvent) {
+                window.detachEvent('onresize', this._resizeHandler);
+            }
+            this._resizeBound = false;
+            this._resizeHandler = null;
+        }
+
+        // 移除表身scroll监听
+        if (this.bodyWrapper && this._bodyScrollHandler) {
+            if (this.bodyWrapper.removeEventListener) {
+                this.bodyWrapper.removeEventListener('scroll', this._bodyScrollHandler);
+            } else if (this.bodyWrapper.detachEvent) {
+                this.bodyWrapper.detachEvent('onscroll', this._bodyScrollHandler);
+            }
+            this._bodyScrollHandler = null;
+        }
+
+        // 恢复body原始overflow-y（fitViewport=true接管过才需要恢复）
+        if (this._bodyOverflow !== undefined) {
+            document.body.style.overflowY = this._bodyOverflow;
+            this._bodyOverflow = undefined;
+        }
+
+        // 清空容器DOM
+        if (this.el) {
+            this.el.innerHTML = '';
+        }
     };
 
     /**

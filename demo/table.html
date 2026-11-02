@@ -12,8 +12,6 @@
             padding: 15px;
             font-family: "Microsoft YaHei", Arial, sans-serif;
             background-color: #f0f2f5;
-            overflow-y: hidden; 
-            /* testing3 */
         }
         .toolbar {
             margin-bottom: 15px;
@@ -35,8 +33,7 @@
         }
         /* testing3 */
         #table-box {
-            /* height: 900px; */
-
+            height: 800px;
             background-color: #fff;
             /* border: 1px solid blue; */
             padding: 10px;
@@ -49,13 +46,26 @@
             background-color: #fff;
             border-radius: 4px;
             font-size: 12px;
-            max-height: 200px;
             overflow: auto;
             white-space: pre-wrap;
         }
+        #result1 {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            top: 100px;
+            left: 100px;
+            right: 100px;
+            height: 500px;
+            background: #fff;
+            box-shadow: 2px 3px 4px #999;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
 
         /* 分页栏样式 */
-        .mel-pagination {
+        /* .mel-pagination {
             margin-top: 10px;
             padding: 8px 0;
             text-align: right;
@@ -88,7 +98,7 @@
             padding: 4px 6px;
             border: 1px solid #dcdfe6;
             border-radius: 2px;
-        }
+        } */
 
         /* 合计行样式 */
         .mel-summary-row td {
@@ -100,6 +110,7 @@
 <body>
 
 <div class="toolbar">
+    <button onclick="closeResult()"> 关闭result 弹出窗口 </button>
     <button onclick="addRow()">新增一行</button>
     <button onclick="saveData()">保存（只提交修改过的）</button>
     <button onclick="saveAllData()">保存（保存所有行数据）</button>
@@ -111,7 +122,8 @@
 
 <div id="table-box"></div>
 
-<div class="result" id="result"></div>
+<div class="result" id="result1"></div>
+<div class="result" id="result2"></div>
 
 <!-- 单元格渲染器 -->
 <script src="../src/components/table/cell-renderers/text.js"></script>
@@ -146,7 +158,7 @@
 
     // 列配置
     var columns = [
-        {field: 'xh_self', title: '编号', width: 80, renderer: 'text', align: 'center'},
+        {field: 'xh_self', title: '编号', width: 180, renderer: 'text', align: 'center'},
         {field: 'mj', title: '面积', subtitle: '(㎡)', width: 100, renderer: 'input', type: 'float', digit: 2, required: true, align: 'center'},
         {field: 'area', title: '省市区', width: 200, renderer: 'input', readonly: true, align: 'left'},
         {field: 'scjj', title: '楼盘均价', width: 200, renderer: 'input', type: 'float', required: true, align: 'right'},
@@ -173,16 +185,17 @@
     // 初始化表格
     table = MelUi.Table({
         el: '#table-box',
-        fixedLeftColumns: 1,
-        headerHeight: 40,
+        fixedLeftColumns: 2, // 冻结列，目前不起作用，待开发
+        // headerHeight: 60,
         rowHeight: 40,
 
         showSelectAll: false,     // 多选列表头是否显示全选checkbox
 
         // testing3
-        bodyHeight: 300, // 表身高度，0表示不限制，由el节点控制
-        fitViewport: false,     // 是否适配视口，true=自动占满页面剩余高度，页面不出现垂直滚动条(可选)
-        fitWidth: true,         // 是否拉伸占满容器，false=列宽多少就多少
+        bodyHeight: 0, // 表身高度，0表示不限制，由el节点控制
+        fitViewport: true,     // 是否适配视口，true=自动占满页面剩余高度，页面不出现垂直滚动条(可选)
+        fitWidth: false,         // 是否拉伸占满容器，false=列宽多少就多少
+        viewportBottomGap: 15, // fitViewport模式下视口底部预留间隙(可选)。仅fitViewport=true生效，单位px，在表格与视口底边之间留出空隙露出body背景色
 
         bordered: true,
         stripe: true,
@@ -191,6 +204,9 @@
         data: data,
         plugins: [
             'SerialNo',
+            {
+                name:"Layout"
+            },
             // 'Checkbox',
             {name: 'Checkbox', width: 60 },
             'StateColumn',
@@ -223,6 +239,11 @@
         }
     });
 
+    function closeResult() {
+        document.getElementById('result1').style.display = 'none';
+    }
+
+
     // 新增一行
     function addRow() {
         table.addRow({
@@ -238,8 +259,10 @@
 
     // 保存数据(只保存有修改过的数据)
     function saveData() {
+        var elResult = document.getElementById('result1');
+        elResult.style.display = 'block';
         var dirtyData = table.getDirtyData();
-        document.getElementById('result').innerHTML =
+        elResult.innerHTML =
             '需要保存的数据（共' + dirtyData.length + '条）：\n' +
             JSON.stringify(dirtyData, null, 2);
 
@@ -249,8 +272,10 @@
 
     // 保存数据(保存所有数据)
     function saveAllData() {
+        var elResult = document.getElementById('result1');
+        elResult.style.display = 'block';
         var allData = table.getData();
-        document.getElementById('result').innerHTML =
+        elResult.innerHTML =
             '需要保存的数据（共' + allData.length + '条）：\n' +
             JSON.stringify(allData, null, 2);
 

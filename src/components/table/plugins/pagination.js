@@ -1,13 +1,14 @@
 /**
  * MelUi Table 表格组件 - 分页插件
  * 底部分页栏，支持自定义位置和对齐方式
+ * 样式统一放在 index.css（.mel-pagination 系列），本插件不再写内联样式
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.2.1
+ * @Version：v1.3.0
  * @Date：2026-10-10
- * @Pubdate：2026-10-10
+ * @PubDate：2026-11-02
  */
 
-(function(MelUi) {
+ (function(MelUi) {
 
     /**
      * Pagination 分页插件
@@ -38,6 +39,10 @@
         this.table = table;
         var self = this;
 
+        // 把分页位置回填到表格options，供renderer _applyLayout判断是否扣除分页高度
+        // position !== 'fixed' 时分页在普通文档流，需要预留分页位置；fixed脱离文档流不需要预留
+        table.options._paginationPos = this.options.position || 'bottom';
+
         table.dataStore.setPageSize(this.options.pageSize);
 
         table.eventBus.on('rendered', function() {
@@ -64,40 +69,40 @@
             this.barDom.parentNode.removeChild(this.barDom);
         }
 
-        // 对齐方式
-        var alignMap = {left: 'left', center: 'center', right: 'right'};
-        var textAlign = alignMap[this.options.align] || 'right';
-
-        // 位置样式
-        var positionStyle = '';
+        // 位置class：fixed脱离文档流
+        var posCls = '';
         if (this.options.position === 'fixed') {
-            positionStyle = 'position:fixed;bottom:0;left:0;right:0;background:#fff;z-index:100;';
+            posCls = ' mel-pagination-fixed';
         }
 
-        var html = '<div class="mel-pagination" style="padding:10px 0;text-align:' + textAlign + ';font-size:13px;color:#606266;' + positionStyle + '">';
-        html += '<span style="margin-right:15px;">共 ' + total + ' 条</span>';
+        // 对齐class
+        var alignMap = {left: 'left', center: 'center', right: 'right'};
+        var alignCls = ' mel-pagination-align-' + (alignMap[this.options.align] || 'right');
+
+        var html = '<div class="mel-pagination' + posCls + alignCls + '">';
+        html += '<span class="mel-pagination-total">共 ' + total + ' 条</span>';
 
         if (this.options.pageMode === 'select') {
-            html += '<select class="mel-page-select" style="padding:3px 6px;border:1px solid #dcdfe6;border-radius:2px;">';
+            html += '<select class="mel-page-select">';
             for (var i = 1; i <= totalPages; i++) {
                 html += '<option value="' + i + '"' + (i === curpage ? ' selected' : '') + '>第 ' + i + ' 页</option>';
             }
             html += '</select>';
         } else {
-            html += '<span class="mel-page-btn" data-action="first" style="display:inline-block;padding:3px 8px;margin:0 2px;border:1px solid #dcdfe6;border-radius:2px;cursor:pointer;">首页</span>';
-            html += '<span class="mel-page-btn" data-action="prev" style="display:inline-block;padding:3px 8px;margin:0 2px;border:1px solid #dcdfe6;border-radius:2px;cursor:pointer;">上一页</span>';
+            html += '<span class="mel-page-btn" data-action="first">首页</span>';
+            html += '<span class="mel-page-btn" data-action="prev">上一页</span>';
 
             var start = Math.max(1, curpage - Math.floor(this.options.pageListSize / 2));
             var end = Math.min(totalPages, start + this.options.pageListSize - 1);
             start = Math.max(1, end - this.options.pageListSize + 1);
 
             for (var i = start; i <= end; i++) {
-                var activeCls = i === curpage ? 'background-color:#409eff;color:#fff;border-color:#409eff;' : '';
-                html += '<span class="mel-page-num" data-page="' + i + '" style="display:inline-block;padding:3px 8px;margin:0 2px;border:1px solid #dcdfe6;border-radius:2px;cursor:pointer;' + activeCls + '">' + i + '</span>';
+                var activeCls = i === curpage ? ' active' : '';
+                html += '<span class="mel-page-num' + activeCls + '" data-page="' + i + '">' + i + '</span>';
             }
 
-            html += '<span class="mel-page-btn" data-action="next" style="display:inline-block;padding:3px 8px;margin:0 2px;border:1px solid #dcdfe6;border-radius:2px;cursor:pointer;">下一页</span>';
-            html += '<span class="mel-page-btn" data-action="last" style="display:inline-block;padding:3px 8px;margin:0 2px;border:1px solid #dcdfe6;border-radius:2px;cursor:pointer;">尾页</span>';
+            html += '<span class="mel-page-btn" data-action="next">下一页</span>';
+            html += '<span class="mel-page-btn" data-action="last">尾页</span>';
         }
 
         html += '</div>';

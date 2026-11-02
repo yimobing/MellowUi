@@ -2,12 +2,12 @@
  * MelUi Table 表格组件 - 主类
  * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.3.0
+ * @Version：v1.5.1
  * @Date：2026-10-10
- * @Pubdate：2026-10-10
+ * @PubDate：2026-11-02
  */
 
-(function(MelUi) {
+ (function(MelUi) {
 
     /**
      * TableCore 构造函数
@@ -16,22 +16,22 @@
     function TableCore(options) {
         // 默认配置
         var defaults = {
-            el: null,
-            columns: [],
-            data: [],
-            rowHeight: 40,
-            headerHeight: 40,
-            bodyHeight: 0,          // 表身高度，默认0表示不限(可选)
-            fitViewport: false,     // 是否适配视口，true=自动占满页面剩余高度，页面不出现垂直滚动条(可选)
-            fitWidth: false,         // 是否拉伸占满容器，false=列宽多少就多少
-            fixedLeftColumns: 0,
-            bordered: true,
-            stripe: false,
-            hoverHighlight: true,
-            showSelectAll: true,     // 多选列表头是否显示全选checkbox
-            paginationPosition: 'bottom',  // 分页栏位置：bottom=紧跟表格 / fixed=固定底部
-            plugins: [],
-            events: {}
+            el: null, // 表格挂载节点(必填)。传CSS选择器字符串或DOM元素
+            columns: [], // 列配置数组(必填)。每项含 field/title/width/renderer/type 等
+            data: [], // 表格数据(必填)。对象数组，每项对应一行
+            rowHeight: 40, // 行高(可选)。默认40px
+            headerHeight: 40, // 表头高度(可选)。默认40px
+            fitViewport: true, // 是否垂直适配视口(可选)。true时，bodyHeight、el自定义高度失效，整套表格在视口内展示，即自动占满页面剩余高度且页面不出现垂直滚动条。
+            viewportBottomGap: 16, // fitViewport模式下视口底部预留间隙(可选)。仅fitViewport=true生效，单位px，在表格与视口底边之间留出空隙露出body背景色
+            bodyHeight: 0, // 表身固定高度(可选)。0表示不限制，由el节点控制。fitViewport=true时本参数无效；fitViewport=false && bodyHeight>0时，会强制el高度为auto!important
+            fitWidth: false, // 是否开启列宽自适应(可选)。false 固定列宽模式：使用columns配置的固定px列宽；true 弹性自适应模：以各列width为权重，根据容器宽度弹性分配填满容器
+            fixedLeftColumns: 0, // 表格固定几列不动(可选)。值：0 0列, 1 1列
+            bordered: true, // 是否显示边框(可选)。true显示边框，false不显示
+            stripe: false, // 是否斑马纹(可选)。true交替行背景色
+            hoverHighlight: true, // 是否行悬浮高亮(可选)。true鼠标悬停行高亮
+            showSelectAll: true, // 多选列表头是否显示全选checkbox(可选)。true显示，false不显示
+            plugins: [], // 插件数组(可选)。字符串简写启用+默认配置，或对象{name, ...}启用+自定义配置
+            events: {} // 事件配置(可选)。如 onCellClick/onCellChange/onRowClick 等回调
         };
 
         // 合并配置
@@ -423,9 +423,15 @@
     // ==================== 销毁 ====================
 
     /**
-     * 销毁表格
+     * 销毁表格(可选)
+     * 清理window.resize、表身scroll事件监听，恢复body样式，销毁插件，清空容器DOM。
+     * 【重要】SPA路由切换、弹窗关闭、容器复用重新new实例场景必须手动调用；整页刷新无需调用。
+     * 重复调用不会报错。
      */
     TableCore.prototype.destroy = function() {
+        if (this._isDestroyed) return;
+        this._isDestroyed = true;
+
         // 销毁插件
         if (this._pluginInstances) {
             for (var i = 0; i < this._pluginInstances.length; i++) {
@@ -435,9 +441,9 @@
             }
         }
 
-        // 清空 DOM
-        if (this.renderer && this.renderer.el) {
-            this.renderer.el.innerHTML = '';
+        // renderer统一清理：移除resize/scroll监听、恢复body样式、清空容器DOM
+        if (this.renderer && this.renderer._destroy) {
+            this.renderer._destroy();
         }
     };
 
