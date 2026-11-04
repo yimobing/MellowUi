@@ -2,12 +2,12 @@
  * MelUi Table 表格组件 - 状态列插件
  * 在表格最后插入一列状态标记（新增/修改/已保存）
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.0.0
+ * @Version：v1.2.0
  * @Date：2026-10-10
- * @Pubdate：2026-10-10
+ * @Pubdate：2026-11-03
  */
 
-(function(MelUi) {
+ (function(MelUi) {
 
     /**
      * StateColumn 状态列插件
@@ -16,13 +16,15 @@
      *   newText: 新增标记文字，默认 '新'
      *   unsaveText: 修改标记文字，默认 '改'
      *   savedText: 已保存标记文字，默认 ''
+     *   columnPosition: 状态列显示位置(可选)。'behind'=状态列在所有数据列的最后面(默认)；'front'=状态列在checkbox/序号列之前(无这两列时在数据第1列前)
      */
     function StateColumn(options) {
         this.options = this._extend({
             width: 60,
             newText: '新',
             unsaveText: '改',
-            savedText: ''
+            savedText: '',
+            columnPosition: 'behind'
         }, options || {});
     }
 
@@ -35,14 +37,20 @@
     StateColumn.prototype.init = function(table) {
         this.table = table;
 
-        // 在列配置最后面插入状态列
-        table.dataStore.columns.push({
+        var stateCol = {
             field: '_state',
             title: '状态',
             width: this.options.width,
             renderer: 'text',
             align: 'center'
-        });
+        };
+
+        // columnPosition: 'front'=插到列配置最前面(checkbox/序号列之前，若无这两列则数据第1列前)；'behind'=追加到列配置最后面(默认)
+        if (this.options.columnPosition === 'front') {
+            table.dataStore.columns.unshift(stateCol);
+        } else {
+            table.dataStore.columns.push(stateCol);
+        }
 
         // 初始化所有行的状态字段
         var rows = table.dataStore.rows;

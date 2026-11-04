@@ -1,22 +1,25 @@
 /**
  * MelUi Table 表格组件 - 多选列插件
  * 只负责修改选中状态数据，DOM 渲染由 Renderer 统一处理
+ * 支持多选(multi)与单选(single)两种模式
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.1.0
+ * @Version：v1.2.1
  * @Date：2026-10-10
- * @Pubdate：2026-10-10
+ * @Pubdate：2026-11-03
  */
 
-(function(MelUi) {
+ (function(MelUi) {
 
     /**
      * Checkbox 多选列插件
      * @param {Object} options 配置
      *   width: 列宽，默认60（要放得下"合计"两个字）
+     *   mode: 选择模式 'multi'多选(默认) / 'single'单选
      */
     function Checkbox(options) {
         this.options = this._extend({
-            width: 60
+            width: 60,
+            mode: 'multi'
         }, options || {});
     }
 
@@ -24,29 +27,33 @@
     Checkbox.prototype.constructor = Checkbox;
 
     /**
-     * 初始化：只加列配置 + 监听事件改数据，不碰 DOM
+     * 初始化：记录选择模式、加列配置、监听事件改数据，不碰 DOM
      */
     Checkbox.prototype.init = function(table) {
         this.table = table;
         var self = this;
 
-        // 在列配置最前面插入复选列
+        // 记录选择模式到 dataStore（单选互斥、API保护用）
+        table.dataStore.selectMode = this.options.mode;
+
+        // 在列配置最前面插入选择列（带mode标记，供渲染器/表头判断）
         table.dataStore.columns.unshift({
             field: '_checkbox',
             title: '',
             width: this.options.width,
             renderer: 'checkbox',
-            align: 'center'
+            align: 'center',
+            mode: this.options.mode
         });
 
-        // 监听渲染完成后，给 tbody 加点击监听（只监听复选框点击）
+        // 监听渲染完成后，给 tbody 加点击监听（只监听勾选框点击）
         table.eventBus.on('rendered', function() {
             self._bindClickEvent();
         });
     };
 
     /**
-     * 绑定复选框点击事件（此时 DOM 已就绪）
+     * 绑定勾选框点击事件（此时 DOM 已就绪）
      */
     Checkbox.prototype._bindClickEvent = function() {
         var tbody = this.table.renderer.tbody;
@@ -58,14 +65,19 @@
             var event = e || window.event;
             var target = event.target || event.srcElement;
 
-            if (target.tagName !== 'INPUT' || target.type !== 'checkbox') return;
+            if (target.tagName !== 'INPUT') return;
+            if (target.type !== 'checkbox' && target.type !== 'radio') return;
 
             var td = self._findParent(target, 'TD');
             if (!td) return;
 
+            // 只处理本插件专属的 _checkbox 列；表格内其它列(input/radio/checkbox)点击一律忽略，互不干扰
+            var field = td.getAttribute('data-field');
+            if (field !== '_checkbox') return;
+
             var rowIndex = parseInt(td.getAttribute('data-row-index'));
 
-            // 改数据
+            // setRowSelected 内部已处理单选互斥（选中新行自动清空其它行选中），多选只切换当前行
             self.table.dataStore.setRowSelected(rowIndex, target.checked);
 
             // 发事件，Renderer 收到后刷新勾选状态

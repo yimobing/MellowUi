@@ -2,16 +2,18 @@
  * MelUi Table 表格组件 - 数据存储
  * 负责管理表格所有数据：行数据、列配置、选中状态、排序状态
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.1.0
+ * @Version：v1.10.3
  * @Date：2026-10-10
- * @Pubdate：2026-10-10
+ * @Pubdate：2026-11-04
  */
 
-(function(MelUi) {
+ (function(MelUi) {
 
     /**
      * DataStore 构造函数
      * @param {Object} options 配置项
+     * @param {Boolean} options.remotePaging 是否后端远程分页（默认false，前端本地分页）
+     * @param {Number} options.total 远程分页时的总记录数（由外部传入）
      */
     function DataStore(options) {
         this.columns = options.columns || [];
@@ -21,6 +23,17 @@
         this.selectedRowIndexes = [];
         this.currentPage = 1;  // 当前页码
         this.pageSize = 0;     // 每页条数，0表示不分页
+        this.selectMode = 'multi'; // 选择模式：multi多选 / single单选，由Checkbox插件init时设置
+        this.remotePaging = !!(options && options.remotePaging); // 后端远程分页开关
+        this.remoteTotal = (options && options.total) || 0;       // 远程分页总条数
+        // 是否兜底后端远程分页（仅 remotePaging=true 生效）：
+        //   true：后端 total=0 或 total<返回列表条数时，组件自动降级，用当前这批数据做前端本地分页；
+        //   false：严格信任后端 total，不会自动切换成前端本地分页（标准分页接口应设为false）。
+        this.enableRemotePagingFallback = (options && options.enableRemotePagingFallback !== undefined)
+            ? !!options.enableRemotePagingFallback : true;
+        this.addRowMode = (options && options.addRowMode) || 'currentPage'; // 新增行插入位置：currentPage当前页 / global全局
+        this._tempAppendRows = []; // addRowMode='currentPage'时，当前页临时追加的行引用集合（翻页/排序/setData时清空）
+        this._tempRowSeq = 0;      // 草稿行独立索引计数器：remote/currentPage 新增的草稿行用负数自增索引，与后端 rows 的 0..n 隔离，避免 data-row-index 冲突
 
         // 初始化数据
         if (options.data && options.data.length) {
@@ -30,7 +43,44 @@
                 this.rows.push(row);
             }
         }
+
+        // 构造时若进入降级兜底场景，自动把 pageSize 对齐为数据长度（初始化铺满一页）
+        this._alignFallbackPageSize();
     }
+
+    /**
+     * 降级兜底时自动对齐 pageSize（统一入口）
+     * 规则：仅 remotePaging=true 且 enableRemotePagingFallback=true 且后端 total 不可信
+     *   （total=0 或 < 当前返回列表长度）时，把 pageSize 设为当前 rows 长度，
+     *   使数据加载进来自动铺满一页展示全部；
+     * 用户随后手动在下拉切换 pageSize 后，以用户选择为准（本方法不再覆盖），
+     * 直到下一次数据刷新（构造 / setRows）再次触发降级才重新对齐。
+     * 注意：enableRemotePagingFallback=false（严格信任后端 total）时不触碰 pageSize。
+     */
+    DataStore.prototype._alignFallbackPageSize = function() {
+        if (!this.remotePaging || !this.enableRemotePagingFallback) return;
+        var bt = this.remoteTotal || 0;
+        var ll = this.rows.length;
+        if (bt > 0 && bt >= ll) return; // total 可信，标准远程分页，不触碰
+        if (ll <= 0) return;
+        this.pageSize = ll; // 降级：铺满一页
+    };
+
+    /**
+     * 是否处于降级兜底分页状态（只读）
+     * 供业务在 onPageChange 中判断：true 时不请求后端接口（组件内部前端切片分页），
+     * false 时按标准远程分页由业务自行请求后端。
+     * 判定：仅 remotePaging=true 且 enableRemotePagingFallback=true 且后端 total 不可信
+     *   （total=0 或 < 当前返回列表长度）时返回 true，否则 false。
+     * @return {Boolean}
+     */
+    DataStore.prototype.isFallbackPaging = function() {
+        if (!this.remotePaging) return false;
+        if (!this.enableRemotePagingFallback) return false;
+        var bt = this.remoteTotal || 0;
+        var ll = this.rows.length;
+        return !(bt > 0 && bt >= ll);
+    };
 
     /**
      * 初始化一行数据，附加内部字段（不 push 到 rows，由调用方控制位置）
@@ -59,10 +109,24 @@
     /**
      * 获取指定行数据
      * @param {Number} rowIndex 行索引
+     *   负数索引：草稿行（remote 模式新增行只进 _tempAppendRows、不进 rows，分配独立负数索引），
+     *   在 _tempAppendRows 中按 _rowIndex 精确匹配定位，与后端 rows 的 0..n 下标体系隔离，
+     *   避免渲染 data-row-index 冲突导致状态列"改"错标到旧行、单元格数据写错位置。
      * @return {Object|null}
      */
     DataStore.prototype.getRow = function(rowIndex) {
-        if (rowIndex < 0 || rowIndex >= this.rows.length) return null;
+        // 负数索引：草稿行定位到临时插队集合
+        if (rowIndex < 0) {
+            if (this._tempAppendRows) {
+                for (var t = 0; t < this._tempAppendRows.length; t++) {
+                    if (this._tempAppendRows[t] && this._tempAppendRows[t]._rowIndex === rowIndex) {
+                        return this._tempAppendRows[t];
+                    }
+                }
+            }
+            return null;
+        }
+        if (rowIndex >= this.rows.length) return null;
         return this.rows[rowIndex];
     };
 
@@ -100,7 +164,18 @@
     /**
      * 新增一行
      * @param {Object} data 行数据（可选）
-     * @param {String} position 位置：'first' 插入最前 / 'last' 追加最后
+     * @param {String} position 位置：'first' 最前 / 'last' 最后
+     * 按 addRowMode 与分页模式区分：
+     *   - addRowMode='currentPage'（本地分页）：新增行写入全局 rows（真实数据源，getData/导出/翻页不丢），
+     *     打 _isTempAdd 标记，渲染时由 getVisibleRows 把该行【附加】到当前页切片首/尾，
+     *     原当前页切片数据不被挤走（不会跑到下一页）、其它页数据分布完全不变；
+     *     翻页/排序/setData 时 clearTempAppend 清空插队集合并移除 _isTempAdd，该行回归普通分页。
+     *   - addRowMode='global'（本地分页）：直接操作全局数组真首尾（'first'→下标0，'last'→末尾），
+     *     只打 _isTempAdd 标记（用于序号控制：showNewRowSerialNumber=false 时新增行序号空），不进插队集合。
+     *     这是 global 语义：新增行真正插入数据源首部，rows 整体右移，分页边界按新数组重算，属正常结果。
+     *   - remotePaging=true：rows 是后端返回的当前页数据，不能直接插入污染
+     *     （否则 unshift 会改变原行下标、导致原行序号偏移）；新增行仅加入 _tempAppendRows
+     *     由 getVisibleRows 附加到当前页首/尾，真正入库由业务调用后端接口处理，本处只做视图层临时显示。
      * @return {Object} 新增的行对象
      */
     DataStore.prototype.addRow = function(data, position) {
@@ -117,15 +192,67 @@
 
         var row = this._createRow(rowData);
         row._status = 'i';  // 新增行标记为 i
+        // 打新增标记：序号插件据此决定是否显示序号
+        row._isTempAdd = true;
 
-        if (position === 'first') {
-            this.rows.unshift(row);
-        } else {
+        if (this.remotePaging) {
+            // ===== 远程分页：仅加入临时插队集合，不污染后端当前页数据 =====
+            // 草稿行分配独立负数索引（--_tempRowSeq），与后端 rows 的 0..n 下标隔离：
+            //   - 渲染 data-row-index 用该负数，不与后端任一行的 data-row-index 冲突；
+            //   - getRow(rowIndex) 对负数在 _tempAppendRows 中按 _rowIndex 精确定位，
+            //     保证 cellChange/setCell/state-column 状态标记作用到草稿行本身，而非错位的旧行。
+            row._rowIndex = --this._tempRowSeq;
+            row._insertPos = position;
+            // 最新新增的草稿行用 unshift 插到集合最前，保证多次"新增到最前"时视图顺序为 3,2,1（最新加的最上）
+            if (position === 'first') {
+                this._tempAppendRows.unshift(row);
+            } else {
+                this._tempAppendRows.push(row);
+            }
+        } else if (this.addRowMode === 'currentPage') {
+            // ===== currentPage 模式：写全局 rows 末尾 + 附加到当前页首/尾 =====
+            // 统一追加到 rows 末尾（不做 unshift），避免把本页末尾行挤到下一页、不改变其它页数据分布；
+            // 配合 _insertPos，由 getVisibleRows 把该行附加到当前页首/尾显示。
+            // 注意：currentPage 草稿行写入了 rows，其 _rowIndex 由 _updateRowIndexes 按 rows 下标重排，
+            //   不冲突（同一行对象即 rows 里的真实行）。此处保持既有语义，仅 _tempAppendRows 用 unshift 满足 3,2,1 顺序。
             this.rows.push(row);
+            row._insertPos = position;
+            if (position === 'first') {
+                this._tempAppendRows.unshift(row);
+            } else {
+                this._tempAppendRows.push(row);
+            }
+        } else {
+            // ===== global 模式：直接操作全局数组真首尾 =====
+            if (position === 'first') {
+                this.rows.unshift(row);
+            } else {
+                this.rows.push(row);
+            }
         }
 
         this._updateRowIndexes();
         return row;
+    };
+
+    /**
+     * 清空当前页插队集合（addRowMode='currentPage' 的新增行）
+     * 翻页、排序、setData 时调用：
+     *   1. 清空 _tempAppendRows 集合；
+     *   2. 移除集合中这些行的 _isTempAdd 标记，使其回归普通行（按全局下标正常分页、正常显示序号）。
+     * 数据本身已写入全局 rows，不会丢失，只是不再"插队"显示在当前页首/尾。
+     */
+    DataStore.prototype.clearTempAppend = function() {
+        if (this._tempAppendRows && this._tempAppendRows.length) {
+            for (var i = 0; i < this._tempAppendRows.length; i++) {
+                var row = this._tempAppendRows[i];
+                if (row) {
+                    delete row._isTempAdd;
+                    delete row._insertPos;
+                }
+            }
+            this._tempAppendRows.length = 0;
+        }
     };
 
     /**
@@ -134,8 +261,20 @@
      */
     DataStore.prototype.removeRow = function(rowIndex) {
         if (rowIndex < 0 || rowIndex >= this.rows.length) return;
+
+        var row = this.rows[rowIndex];
         this.rows.splice(rowIndex, 1);
         this._updateRowIndexes();
+
+        // 若被删除的行还残留在当前页临时追加集合中，同步移除，避免getVisibleRows再concat出已删行
+        if (this._tempAppendRows && this._tempAppendRows.length) {
+            for (var i = 0; i < this._tempAppendRows.length; i++) {
+                if (this._tempAppendRows[i] === row) {
+                    this._tempAppendRows.splice(i, 1);
+                    break;
+                }
+            }
+        }
     };
 
     /**
@@ -144,6 +283,7 @@
     DataStore.prototype.clearRows = function() {
         this.rows = [];
         this.selectedRowIndexes = [];
+        this.clearTempAppend();
     };
 
     /**
@@ -193,6 +333,14 @@
         var row = this.getRow(rowIndex);
         if (!row) return;
 
+        // 单选模式：选中新行时先清空其它行选中（互斥）
+        if (this.selectMode === 'single' && selected) {
+            for (var k = 0; k < this.rows.length; k++) {
+                this.rows[k]._selected = false;
+            }
+            this.selectedRowIndexes = [];
+        }
+
         row._selected = selected;
 
         // 同步维护 selectedRowIndexes 数组
@@ -220,9 +368,12 @@
 
     /**
      * 全选 / 全不选
+     * 单选模式：全选操作静默忽略（不console.warn，兼容IE）
      * @param {Boolean} selected 是否选中
      */
     DataStore.prototype.selectAll = function(selected) {
+        if (this.selectMode === 'single') return;
+
         this.selectedRowIndexes = [];
         for (var i = 0; i < this.rows.length; i++) {
             this.rows[i]._selected = selected;
@@ -232,8 +383,11 @@
 
     /**
      * 反选
+     * 单选模式：反选操作静默忽略（不console.warn，兼容IE）
      */
     DataStore.prototype.invertSelect = function() {
+        if (this.selectMode === 'single') return;
+
         this.selectedRowIndexes = [];
         for (var i = 0; i < this.rows.length; i++) {
             this.rows[i]._selected = !this.rows[i]._selected;
@@ -242,15 +396,33 @@
     };
 
     /**
+     * 清空所有选中（单选/多选都适用）
+     */
+    DataStore.prototype.clearSelection = function() {
+        this.selectedRowIndexes = [];
+        for (var i = 0; i < this.rows.length; i++) {
+            this.rows[i]._selected = false;
+        }
+    };
+
+    /**
      * 排序
      * @param {String} field 字段名
      * @param {String} order 排序方向：'asc' / 'desc'
+     * @param {Boolean} currentPageOnly 是否仅对当前页排序（可选）。
+     *   仅 remotePaging=false 本地分页且 pageSize>0 时生效：
+     *     只取出当前页对应的 rows 切片区间排序，结果回填回原 rows 该区间，其他数据顺序不变；
+     *     这样当前页内顺序变了，分页边界不变，不会出现数据排序后跑到其他页。
+     *   remotePaging=true 或未分页时本参数无效，等价于全量排序。
      */
-    DataStore.prototype.sort = function(field, order) {
+    DataStore.prototype.sort = function(field, order, currentPageOnly) {
         this.sortField = field;
         this.sortOrder = order;
 
-        this.rows.sort(function(a, b) {
+        // 排序会重建数据顺序，清空当前页插队集合
+        this.clearTempAppend();
+
+        var compareFn = function(a, b) {
             var va = a[field];
             var vb = b[field];
 
@@ -269,7 +441,29 @@
             } else {
                 return va > vb ? -1 : (va < vb ? 1 : 0);
             }
-        });
+        };
+
+        // 仅当前页排序：只对当前页切片区间排序并回填原数组区间
+        if (currentPageOnly && !this.remotePaging && this.pageSize > 0) {
+            var start = (this.currentPage - 1) * this.pageSize;
+            var end = Math.min(start + this.pageSize, this.rows.length);
+            if (start >= this.rows.length) {
+                this._updateRowIndexes();
+                return;
+            }
+
+            // 取出当前页切片区间，排序
+            var segment = this.rows.slice(start, end);
+            segment.sort(compareFn);
+
+            // 回填回原数组该区间（区间外数据顺序不变）
+            for (var i = start; i < end; i++) {
+                this.rows[i] = segment[i - start];
+            }
+        } else {
+            // 全量排序（默认 / 远程分页 / 未分页）
+            this.rows.sort(compareFn);
+        }
 
         this._updateRowIndexes();
     };
@@ -285,24 +479,175 @@
 
     /**
      * 获取当前页应显示的行
+     * 远程分页(remotePaging=true)：rows 是后端当前页数据，把 _tempAppendRows 中新增行【附加】到首/尾，
+     *   不污染后端数据、不改变原行序号。
+     * 本地分页：按 currentPage/pageSize 对 rows 切片，再把 _tempAppendRows 中新增行【附加】到切片首/尾：
+     *   - position='first' 的行放切片最前面
+     *   - position='last' 的行放切片最后面
+     * 原切片数据保持完整（本页临时多展示新增行），不会被挤走到下一页。
      * @return {Array}
      */
     DataStore.prototype.getVisibleRows = function() {
-        if (!this.pageSize || this.pageSize <= 0) {
-            return this.rows;
+        var base = null;
+
+        if (this.remotePaging) {
+            // 远程分页分支
+            var backendTotal = this.remoteTotal || 0;
+            if (backendTotal > 0 && backendTotal >= this.rows.length) {
+                // 标准远程分页：后端 total 可信，rows 是后端已切好的当前页数据，不做本地切片
+                base = this.rows;
+            } else if (this.enableRemotePagingFallback && this.pageSize > 0) {
+                // 兜底降级：后端 total 不可信（=0 或 < 返回列表长度），
+                // 后端不再负责分页，由前端对当前这批 rows 做本地切片分页（支持切换每页条数、翻页）
+                var fs = (this.currentPage - 1) * this.pageSize;
+                var fe = fs + this.pageSize;
+                base = this.rows.slice(fs, fe);
+            } else {
+                // 未开启兜底（enableRemotePagingFallback=false）：严格信任后端 total，不自动降级切片
+                base = this.rows;
+            }
+        } else if (!this.pageSize || this.pageSize <= 0) {
+            // 未分页：直接返回全部 rows
+            base = this.rows;
+        } else {
+            // 本地分页：按 currentPage/pageSize 切片
+            var start = (this.currentPage - 1) * this.pageSize;
+            var end = start + this.pageSize;
+            base = this.rows.slice(start, end);
         }
-        var start = (this.currentPage - 1) * this.pageSize;
-        var end = start + this.pageSize;
-        return this.rows.slice(start, end);
+
+        // 有插队新增行时，附加到 base 首/尾（不改变 base 本身，不挤走原数据）
+        if (this._tempAppendRows && this._tempAppendRows.length) {
+            var firstAdds = [];  // position='first' 的新增行（放最前）
+            var lastAdds = [];   // position='last' 的新增行（放最后）
+
+            // 先从 base 中剔除已在 base 内的插队行（本地分页时新增行也写入了 rows，可能在切片内，避免重复显示）
+            var keepBase = [];
+            for (var k = 0; k < base.length; k++) {
+                var inTemp = false;
+                for (var t = 0; t < this._tempAppendRows.length; t++) {
+                    if (base[k] === this._tempAppendRows[t]) { inTemp = true; break; }
+                }
+                if (!inTemp) {
+                    keepBase.push(base[k]);
+                }
+            }
+
+            // 按插入位置归类待插队行
+            for (var i = 0; i < this._tempAppendRows.length; i++) {
+                var tempRow = this._tempAppendRows[i];
+                if (!tempRow) continue;
+                if (tempRow._insertPos === 'first') {
+                    firstAdds.push(tempRow);
+                } else {
+                    lastAdds.push(tempRow);
+                }
+            }
+
+            // 拼装：first插队行 + 剔除插队行后的原数据 + last插队行
+            var result = [];
+            for (var a = 0; a < firstAdds.length; a++) result.push(firstAdds[a]);
+            for (var m = 0; m < keepBase.length; m++) result.push(keepBase[m]);
+            for (var n = 0; n < lastAdds.length; n++) result.push(lastAdds[n]);
+            return result;
+        }
+
+        return base;
+    };
+
+    /**
+     * 获取矫正后的展示总条数
+     * 规则（仅 remotePaging=true 时对后端 total 做合法性校验）：
+     *   - 后端 total > 0 且 >= 本次返回列表长度 → 后端 total 可信，标准远程分页，采用之；
+     *   - 后端 total = 0，或 total > 0 但 < 本次返回列表长度（数据自相矛盾）：
+     *       若 enableRemotePagingFallback=true（默认）→ 开启兜底，降级采用本次返回实际列表长度 rows.length，
+     *       后端不再负责分页，由前端对该批数据本地分页；
+     *       若 enableRemotePagingFallback=false → 关闭兜底，严格信任后端 total，不自动切换。
+     *  remotePaging=false 时始终返回本地行数 rows.length。
+     * @return {Number}
+     */
+    DataStore.prototype.getEffectiveTotal = function() {
+        if (!this.remotePaging) return this.rows.length;
+        var backendTotal = this.remoteTotal || 0;
+        var listLen = this.rows.length;
+        if (backendTotal > 0 && backendTotal >= listLen) {
+            return backendTotal; // 后端 total 可信，标准远程分页
+        }
+        // total 不可信
+        if (this.enableRemotePagingFallback) {
+            return listLen; // 开启兜底：以本次返回列表长度为总数
+        }
+        return backendTotal; // 关闭兜底：严格信任后端 total，不自动切换
+    };
+
+    /**
+     * 获取矫正后的生效每页条数
+     * 无论 remotePaging 是否开启、total 是否可信，均跟随当前选中的 pageSize：
+     *   - 标准远程分页：pageSize 由业务/分页下拉控制；
+     *   - 降级兜底分页：同样由分页下拉控制（用户可自由切换每页条数，触发前端本地切片）。
+     * 由 getTotalPages / getVisibleRows 配合完成实际切片与总页数计算。
+     * @return {Number}
+     */
+    DataStore.prototype.getEffectivePageSize = function() {
+        return this.pageSize;
     };
 
     /**
      * 获取总页数
+     * 基于 getEffectiveTotal / getEffectivePageSize 计算，与分页栏展示口径完全统一。
      * @return {Number}
      */
     DataStore.prototype.getTotalPages = function() {
-        if (!this.pageSize || this.pageSize <= 0) return 1;
-        return Math.ceil(this.rows.length / this.pageSize);
+        var effPageSize = this.getEffectivePageSize();
+        if (!effPageSize || effPageSize <= 0) return 1;
+        var total = this.getEffectiveTotal();
+        if (isNaN(total)) total = 0;
+        return Math.ceil(total / effPageSize);
+    };
+
+    /**
+     * 新增一行到当前页数据集合（addRowMode='currentPage'）
+     * 统一委托给 addRow 处理：
+     *  - 行写入全局 rows（保证 getData/getDirtyData/导出/校验可读，业务无需手动合并）
+     *  - addRowMode='currentPage' 时把行引用追加到 _tempAppendRows，getVisibleRows 会 concat，
+     *    使新增行新增瞬间留在当前页；翻页/排序/setData 清空后回归标准分片。
+     * @param {Object} data 行数据（可选）
+     * @param {String} position 位置：'first' 插到当前页首 / 'last' 追加到当前页尾
+     * @return {Object} 新增的行对象
+     */
+    DataStore.prototype.addRowToCurrentPage = function(data, position) {
+        return this.addRow(data, position);
+    };
+
+    /**
+     * 替换整表数据（远程分页回填用，也支持普通全量替换）
+     * @param {Array} data 行数据数组
+     */
+    DataStore.prototype.setRows = function(data) {
+        this.rows = [];
+        if (data && data.length) {
+            for (var i = 0; i < data.length; i++) {
+                var row = this._createRow(data[i]);
+                row._rowIndex = i;
+                this.rows.push(row);
+            }
+        }
+
+        // 说明：不在此处改写 remoteTotal。
+        // 分页栏展示总数、总页数统一由 getEffectiveTotal / getEffectivePageSize 做合法性矫正：
+        //   - 后端 total>0 且 >= 返回列表长度 → 正常采用；
+        //   - 后端 total=0 或 < 返回列表长度 → 降级以本次返回列表长度为准。
+        // 保持 remoteTotal 为后端原始值，才能正确区分"正常远程分页"与"total 不可信降级"两种场景。
+
+        // 降级兜底时自动对齐 pageSize（只在此次 setRows 刷新时重置一次），
+        // 使新数据加载进来自动铺满一页展示全部；用户随后手动切换 pageSize 以用户选择为准，
+        // 直到下一次 setRows 拿到新数据再次触发降级才重新对齐。
+        this._alignFallbackPageSize();
+
+        // 清空选中状态（数据已替换）
+        this.selectedRowIndexes = [];
+        // 数据整体替换：清空当前页临时追加集合
+        this.clearTempAppend();
     };
 
     // 暴露到命名空间

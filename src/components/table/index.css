@@ -1,9 +1,9 @@
 /**
  * MelUi Table 表格组件 - 基础样式
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.3.0
+ * @Version：v1.5.1
  * @Date：2026-10-10
- * @PubDate：2026-11-02
+ * @Pubdate：2026-11-04
  */
 
 /* ===== 容器 ===== */
@@ -50,7 +50,8 @@
 }
 
 .mel-th-title {
-    display: block;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .mel-th-subtitle {
@@ -260,6 +261,19 @@
     border: 1px solid #dcdfe6;
     border-radius: 2px;
     cursor: pointer;
+    font-family: inherit;       /* 原生 button 默认字体，需继承页面字体 */
+    font-size: inherit;
+    line-height: inherit;
+    background: transparent;    /* 去掉原生 button 的灰色底 */
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+
+.mel-page-btn[disabled],
+.mel-page-num[disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+    color: #a8abb2;
 }
 
 .mel-page-num.active {
@@ -272,4 +286,32 @@
     padding: 3px 6px;
     border: 1px solid #dcdfe6;
     border-radius: 2px;
+}
+
+/* 每页条数切换下拉（Pagination.showSizeChanger） */
+.mel-pagination-size {
+    margin-left: 12px;
+    color: #606266;
+    vertical-align: middle;
+}
+.mel-pagination-size select,
+.mel-page-size-select {
+    padding: 3px 6px;
+    border: 1px solid #dcdfe6;
+    border-radius: 2px;
+    margin: 0 4px;
+}
+
+/* 页码快速跳转下拉（Pagination.showQuickJumper） */
+.mel-pagination-jumper {
+    margin-left: 12px;
+    color: #606266;
+    vertical-align: middle;
+}
+.mel-pagination-jumper select,
+.mel-page-jumper-select {
+    padding: 3px 6px;
+    border: 1px solid #dcdfe6;
+    border-radius: 2px;
+    margin: 0 4px;
 }

@@ -1,0 +1,114 @@
+# MelUi‑Table 现状 & 后续待实现清单
+
+> 
+> 说明：基于我们这一轮迭代梳理，区分【已完成实现】、【已知待完善 / 待修复】、【规划后续新增功能】
+
+## 一、已实现功能
+
+### 1. 基础表格核心能力
+
+1. 支持传入 columns 配置列，支持 title、subtitle、field、width、对齐配置（left/center/right）
+2. 支持传入数组 data 渲染表格数据；支持行新增、行删除 API
+3. 表格样式：边框模式 `bordered`、隔行变色 `stripe`、行 hover 高亮 `hover`
+4. 单元格渲染：文本、输入框、文本域、按钮、radio 单选、checkbox 复选；单元格文字溢出省略
+5. 合计行功能 `summary‑row`
+6. IE9‑IE11、Edge 兼容；`table‑layout:fixed` 固定列布局模式
+
+### 2. 高度视口模式 fitViewport（本轮重点迭代）
+
+1. `fitViewport:true`：表格自适应浏览器可视区域高度，页面 body 设置`overflow‑y:hidden`，销毁实例恢复原有样式
+2. 新增配置 `viewportBottomGap`：fitViewport 模式下视口底部预留间隙，露出 body 背景色
+3. 窗口 resize 监听 + 节流；所有模式均刷新水平布局，fitViewport=true 额外刷新垂直高度
+4. destroy 实例销毁能力：清理 window.resize、DOM 滚动监听事件、恢复 body 样式、清空容器；增加`_isDestroyed`防重复调用
+5. 修复 resize 问题：窗口大小变化，水平、垂直布局同步更新
+
+### 3. 分页插件 Pagination（独立 plugins 插件）
+
+1. 作为插件启用 `plugins:[{name:'Pagination',...}]`
+2. 分页位置支持：`top` / `bottom` / `fixed`；对齐支持 left /center/right
+3. 两种分页模式：`list`数字页码按钮、`select`下拉选页；首页 / 上一页 / 下一页 / 尾页
+4. pageChange 事件抛出；行增删自动更新总页数
+5. 样式全部抽离到 index.css，去除 JS 内联 style；分页容器默认白色背景
+6. 插件内部回填`_paginationPos`给表格主实例，供布局高度计算读取
+
+### 4. 布局高度计算（本轮修正大量 bug）
+
+1. 完整分页高度扣除规则：
+   - `fitViewport=true`：无论分页 position 为 top/bottom/fixed，**一律扣除分页高度**，fixed 模式用于避让悬浮分页遮挡表格内容
+   - `fitViewport=false`：仅 top/bottom 普通文档流分页扣除高度；fixed 不扣除
+2. 修复历史 bug：fitViewport=false + el 固定高度 + 分页 top/bottom，分页 DOM 溢出 el 容器问题；修复 fixed 分页错误扣除高度 bug
+3. `headerHeight`、`rowHeight`配置参数生效，控制表头、表格行固定高度，布局计算读取配置而非 DOM offsetHeight
+4. 代码规范：禁止业务参数硬编码数字兜底，优先读取合并后`this.options`，异常降级原始 defaults，不散落写死常量
+
+### 5. 滚动同步
+
+1. 表身水平滚动，表头同步滚动；改用`addEventListener`监听滚动事件，解决直接赋值`onscroll`事件覆盖丢失回调的 bug
+
+### 6. 事件机制
+
+1. eventBus 事件总线，内置`rendered`、`rowAdd`、`rowDelete`、`pageChange`等事件
+
+### 7. 插件体系
+
+1. 插件基类 PluginBase，支持 plugins 数组注册插件；Pagination 插件已接入插件注册表
+
+## 二、当前已知待完善 / 待修复（现有功能半成品、遗留 bug）
+
+1. **fixedLeftColumns 左侧冻结列（Layout 插件）**
+   - layout.js 文件存在，插件框架已预留，但是插件内部代码存在问题，暂不可用；之前约定延后处理。
+   - 问题点：renderer 内部存在一套残缺的固定列逻辑，与 Layout 插件两套逻辑会打架；滚动回调缺少列偏移逻辑；新增行不会刷新冻结列样式。
+2. 边界健壮性
+   - 布局执行时序：分页插件渲染晚于第一轮布局，首次布局拿不到分页 DOM 高度，第一次高度计算不准，依赖分页渲染完成后重刷布局；需要处理时序优化。
+   - destroy 销毁校验：调用 destroy 之后，外部继续调用 render / 更新行等 API 缺少防护，容易报错。
+
+## 三、规划后续新增功能（之前口头提到、尚未开发）
+
+### 表格交互类
+
+1. **列拖拽排序**：鼠标拖拽表头调整列顺序
+2. **列宽度拖拽调整**：拖动表头分割线修改列宽
+3. 列显示隐藏：列设置显示 / 隐藏，列配置 visible 开关
+4. 纵向冻结（固定表头已经实现；固定表尾）
+5. 右侧固定列 fixedRightColumns
+
+### 数据 & 交互
+
+1. 行选中、多选、单选；checkbox 行选择；获取选中行 API
+2. 表格筛选、列头部筛选
+3. 列排序：表头点击排序、多列排序
+4. 虚拟滚动（大数据行渲染优化，IE9 环境要考虑兼容性取舍）
+
+### 其他插件
+
+1. 导出插件（导出 csv）
+2. 打印插件
+3. 行展开（树形表格、行展开详情）
+
+### API 与文档
+
+1. 使用文档：`destroy()`调用时机说明；各个配置参数、plugins 插件使用示例、注意事项；
+2. API 文档：实例方法、事件说明；
+3. 示例 demo 页面。
+
+## 四、优先级参考建议
+
+> 
+> P1（优先做，现有体系补全）
+
+1. 修复 Layout 固定列插件 fixedLeftColumns；清理 renderer 内部残留的残缺固定列代码。
+2. 优化布局时序问题（分页 DOM 渲染晚于布局，首次高度不准）；完善 destroy 之后调用其他 API 的防护。
+
+> 
+> P2（重要交互）
+
+3. 行选择（单选、多选 checkbox）
+4. 列宽拖拽调整
+
+> 
+> P3（迭代新增）
+
+5. 列拖拽排序、列显隐、右侧冻结列、排序筛选等
+6. 虚拟滚动、导出打印等插件
+7. 完整使用文档、demo
+
+如果你需要，我可以把这份清单整理成 markdown 任务列表，方便后续开发打勾跟踪。
