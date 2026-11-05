@@ -1,0 +1,263 @@
+
+========================================================================
+            打包及原理解释
+========================================================================
+
+----------------------------------------
+    # 打包发布方法
+----------------------------------------
+ctrl + `~ 键，调出终端，输入 npm run build 即可打包生成项目文件目录 dist
+
+----------------------------------------
+# dist 目录结构如下
+----------------------------------------
+
+```
+dist
+├─ common/                ← build‑css.js(baseStyles)输出公共基础样式
+│  ├─ layout.css / layout.min.css
+│  └─ button.css / button.min.css
+├─ dialog/                ← rollup任务数组，dialog两条编译任务
+│  ├─ dialog.js           ← rollup输出js
+│  ├─ dialog.css          ← postcss extract:true，从dialog/index.js import提取
+│  ├─ dialog.min.js
+│  └─ dialog.min.css
+├─ datePicker/
+│  └─ ……同上
+├─ drawer/
+│  └─ ……同上
+├─ melui.js               ← rollup处理src/index.js，全量库开发版
+├─ melui.css              ← extract提取，合并【公共样式+全部组件css】
+├─ melui.min.js
+└─ melui.min.css
+```
+
+
+
+----------------------------------------
+# 原理解释
+----------------------------------------
+
+# 要成功打包，主要依赖以下文件
+/package.json
+/rollup.config.js
+/src/index.js
+/build-css.js
+
+
+# 重要现实前提：
+✔ Win7 环境，全部是 rollup/postcss 系列低版本；
+✔ 你的各个组件 `.js` 文件**内部没有 import 组件自身的 css**；
+✔ `src/index.js` 里面才集中导入全部公共样式、全部组件 css。
+
+# 打包分工说明
+1. ✅ rollup.config.js：打包【各个组件 JS + 合并全量 JS`melui.js`】（dev/min 两套）；
+2. ✅ src/index.js：汇总全部组件 js，同时集中`import`公共 + 组件 css，供 rollup 合并打包成【`melui.css`】（dev/min 两套）；
+3. ✅ build‑css.js：读取源 css 文件，打包【公共 css + 各个组件独立 css】（dev/min 两套）。
+
+说明:
+Win7 环境、全部低版本 npm 包、组件 js 不内引 css 的现状：
+rollup.config.js 不产出单个组件 css，单个组件 css 是 build‑css.js 全权负责。
+rollup.config.js 仅走`src/index.js`全量入口时，顺带产出合并大 css`melui.css`；不产出组件单独 css。
+
+
+
+# 构建脚本分析（package.json / rollup.config.js / build‑css.js / src/index.js）
+
+> 
+> 现象：执行`npm run build`之后生成你预期的dist目录结构，下面拆解**为什么会产出这个目录，两套css处理逻辑，整体流水线，关键点、潜在坑点**。
+
+## 一、npm脚本流水线（package.json scripts）
+
+```
+"build": "npm run clean && npm run build:js && npm run build:css"
+```
+
+执行顺序：
+
+1. `npm run clean`：windows批处理，删除整个dist文件夹；保证每一次构建完全干净，无旧残留产物。
+2. `npm run build:js`：执行`rollup -c`，运行`rollup.config.js`，**只处理JS，顺带提取组件内import进来的css**。
+3. `npm run build:css`：执行node脚本`build‑css.js`，**独立Node脚本，单独编译公共基础css**。
+
+> 
+> ⚠️重点：这里是**两套完全独立的CSS处理链路**，不要混淆：
+> 
+> 
+> 1. rollup+`rollup‑plugin‑postcss`：处理**各个组件内部`import './xxx.css'`**；
+> 2. 独立node脚本`build‑css.js`：专门处理`baseStyles`公共基础样式（layout.css、button.css）；
+
+## 二、rollup.config.js原理（JS打包 + 组件内css提取）
+
+rollup配置导出**数组**，数组每一项 = **一条独立编译任务**。
+
+```
+export default [
+    // ① dialog开发版任务
+    {input:'src/components/dialog/index.js', output:{file:'dist/dialog/dialog.js'}, plugins:[createCssDev()]},
+    // ② dialog压缩版任务
+    {input:'src/components/dialog/index.js', output:{file:'dist/dialog/dialog.min.js'}, plugins:[createCssProd(),terser()]},
+    // ③ datePicker开发版
+    // ④ datePicker压缩版
+    // ⑤ drawer开发版
+    // ⑥ drawer压缩版
+    // ⑦ 全量库开发版 src/index.js → dist/melui.js
+    // ⑧ 全量库压缩版 src/index.js → dist/melui.min.js
+]
+```
+
+每一条任务特点：
+
+1. `input`：入口文件；
+2. `output.file`：**明确指定输出路径，带子目录 `dist/dialog/dialog.js`**；rollup自动创建子文件夹；
+3. `format:'umd'`，`name:'MelUi'`：输出umd通用模块，浏览器直接script标签引入可以得到全局`window.MelUi`；
+4. `createCssDev() / createCssProd()`内部是`rollup‑plugin‑postcss`并且设置`extract:true`；> 
+> `extract:true`含义：把JS里面`import './xxx.css'`导入的样式**抽离成独立`.css`磁盘文件**，不会内联进JS。输出路径**和js同目录，同名，后缀改为`.css`**。
+> 
+> 
+> - 例如输入`dist/dialog/dialog.js` → 自动生成`dist/dialog/dialog.css`；
+> - 压缩任务`dialog.min.js` → 自动生成`dialog.min.css`；
+5. `terser`做JS压缩，`ecma:5`，保证兼容IE9，去掉注释。
+
+### src/index.js（全量库入口）
+
+```
+// 公共基础样式优先导入
+import './styles/layout.css';
+import './styles/button.css';
+// 各个组件js+css
+import './components/dialog/index.js';
+import './components/dialog/index.css';
+……
+export default window.MelUi;
+```
+
+> 
+> 当rollup处理`src/index.js`（全量库入口）：
+> 里面`import './styles/layout.css'`、`import './styles/button.css'`，会被`rollup‑plugin‑postcss`提取，合并输出到：`dist/melui.css` / `dist/melui.min.css`。
+> ✅**全量包melui.css里面已经包含公共基础样式+所有组件样式。**
+
+> 
+> ❗但是！组件独立入口（`src/components/dialog/index.js`）**并没有import公共的layout.css、button.css**；
+> 所以`dist/dialog/dialog.css`**只有dialog组件自己的样式，不含公共基础样式**。
+> 这就是为什么单独引入dialog组件的时候，业务还必须手动引入`dist/common/layout.css`、`button.css`，这部分是交给`build‑css.js`脚本生成。
+
+## 三、build‑css.js 独立Node脚本，专门处理公共基础样式
+
+```
+const baseStyles = [
+  { name: 'layout', src: 'src/styles/layout.css', outDir: 'dist/common' },
+  { name: 'button', src: 'src/styles/button.css', outDir: 'dist/common' }
+];
+const components = [ …… ];
+```
+
+1. `fs‑extra.ensureDir`自动创建输出文件夹；
+2. 直接读取源css文本，使用`postcss` + `autoprefixer` + `cssnano`，**不经过rollup**；
+3. 对每一个样式输出两份：开发版（仅加浏览器前缀）、min压缩版；
+4. `baseStyles`输出到`dist/common/`；
+5. `components`数组：你这里**components数组定义了，但是src里面组件独立css并没有放到这里！当前components数组没有实际生效产出文件**。
+
+### 产物结果
+
+```
+dist/common/
+├─ layout.css
+└─ layout.min.css
+├─ button.css
+└─ button.min.css
+```
+
+> 
+> 设计意图：业务如果只想单独使用某一个组件（比如只用dialog，不想引入完整`melui.js/melui.css`）：
+> 业务需要手动引入：
+> 
+> 
+> ```
+> <link rel="stylesheet" href="./dist/common/layout.css">
+> <link rel="stylesheet" href="./dist/common/button.css">
+> <link rel="stylesheet" href="./dist/dialog/dialog.css">
+> <script src="./dist/dialog/dialog.js"></script>
+> ```
+> 
+> 
+> 因为组件独立打包产物的css**不含全局公共基础样式**，公共基础样式由build‑css.js输出到`dist/common`。
+
+## 四、完整dist目录形成逻辑总结（正好是你想要的结构）
+
+```
+dist
+├─ common/                ← build‑css.js(baseStyles)输出公共基础样式
+│  ├─ layout.css / layout.min.css
+│  └─ button.css / button.min.css
+├─ dialog/                ← rollup任务数组，dialog两条编译任务
+│  ├─ dialog.js           ← rollup输出js
+│  ├─ dialog.css          ← postcss extract:true，从dialog/index.js import提取
+│  ├─ dialog.min.js
+│  └─ dialog.min.css
+├─ datePicker/
+│  └─ ……同上
+├─ drawer/
+│  └─ ……同上
+├─ melui.js               ← rollup处理src/index.js，全量库开发版
+├─ melui.css              ← extract提取，合并【公共样式+全部组件css】
+├─ melui.min.js
+└─ melui.min.css
+```
+
+### 两条CSS链路对比
+
+| 链路 | 工具 | 处理内容 | 输出位置 |
+| --- | --- | --- | --- |
+| 链路A rollup+postcss | rollup‑plugin‑postcss | 各个组件`import xxx.css` | 和对应js同目录，同名css；全量包合并到melui.css |
+| 链路B build‑css.js node脚本 | postcss直接读文件 | 公共基础样式layout、button | `dist/common/*.css` |
+
+> 
+> 关键点：
+> 
+> 
+> 1. **全量包`melui.css`已经包含layout+button公共样式**；业务用完整库不需要再引入`dist/common`下面的文件；
+> 2. **单独引入某个组件（dialog/datePicker）时，组件自己的css不包含公共基础样式，业务必须额外引入dist/common下面的layout.css、button.css，否则样式错乱。**
+
+## 五、现存潜在问题/坑点（需要注意）
+
+1. `build‑css.js`里面的`components`数组目前定义了，但**没有实际源文件对应**，这一块代码属于预留占位，目前不会产出组件css，组件css全部靠rollup的`extract:true`输出。
+2. 重复内容：
+   - `melui.css` 已经包含layout.css+button.css；
+   - 同时build‑css.js又单独输出一份到`dist/common`；文件内容两份是一样的，产物存在重复css文本，属于可接受，是为了支持“按需单独组件”的设计。
+3. rollup每一个独立组件入口（dialog/index.js）**没有import公共layout、button**，这是刻意设计，避免单独组件css把全局公共样式打包进去，造成业务多次引入组件时公共样式重复拷贝。
+4. autoprefixer配置统一`overrideBrowserslist: ['IE 9','IE10','IE11','last 2 versions']`，保证所有css产物（rollup提取的css + build‑css输出common下css）浏览器前缀统一，符合你的IE9兼容目标。
+
+## 六、两种业务使用方式（对应产物设计目标）
+
+### 方式1：使用完整MelUi库（最常用）
+
+```
+<link rel="stylesheet" href="dist/melui.css">
+<script src="dist/melui.js"></script>
+```
+
+> 
+> ✅ melui.css内部已经合并公共基础+全部组件样式，**不需要引入dist/common下任何文件**。
+
+### 方式2：只引入单个组件，按需引入（本套构建体系设计的目标场景）
+
+```
+<!-- 公共基础样式（来自build‑css.js输出的dist/common） -->
+<link rel="stylesheet" href="dist/common/layout.css">
+<link rel="stylesheet" href="dist/common/button.css">
+<!-- 组件自己的js和css -->
+<link rel="stylesheet" href="dist/dialog/dialog.css">
+<script src="dist/dialog/dialog.js"></script>
+```
+
+> 
+> ⚠️ 如果忘记引入common下面的layout、button，组件会缺失基础布局、按钮样式，UI错乱。
+
+> 
+> 整个配置之所以产出你预期的目录，核心就是两点：
+> 
+> 
+> 1. rollup配置输出**数组**，每一项为独立打包任务，`output.file`指定子目录，配合`extract:true`抽组件css；
+> 2. 额外独立node脚本`build‑css.js`专门输出公共基础样式到`dist/common`，服务于「单独按需引入组件」场景。
+
+如果你需要，我可以帮你写一小段注释加到build‑css.js、rollup.config.js头部，方便后续维护看懂这套双css链路逻辑。

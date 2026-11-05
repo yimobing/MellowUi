@@ -109,6 +109,9 @@
 <div class="result" id="result1"></div>
 <div class="result" id="result2"></div>
 
+<!-- 入口 -->
+<script src="../src/components/table/index.js"></script>
+
 <!-- 单元格渲染器 -->
 <script src="../src/components/table/cell-renderers/text.js"></script>
 <script src="../src/components/table/cell-renderers/input.js"></script>
@@ -131,10 +134,10 @@
 <script src="../src/components/table/plugins/pagination.js"></script>
 <script src="../src/components/table/plugins/summary.js"></script>
 <script src="../src/components/table/plugins/export.js"></script>
-<!-- 入口 -->
-<script src="../src/components/table/index.js"></script>
+
 <script>
     var table = null;
+
     // 列配置 testing3
     var columns = [
         {field: 'xh_self', title: '编号', width: 100, renderer: 'text', required: false, align: 'center'},
@@ -233,7 +236,12 @@
                 showQuickJumper: true, // 是否显示页码快速跳转下拉
                 showSizeChanger: true // 是否显示每页条数切换下拉
             },
-            {name: 'Summary', columns: ['mj', 'scjj', 'zje'], title: '合计', titleColumn: 2},
+            {
+                name: 'Summary', 
+                columns: ['mj', 'scjj', 'zje'], 
+                title: '合计', 
+                titleColumn: 2
+            },
             'Export'
         ],
         events: {
@@ -249,8 +257,8 @@
                 // console.log('分页时，全局数据源：', table.getData());
                 console.log('table.isFallbackPaging:', table.isFallbackPaging); // 
                 
-                // 仅后端远程分页(remotePaging = true)才请求后端并setData回填
-                // 且兜底降级时不请求后端
+                // 仅后端远程分页(remotePaging = true)才请求后端且兜底降级时不请求后端
+                // 可使用setData回填数据
                 if (table.options.remotePaging && !table.isFallbackPaging) {
                     // 请求后端数据
                     var data = []
@@ -265,7 +273,7 @@
                             remark: ''
                         });
                     }
-                    table.setData(data);
+                    table.setData(data); // 使用setData回填
                 }
             },
             onSort: function(data) {

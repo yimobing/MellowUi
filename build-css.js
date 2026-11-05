@@ -1,3 +1,10 @@
+
+//----------------------------------------
+// CSS打包处理：打包各个组件的CSS + 公用CSS
+// 将以下css会被`独立 node 脚本`build‑css.js`处理并生成“开发版 + 版本min版”两个版本的CSS文件到指定目录dist
+//----------------------------------------
+
+
 const fs = require('fs-extra');
 const postcss = require('postcss');
 const autoprefixer = require('autoprefixer');
@@ -17,7 +24,8 @@ const baseStyles = [
 const components = [
   { name: 'dialog', src: 'src/components/dialog/index.css', outDir: 'dist/dialog' },
   { name: 'datePicker', src: 'src/components/datePicker/index.css', outDir: 'dist/datePicker' },
-  { name: 'drawer', src: 'src/components/drawer/index.css', outDir: 'dist/drawer' }
+  { name: 'drawer', src: 'src/components/drawer/index.css', outDir: 'dist/drawer' },
+  { name: 'table', src: 'src/components/table/index.css', outDir: 'dist/table' }
 ];
 
 /**

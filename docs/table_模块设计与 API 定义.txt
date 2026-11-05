@@ -1,0 +1,816 @@
+# MelUi.Table 模块设计与 API 定义
+------------------------------------------------------------------------------------------
+            ## 一、新架构
+------------------------------------------------------------------------------------------
+
+# 正确的架构应该长什么样
+
+核心原则只有一条：**数据模型是唯一真相源，DOM 只是数据的投影**。
+
+```
+    ┌─────────────┐
+    │  数据模型     │  ← 唯一真相源
+    │ (DataStore)  │    所有数据、状态、配置都在这里
+    └──────┬──────┘
+            │ 数据变化时通知
+            ▼
+    ┌─────────────┐
+    │  渲染层      │  ← 只负责把数据画出来
+    │ (Renderer)   │    不存数据，不做业务判断
+    └──────┬──────┘
+            │ 用户操作时触发
+            ▼
+    ┌─────────────┐
+    │  事件层      │  ← 事件委托，只处理交互
+    │ (Events)     │    改数据模型，不直接改 DOM
+    └─────────────┘
+```
+
+
+# 整体架构全景
+
+```
+┌──────────────────────────────────────────────────────┐
+│                    MelUi.Table                         │
+├──────────────────────────────────────────────────────┤
+│  插件层（Plugins，按需启用，全部打包在一个JS里）       │
+│  SerialNo / Checkbox / Sort / Pagination / Summary   │
+│  StateColumn / Export                                 │
+├──────────────────────────────────────────────────────┤
+│  核心层（Core，固定不变）                              │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │
+│  │DataStore │ │ Renderer │ │ EventBus │ │ Layout │ │
+│  │数据管理   │ │DOM渲染   │ │事件调度  │ │布局测量│ │
+│  └──────────┘ └──────────┘ └──────────┘ └────────┘ │
+├──────────────────────────────────────────────────────┤
+│  DOM层（原生 table）                                   │
+│  <table><thead>…</thead><tbody>…</tbody></table>     │
+└──────────────────────────────────────────────────────┘
+```
+
+**依赖关系单向向下**：插件 → 核心 → DOM。插件之间不直接通信，通过 EventBus 解耦。
+
+# 这个架构下：
+- 核心层很小，只做数据管理和渲染，性能好
+- 插件层是增量，不用的功能不加载
+- 加新功能 = 写新插件，不改核心
+- 数据在 JS 对象里，不在 DOM 里，操作快
+- 原生 table 布局，浏览器帮你做列宽对齐
+
+表格控件是典型的 "地基决定上限" 的东西 —— 一开始架构选对了，后面加功能只是往上搭积木；一开始选错了，每加一个功能都要拆东墙补西墙，最后性能和可维护性一起崩。
+
+
+# IE9 兼容下要注意的坑
+最后说几个 IE9 特有的限制，架构设计时就要考虑：
+1. **没有 `Promise`**—— 异步操作要用回调，不能用.then ()
+2. **没有 `Array.prototype.forEach`？** 不，IE9 支持 forEach。但不支持 `map`、`filter`？不对，IE9 也支持 map 和 filter。IE9 支持标准 ES5 数组方法，这个没问题。
+3. **没有 `Object.keys`？** IE9 支持 Object.keys。
+4. **`addEventListener` 支持**——IE9 开始支持了，不用 attachEvent。
+5. **`querySelector/querySelectorAll`**——IE9 支持。
+6. **`classList`**——IE9 不支持，要操作 className 字符串。
+7. **`dataset`**——IE9 不支持，要用 `getAttribute`/`setAttribute`。
+8. **`textContent`**——IE9 支持。
+9. **CSS transform**——IE9 支持，但要带 `-ms-` 前缀。
+10. **`opacity`**——IE9 支持，但 rgba 在 IE9 下有坑，要用 filter。
+
+这些都是工具层面的问题，不影响架构设计。真正要注意的是：**不要依赖 Proxy 做响应式，不要用 ES6 语法，不要用虚拟 DOM 库**。
+
+
+
+------------------------------------------------------------------------------------------
+            ## 二、新旧构架对比说明
+------------------------------------------------------------------------------------------
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 为什么旧架构控件越改越卡 —— 根因分析
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## 现有旧架构的致命问题：DOM 即数据
+你现在的表格，**数据存在哪里？存在 DOM 里**。
+- 单元格的值 → 存在 `<input value="...">` 里
+- 行状态 → 存在 `.i-t-state` 这个 input 的 value 里
+- 列配置 → 存在表头的 `data-*` 属性里
+- 取数据 → `getFormData()` 遍历所有 DOM 节点，一个一个读 `.val()`、`.text()`
+- 改数据 → 直接改 DOM，然后状态列自动追踪
+
+这个模式在 10 行 5 列的时候没问题。但行数一多，问题就来了：
+1. **每次取数据都要全表扫 DOM**——30 行 ×15 列 = 450 个单元格，每个都要 `.find()`、`.val()`
+2. **每次点击单元格都要重新取全表数据**—— 因为回调函数需要知道 "当前行所有列的值"，但你是从 DOM 里现读的
+3. **行高、列宽全部靠 JS 测量 DOM**—— 渲染完了再读 `offsetHeight`，再写回去，反复 reflow
+4. **加新功能就要加 DOM 节点**—— 小计行要克隆一行 DOM，合计行又克隆一行，状态列要多一个 input
+
+**本质上，你的表格是一个 "DOM 操作库"，不是一个 "数据驱动的表格"。**
+
+这就是为什么功能越加越卡：每加一个功能，DOM 节点就多一批，DOM 操作就多一轮，reflow 就多一次。
+
+---
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## 新的架构三层架构各自干什么
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+### 第一层：数据模型（DataStore）—— 最关键
+
+表格所有的数据、状态都存在一个 JS 对象里，不是存在 DOM 里：
+
+```
+DataStore = {
+  columns: [...],     // 列配置（只读，初始化后不变）
+  rows: [...],        // 行数据数组，每一行是一个对象 {field1: val1, field2: val2, _status: 'i'/'u'/'s'}
+  selectedRows: [...],// 选中的行索引
+  sort: {field, order},
+  page: {curpage, pagesize, total}
+}
+```
+
+**这个设计带来的改变：**
+
+表格
+
+| 操作 | 现有方式（DOM 即数据） | 新方式（数据驱动） |
+| --- | --- | --- |
+| 取某行数据 | 遍历 DOM，找 td，读 input.value | `DataStore.rows[rowIndex]`，直接读对象 |
+| 取全表数据 | 遍历 450 个 DOM 节点 | `DataStore.rows`，一个数组 |
+| 改某个单元格的值 | 改 input.value，再追踪状态 | `DataStore.rows[i][field] = val`，然后通知渲染层更新那个单元格 |
+| 标记行状态 | 找到.state input，改 value | `DataStore.rows[i]._status = 'u'` |
+| 新增一行 | 克隆 DOM，清空，重置 radio | `DataStore.rows.push({...})`，然后渲染层只渲染这一行 |
+| 删除一行 | DOM remove，再重排序号 | `DataStore.rows.splice(i, 1)`，然后渲染层删掉这一行 |
+| 排序 | 重新创建整个表格 DOM | 数组排序，然后重渲染行 |
+
+**性能差距在哪：**
+
+- 取数据从 O (行 × 列) 的 DOM 查询 → O (1) 的对象读取
+- 新增行不用克隆整个 DOM 再清空 → 只渲染一行
+- 删除行不用遍历重排序号 → 数组 splice，序号重新生成
+- 状态追踪不用找 DOM → 直接改对象属性
+
+### 第二层：渲染层（Renderer）—— 只画不管
+
+渲染层的职责：根据数据模型，把数据画成 DOM。
+
+关键设计：**渲染分两层 —— 表头只渲染一次，行按需渲染**。
+
+- 表头：初始化时渲染一次，之后除非列配置变了，不再重渲染
+- 行数据：
+  - 录入型场景（每页 30 行）：全部渲染，简单粗暴
+  - 展示型场景（数据多）：只渲染可视区域内的行（虚拟滚动）
+
+**为什么要分层：**
+
+- 现有控件排序时，是**整个表格重新创建 DOM**（你看代码里排序后调 `$.refreshData()`，表头表身全部重建）
+- 数据驱动的话，排序只是数组排序，然后**只重绘行部分**，表头不动，滚动位置保持
+
+
+
+### 第三层：事件层（Events）—— 全委托
+
+所有事件都绑定在表格根节点上，用事件委托：
+
+- 点击单元格 → 根节点捕获，根据 `data-row-index` 和 `data-field` 判断点了哪个单元格
+- 输入框值变化 → 根节点监听 `input` 事件，改 DataStore
+- 滚动 → 根节点监听，虚拟滚动时计算可视范围
+
+**现有控件的问题：**
+
+- 你看代码里，输入框的 input 事件是逐个绑定的（第 1409 行：`ps_obj.find('input:text...').bind(...)`）
+- 行一多，绑定的事件处理器就多，内存占用大
+- 新增行还要重新绑一遍
+
+事件委托的好处：不管多少行，事件处理器只有一个，绑在根节点上。
+
+---
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 录入型 + 展示型表格合一，怎么做到不互相拖累
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+这是你最关心的问题。两者的核心矛盾：
+
+表格
+
+| 维度 | 录入型需要 | 展示型需要 |
+| --- | --- | --- |
+| 单元格 | 每个都可编辑，有交互 | 纯文本就行 |
+| 行数量 | 少（30 行），但交互多 | 多（几百上千行），但交互少 |
+| 渲染方式 | 全部渲染，因为要编辑 | 虚拟滚动，只渲染可见行 |
+| 列宽 | 固定 px 为主 | 可能自适应内容 |
+| 性能敏感点 | 输入流畅度、状态追踪 | 首屏渲染速度、滚动流畅度 |
+
+**合一的关键：把 "单元格渲染" 做成可插拔的渲染器（renderer）**
+
+```
+列配置里指定：
+{
+  field: 'mj',
+  title: '面积',
+  renderer: 'input'    // 录入型：渲染成input
+}
+{
+  field: 'mj',
+  title: '面积',
+  renderer: 'text'     // 展示型：渲染成纯文本
+}
+```
+
+同一个表格内核，根据列配置自动选择渲染方式：
+
+- 有 `renderer: 'input'` 的列 → 走录入模式
+- 全部是 `renderer: 'text'` → 走展示模式
+
+**这样设计的好处：**
+
+- 表头固定、列冻结、滚动同步这些底层逻辑只有一套
+- 差异只在 "单元格怎么画" 和 "交互怎么处理"
+- 不会出现 "录入表格一套代码，展示表格另一套代码" 的情况
+
+---
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 一开始就要想清楚的地基决策
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+这些东西选错了，后面改不动，因为每加一个功能都要动它：
+
+## 1. 数据存在哪？—— 必须是 JS 对象，不是 DOM
+
+这是最核心的决策。一旦你决定 "数据存在 DataStore 里"，后面所有功能都顺理成章：
+
+- 取数据快
+- 新增行快
+- 删除行快
+- 排序只是数组操作
+- 状态追踪只是改个属性
+
+如果你还是 "数据存在 DOM 里"，后面加任何功能都会慢。
+
+## 2. 用原生 `<table>` 还是 div 模拟？—— 强烈建议原生 table
+
+你现在用 div+flex 模拟表格，是所有性能问题的根源：
+
+- 浏览器不知道这是表格，不做布局优化
+- 列宽行高要 JS 手动对齐
+- 固定表头固定列要拆 DOM 同步
+
+原生 `<table>` 的好处：
+
+- 浏览器内核做表格布局优化，列宽对齐是免费的
+- `table-layout: fixed` 可以让列宽严格按设定来，不会因为内容撑变形
+- 固定表头用 `<thead>` + 滚动容器，固定列用 JS 克隆或绝对定位，比 div 方案简单
+
+**IE9 下原生 table 的兼容性非常好**，比 flex 好得多。你 CSS 里写了一堆 flex 前缀（`-webkit-box`、`-moz-box`、`-ms-flexbox`），说明你在 flex 兼容上吃了不少苦头。原生 table 没这些问题。
+
+## 3. 行渲染是全部渲染还是虚拟滚动？—— 做成可配置
+
+- 录入型：每页 30 行，全部渲染，简单可靠
+- 展示型：数据多，开虚拟滚动
+
+这个不矛盾，做成配置项就行。但架构上要支持：渲染层可以替换 —— 全部渲染器 / 虚拟滚动渲染器。
+
+## 4. 列宽怎么定？—— 固定 px 为主，不要做自适应内容
+
+你之前问过 "列宽 px / 自适应内容" 两种模式。我的建议：**新控件只做固定 px 宽度**。
+
+原因：
+
+- 自适应内容列宽需要渲染后测量 DOM，又回到 "先渲染再测量再调整" 的老路
+- 业务上，列宽本来就应该是设计好的，不是 "根据内容自动撑"
+- 用户要调宽窄，用列宽拖拽功能解决
+
+固定列宽 + `table-layout: fixed`，列宽完全可控，不需要 JS 测量。
+
+## 5. 固定列怎么做？—— 只支持左侧连续 N 列，不要做任意列冻结
+
+任意列冻结（比如第 3 列和第 7 列同时固定）实现复杂度非常高，而且真实业务很少需要。一般就是序号列、名称列固定在左边，后面的列滚动。
+
+做这个限制能省掉 80% 的固定列复杂度。
+
+---
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 架构决策对后期扩展性的影响
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+举几个例子，说明 "地基选对了，加功能很简单"：
+
+表格
+
+| 新功能需求 | 数据驱动架构下 | DOM 即数据架构下 |
+| --- | --- | --- |
+| 加一列 | columns 数组加一项，渲染层加一列 | 改 HTML 模板，改表头，改表身，改 getFormData |
+| 排序 | 数组 sort 一下，重绘行 | 重新创建整个表格 DOM |
+| 列显示 / 隐藏 | columns 数组里设个 visible:false，渲染时跳过 | 遍历 DOM，把对应列的 td 全部 hide |
+| 复制粘贴 Excel | 解析粘贴内容，写入 DataStore.rows，重绘对应行 | 要操作 DOM，找到对应单元格，改 input.value，还要追踪状态 |
+| 导出 Excel | 直接从 DataStore.rows 取数据拼 HTML | 从 DOM 里一个一个读值 |
+| 批量选中 | DataStore.selectedRows 存索引 | 遍历 DOM 找 checkbox checked |
+| 行拖拽排序 | 数组里交换位置，重绘行 | DOM 里移动节点，再重排序号 |
+
+看出来了吗？**数据驱动架构下，加功能就是操作数组和对象，然后告诉渲染层 "哪部分变了"**。而 DOM 即数据架构下，加功能就是操作 DOM，每一步都要小心别搞错位。
+
+---
+
+# 总结：重构的核心不是 "换纯 JS"，是 "换数据模型"
+
+你现在想从 jQuery 换成纯 JS，这个方向是对的，但**这不是最关键的改变**。
+
+最关键的改变是：
+
+1. **数据从 DOM 搬到 JS 对象里**
+2. **用原生 `<table>` 布局，不用 div 模拟**
+3. **渲染和数据分离，数据变了才重绘对应部分**
+
+做到这三点，哪怕你还是用 jQuery，性能也会比现在好 5-10 倍。换纯 JS 只是顺手把 jQuery 那层皮去掉而已。
+
+**反过来，如果只是把 jQuery 换成纯 JS，但数据还是存在 DOM 里，还是 div 模拟表格，那性能提升微乎其微**—— 因为瓶颈不在 jQuery 库本身，在 DOM 操作的次数和方式。
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## 为什么新架构这样比旧架构DOM 存数据快
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+旧架构下:
+你原来获取表格数据的函数 `getFormData()` 是这样的：
+
+```
+点击保存按钮
+  → 遍历30行
+    → 每行遍历15列
+      → 每列.find('input').val()
+      → 每列.find('span').text()
+      → 每列.attr('data-bh')
+  → 拼成JSON
+```
+
+新架构下：
+
+```
+点击保存按钮
+  → DataStore.rows.filter(r => r._status == 'i' || r._status == 'u')
+  → 直接就是JSON，不用读DOM
+```
+
+**30 行 ×15 列 ×5 次 DOM 查询 = 2250 次操作 → 30 次数组过滤。**
+
+
+
+
+
+------------------------------------------------------------------------------------------
+            ## 三、文件划分
+------------------------------------------------------------------------------------------
+
+**开发时内部拆分**（方便维护），**发布时 Rollup 打包成 1 个 js + 1 个 css**：
+
+```
+src/components/table/
+├── index.js              // 入口，挂载 MelUi.Table
+├── index.css             // 基础样式
+├── core/
+│   ├── table.js          // TableCore 主类
+│   ├── data-store.js     // DataStore 数据存储
+│   ├── renderer.js       // Renderer 渲染器
+│   ├── event-bus.js      // EventBus 事件总线
+│   └── layout.js         // Layout 布局（固定列、表头对齐）
+├── plugins/
+│   ├── plugin-base.js    // 插件基类
+│   ├── serial-no.js      // 序号列
+│   ├── checkbox.js       // 多选列
+│   ├── sort.js           // 排序
+│   ├── pagination.js     // 分页
+│   ├── summary.js        // 合计行/小计行
+│   ├── state-column.js   // 状态列
+│   └── export.js        // 导出Excel
+└── cell-renderers/
+    ├── text.js           // 纯文本
+    ├── input.js          // 单行输入
+    ├── textarea.js       // 多行输入
+    ├── radio.js          // 单选
+    ├── checkbox-cell.js   // 复选单元格
+    └── button.js         // 按钮
+demo/
+└── table-demo.html                   # 演示页面
+
+> 
+> 业务方只引入两个文件：`melui-table.js` + `melui-table.css`，所有插件都在里面。用不用某个插件，通过配置控制。
+
+---
+
+
+
+------------------------------------------------------------------------------------------
+            ## 四、核心类设计
+------------------------------------------------------------------------------------------
+### 1 构造方式
+
+```
+var table = new MelUi.Table(options);
+```
+
+### 2 配置项 options
+
+```
+{
+    // 必填
+    el: '#table-box',           // 容器选择器或DOM节点
+    columns: [],                // 列配置，见3.3
+    data: [],                   // 初始数据数组
+
+    // 外观
+    rowHeight: 40,              // 行高px，默认40
+    headerHeight: 40,            // 表头高度px，默认40
+    fixedLeftColumns: 0,        // 左侧固定列数，默认0（不固定）
+    bordered: true,             // 单元格边框，默认true
+    stripe: false,               // 隔行变色，默认false
+    hoverHighlight: true,        // 行hover高亮，默认true
+
+    // 插件
+    plugins: [],                 // 插件实例数组，见第六节
+
+    // 事件
+    events: {}                   // 事件回调，见第五节
+}
+```
+
+### 3 columns 列配置
+
+每一列是一个对象：
+
+```
+{
+    // ----- 基础 -----
+    field: 'mj',                 // 字段名（必填，唯一标识）
+    title: '面积',               // 列标题（必填）
+    subtitle: '(㎡)',            // 副标题（可选，显示在标题下方）
+    width: 100,                  // 列宽px（必填，固定值）
+    renderer: 'input',           // 渲染器类型（必填）
+                                 // 'text'      纯文本
+                                 // 'input'     单行输入框
+                                 // 'textarea'  多行输入框
+                                 // 'radio'     单选按钮组
+                                 // 'checkbox'  复选框
+                                 // 'button'    按钮
+                                 // 'custom'    自定义（需配render函数）
+    align: 'center',             // 对齐：'left'/'center'/'right'，默认'center'
+
+    // ----- 数据校验 -----
+    type: 'float',               // 数据类型（可选）
+                                 // 'string' 默认
+                                 // 'int' 正整数
+                                 // 'int[negative]' 正负整数
+                                 // 'float' 正小数
+                                 // 'float[negative]' 正负小数
+                                 // 'date' 日期
+    required: false,              // 是否必填，默认false
+    unique: false,                // 是否唯一值，默认false
+    digit: 2,                     // 小数位数（type为float时有效）
+
+    // ----- 编辑控制 -----
+    readonly: false,              // 是否只读，默认false
+    disabled: false,              // 是否禁用，默认false
+    defaultValue: '',             // 新增行时的默认值
+
+    // ----- 显示格式化 -----
+    formatter: function(value, rowData) {
+        // 自定义显示格式化，return 显示的文本
+        // 比如 value=1 显示成 '是'
+        return value == 1 ? '是' : '否';
+    },
+
+    // ----- 自定义渲染 -----
+    render: function(value, rowData, cellNode) {
+        // renderer='custom'时的自定义渲染函数
+        // return HTML字符串或DOM节点
+    },
+
+    // ----- renderer='button' 专用 -----
+    buttonText: '保存',           // 按钮文字
+    buttonIcon: 'save',            // 按钮图标（font-awesome类名，可选）
+
+    // ----- renderer='radio' 专用 -----
+    radioOptions: {yes: '是', no: '否'},  // 单选选项
+
+    // ----- 单元格点击回调 -----
+    onCellClick: function(rowData, cell) {
+        // 单元格点击（可选）
+    }
+}
+```
+
+---
+
+
+
+
+------------------------------------------------------------------------------------------
+                ## 五、实例方法 API
+------------------------------------------------------------------------------------------
+### 1. 数据读取
+
+```
+// 获取整表数据
+// return: Array，每一项是一行数据对象
+//   [{xh_self: 'B1001', mj: 110.5, _status: 's'}, ...]
+table.getData();
+
+// 获取指定行数据
+// rowIndex: 行索引（从0开始）
+table.getRowData(rowIndex);
+
+// 获取选中行数据（需配合Checkbox插件）
+table.getSelectedData();
+
+// 获取有变动的行（新增 + 修改的行）
+// return: Array
+table.getDirtyData();
+```
+
+### 2. 数据写入
+
+```
+// 设置某行某列的值
+table.setCellValue(rowIndex, field, value);
+
+// 批量设置某行多个列的值
+// data: {field1: val1, field2: val2}
+table.setRowData(rowIndex, data);
+
+// 新增一行
+// data: 行数据对象（可选，不传则用defaultValue生成空行）
+// position: 'last'（默认，追加到最后）/ 'first'（插入最前面）
+table.addRow(data, position);
+
+// 删除一行
+table.deleteRow(rowIndex);
+
+// 清空所有数据
+table.clearData();
+```
+
+### 3. 状态操作
+
+```
+// 标记某行为已保存
+// rowIndex: 行索引，传 'all' 表示全部
+table.markSaved(rowIndex);
+
+// 设置某行某列为只读/可写
+table.setCellReadonly(rowIndex, field, readonly);
+
+// 全选/全不选/反选（需Checkbox插件）
+table.selectAll();
+table.selectNone();
+table.invertSelect();
+```
+
+### 4. 校验
+
+```
+// 校验指定行必填项
+// rowIndex: 行索引，传 'all' 校验全部
+// return: String 错误提示文字，空字符串表示通过
+table.validate(rowIndex);
+
+// 校验唯一值列
+// return: String 错误提示文字，空字符串表示通过
+table.validateUnique();
+```
+
+### 5. 渲染控制
+
+```
+// 重新渲染整个表格
+table.render();
+
+// 只重绘指定行（数据变了用这个，性能好）
+table.renderRow(rowIndex);
+
+// 只重绘指定单元格
+table.renderCell(rowIndex, field);
+
+// 销毁表格，解绑事件，清空DOM
+table.destroy();
+```
+
+### 6. 事件绑定
+
+```
+// 绑定事件
+table.on(eventName, handler);
+
+// 解绑事件
+table.off(eventName, handler);
+```
+
+---
+
+
+
+------------------------------------------------------------------------------------------
+            ## 六、事件系统
+------------------------------------------------------------------------------------------
+事件通过 `table.on()` 绑定，或在 `options.events` 里配置：
+
+```
+events: {
+    // 单元格点击
+    onCellClick: function(rowData, cell) {
+        // rowData: 当前行数据
+        // cell: {rowIndex, field, value, element}
+    },
+
+    // 单元格值变化（用户输入时触发）
+    onCellChange: function(rowIndex, field, newValue, oldValue) {
+    },
+
+    // 行点击
+    onRowClick: function(rowData, rowIndex) {
+    },
+
+    // 行选中变化（需Checkbox插件）
+    onSelectChange: function(selectedRows) {
+    },
+
+    // 新增行后
+    onRowAdd: function(rowData, rowIndex) {
+    },
+
+    // 删除行后
+    onRowDelete: function(rowIndex, rowData) {
+    },
+
+    // 排序变化（需Sort插件）
+    onSort: function(field, order) {
+        // order: 'asc' / 'desc'
+    },
+
+    // 分页变化（需Pagination插件）
+    onPageChange: function(curpage, pagesize) {
+    }
+}
+```
+
+---
+
+
+
+------------------------------------------------------------------------------------------
+            ## 七、插件机制
+------------------------------------------------------------------------------------------
+### 1. 使用方式
+
+```
+var table = new MelUi.Table({
+    el: '#table-box',
+    columns: columnsConfig,
+    data: dataList,
+    plugins: [
+        new MelUi.Table.plugins.SerialNo(),
+        new MelUi.Table.plugins.Checkbox(),
+        new MelUi.Table.plugins.Sort(),
+        new MelUi.Table.plugins.Pagination({
+            pageSize: 30,
+            pageMode: 'select'
+        }),
+        new MelUi.Table.plugins.Summary({
+            columns: ['mj', 'scjj']   // 需要合计的字段
+        }),
+        new MelUi.Table.plugins.StateColumn(),
+        new MelUi.Table.plugins.Export({
+            filename: '数据导出'
+        })
+    ]
+});
+```
+
+### 2. 内置插件清单
+
+表格
+
+| 插件名 | 作用 | 关键配置 |
+| --- | --- | --- |
+| SerialNo | 序号列 | `width: 50` 序号列宽 |
+| Checkbox | 多选列 | `width: 40` 复选列宽 |
+| Sort | 表头排序 | `defaultField` 默认排序列 |
+| Pagination | 分页 | `pageSize`、`pageMode`、`pageListSize` |
+| Summary | 合计行 / 小计行 | `columns` 合计字段数组、`showSubtotal` 是否分组小计 |
+| StateColumn | 状态列 | `newText`、`unsaveText`、`savedText` |
+| Export | 导出 Excel | `filename`、`extension` |
+
+---
+
+
+
+------------------------------------------------------------------------------------------
+            ## 八、DataStore 内部结构（核心层内部，业务方不用直接操作）
+------------------------------------------------------------------------------------------
+```
+DataStore = {
+    // 列配置（只读）
+    columns: [],
+
+    // 行数据（核心，所有变更都改这里）
+    rows: [
+        {
+            // 业务字段
+            xh_self: 'B1001',
+            mj: 110.5,
+            area: '泉州',
+
+            // 内部字段（下划线开头）
+            _rowIndex: 0,        // 行索引
+            _status: 's',        // 'i'=新增 'u'=修改 's'=已保存
+            _selected: false,    // 是否选中
+            _node: null          // 对应DOM节点引用
+        }
+    ],
+
+    // UI状态
+    sortField: '',
+    sortOrder: '',
+    selectedRowIndexes: [],
+
+    // 内部方法
+    getRow: function(rowIndex) {},
+    setCell: function(rowIndex, field, value) {},
+    addRow: function(data, position) {},
+    removeRow: function(rowIndex) {},
+    getDirtyRows: function() {}
+}
+```
+
+---
+
+
+
+------------------------------------------------------------------------------------------
+            ## 九、完整使用示例（业务方视角）
+------------------------------------------------------------------------------------------
+
+```
+<div id="table-box"></div>
+
+<script>
+var columns = [
+    {field: 'xh_self', title: '编号', width: 80, renderer: 'text'},
+    {field: 'mj', title: '面积', subtitle: '(㎡)', width: 100,
+     renderer: 'input', type: 'float', digit: 2, required: true},
+    {field: 'area', title: '省市区', width: 150, renderer: 'input', readonly: true},
+    {field: 'scjj', title: '楼盘均价', width: 100,
+     renderer: 'input', type: 'float', required: true},
+    {field: 'check_wc', title: '是否完成', width: 80,
+     renderer: 'radio', radioOptions: {yes: '1', no: '0'},
+     formatter: function(v) { return v == '1' ? '是' : '否'; }},
+    {field: 'operation', title: '操作', width: 100,
+     renderer: 'button', buttonText: '保存',
+     onCellClick: function(rowData) {
+         alert('保存行：' + rowData.xh_self);
+     }}
+];
+
+var data = [
+    {xh_self: 'B1001', mj: 110.5, area: '泉州', scjj: 11000, check_wc: '1'},
+    {xh_self: 'B1002', mj: 150.47, area: '泉州', scjj: 12000, check_wc: '0'}
+];
+
+var table = new MelUi.Table({
+    el: '#table-box',
+    columns: columns,
+    data: data,
+    rowHeight: 40,
+    fixedLeftColumns: 1,
+    plugins: [
+        new MelUi.Table.plugins.SerialNo(),
+        new MelUi.Table.plugins.Checkbox(),
+        new MelUi.Table.plugins.StateColumn(),
+        new MelUi.Table.plugins.Summary({columns: ['mj', 'scjj']})
+    ],
+    events: {
+        onCellChange: function(rowIndex, field, newValue) {
+            console.log('单元格变了：', rowIndex, field, newValue);
+        }
+    }
+});
+
+// 保存按钮
+document.getElementById('btn-save').onclick = function() {
+    var dirtyData = table.getDirtyData();
+    console.log('需要保存的数据：', dirtyData);
+};
+</script>
+```
+
+---
+
+
+------------------------------------------------------------------------------------------
+            ## 十、代码规范约束（写代码时遵守）
+------------------------------------------------------------------------------------------
+1. 全部用 `var`，不用 `let`/`const`/ 箭头函数 / 模板字符串
+2. 不用 `Promise`/`async/await`
+3. 不用 `class`，用构造函数 + `prototype`
+4. 不用 `dataset`，用 `getAttribute`/`setAttribute`
+5. 不用 `classList`，用 `className` 字符串操作
+6. 事件全部委托到表格根节点，不逐个绑定
+7. 数据变更只改 DataStore，DOM 更新由 Renderer 负责
+8. HTML 字符串用数组 `join('\r\n')` 拼接
+9. 兼容 IE9 / IE10 / IE11 / Edge
+
+---

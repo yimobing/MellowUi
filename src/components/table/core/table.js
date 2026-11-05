@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 主类
  * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.7.4
+ * @Version：v1.7.5
  * @Date：2026-10-10
- * @Pubdate：2026-11-04
+ * @PubDate：2026-11-05 10:07:38
  */
 
  (function(MelUi) {
@@ -310,7 +310,12 @@
 
     /**
      * 聚焦新增行第一个可输入控件（input/textarea）
-     * 只找本次新增行内部的第一个可编辑输入框；排除 readonly/disabled（不可输入，聚焦无意义）；
+     * 只找本次新增行内部的第一个可编辑输入框；
+     * 过滤规则：
+     *   1. 跳过 readonly/disabled（不可输入，聚焦无意义）；
+     *   2. 只允许 textarea，以及 input 的 text / password 类型；
+     *      checkbox / radio / button / hidden / number / date 等其它 input 类型一律跳过
+     *      （这类控件虽可获得焦点，但不是业务要录入文本的输入框，聚焦上去看不到光标，等同聚焦失效）。
      * 找不到可输入控件时静默跳过，不影响新增流程。
      * @param {Object} row 新增行对象
      */
@@ -319,8 +324,15 @@
         var nodes = row._node.querySelectorAll('input, textarea');
         for (var i = 0; i < nodes.length; i++) {
             var editable = nodes[i];
-            // 跳过只读/禁用输入框（不可输入，聚焦无意义）；select 不算"可输入框"，不处理
+            var tag_name = editable.tagName.toLocaleLowerCase();
+            var type = (editable.type || '').toLocaleLowerCase();
+
+            // 跳过只读/禁用输入框（不可输入，聚焦无意义）
             if (editable.disabled || editable.readOnly) continue;
+
+            // 只允许 textarea / input:text / input:password，其余类型（checkbox/radio/button/hidden 等）跳过
+            if (!(tag_name === 'textarea' || (tag_name === 'input' && (type === 'text' || type === 'password')))) continue;
+
             editable.focus();
             return;
         }
