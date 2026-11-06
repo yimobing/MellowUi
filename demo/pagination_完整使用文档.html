@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title> MelUi Pagination 独立分页组件 完整使用说明</title>
+<link rel="stylesheet" href="../src/components/pagination/index.css">
+<style>
+    body { font-family: "Microsoft YaHei", Arial, sans-serif; background:#f5f7fa; color:#333; margin:0; padding:20px; font-size:14px; }
+    h1 { font-size:20px; margin:0 0 6px; }
+    h2 { font-size:16px; margin:28px 0 10px; padding-left:8px; border-left:4px solid #409eff; }
+    h3 { font-size:14px; margin:18px 0 8px; color:#303133; }
+    .block { background:#fff; border:1px solid #e4e7ed; border-radius:4px; padding:16px; margin-bottom:12px; }
+    .desc { color:#666; margin-bottom:10px; line-height:1.7; }
+    .result { background:#f8f8f9; border:1px dashed #dcdfe6; border-radius:3px; padding:10px; min-height:24px; line-height:1.8; margin:12px 0; word-break:break-all; }
+    .info { color:#909399; font-size:12px; margin-top:8px; }
+    pre { background:#2d2d2d; color:#ccc; padding:14px; border-radius:4px; overflow:auto; font-size:13px; line-height:1.6; margin:10px 0 0; }
+    code { font-family: Consolas, "Courier New", monospace; }
+    .note { background:#ecf5ff; border:1px solid #d9ecff; border-radius:3px; padding:8px 12px; color:#409eff; margin:10px 0; line-height:1.7; }
+</style>
+</head>
+<body>
+
+<h1> MelUi Pagination 独立分页组件 </h1>
+<p>通用分页条组件：负责渲染分页控件、响应用户操作并抛出变更事件。数据请求、数据切片、列表渲染全部由业务自己控制。</p>
+<p>
+    【名词解释】
+    “钳位”一词：是开发圈技术黑话，我们文档里面出现的「页码钳位」。
+    含义：把一个非法 / 越界的数字，强行限制在合法的最小、最大值区间里面，不能跑出这个范围。
+</p>
+<!-- ==================== 引入方式 ==================== -->
+<h2>引入方式</h2>
+<div class="block">
+<pre><code>&lt;link rel="stylesheet" href="dist/pagination/pagination.css"&gt;
+&lt;script src="dist/pagination/pagination.js"&gt;&lt;/script&gt;
+
+// 两种写法都可以：
+var pager = new MelUi.Pagination({ ... });   // 写法1：带 new
+var pager = MelUi.Pagination({ ... });       // 写法2：省略 new，效果完全一样</code></pre>
+</div>
+
+<!-- ==================== 配置项 ==================== -->
+<h2>配置项 Options</h2>
+<div class="block">
+<pre><code>{
+    el: null, // 挂载容器(必填)。默认null，不渲染。支持选择器字符串'#id'或DOM元素。
+    enable: true, // 是否启用交互(可选)。false时所有按钮置灰禁用，DOM保留
+    total: 0, // 总条数(可选)。小于0时全部交互控件置灰。
+    pageSize: 20, // 每页条数(可选)。小于1自动修正为20
+    pageNo: 1, // 当前页码(可选)
+    pageListSize: 5, // 数字页码区域最多展示连续页码数量(可选)。最小值为3
+    showTotal: true, // 是否显示总条数文本(可选)
+    showListSize: true, // 是否展示中间连续数字页码(可选)。比如（1 2 3 4 5）这种
+    showJumpDrop: true, // 是否显示页码下拉选择器(可选)
+    showJumpInput: true, // 是否显示手动输入页码跳转框(可选)
+    showPageSize: true, // 是否显示每页条数下拉(可选)
+    pageSizeOptions: [10,20,50,100], // 自定义每页条数下拉选项(可选)
+
+    // 事件
+    onChange: function({pageNo, pageSize, oldPageNo, oldPageSize}) {
+        // 触发场景：用户点击页码、切换每页条数、下拉选页码、输入框跳转(按回车时跳转) 都会触发
+        // 说明：调用setOption更新状态不会触发onChange，避免循环
+        // 参数：
+        // pageNo / pageSize ：交互后的新值（页码已钳位到 1~maxPage 合法范围，业务不需要再判断越界。）
+        // oldPageNo / oldPageSize ：交互前的旧值，业务据此判断是翻页还是切了每页条数
+        // pageNo 当前页码， pageSize 当前每页记录数， oldPageNo 之前旧的页码， oldPageSize 之前旧的每页记录数。
+    }
+}</code></pre>
+</div>
+
+<!-- ==================== 实例 API ==================== -->
+<h2>实例 API</h2>
+<div class="block">
+
+<h3>1. setOption(patch)：业务主动更新状态并重绘</h3>
+<div class="note"> 说明：setOption 用于重绘UI，但【不会触发 onChange】，避免"setOption→onChange→setOption"死循环 </div>
+<p class="desc">局部更新：传哪些字段就更新哪些，不需要全量传入。支持的全部可更新字段：</p>
+<pre><code>pager.setOption({
+    enable: true,              // 是否启用交互
+    total: 0,                  // 总条数
+    pageSize: 20,             // 每页条数
+    pageNo: 1,                // 当前页码
+    pageListSize: 5,          // 数字页码连续展示个数
+    showTotal: true,         // 是否显示总条数文本
+    showListSize: true,     // 是否显示数字页码行
+    showJumpDrop: true,      // 是否显示页码下拉选择器
+    showJumpInput: true,     // 是否显示手动输入页码跳转框
+    showPageSize: true,      // 是否显示每页条数下拉
+    pageSizeOptions: [10,20,50,100] // 每页条数下拉选项
+});
+
+// 说明：
+// - 只传需要改的字段即可，例如只回写总数：pager.setOption({ total: 300 });
+// - el 是挂载容器，只能在初始化时传入，setOption 不能换容器</code></pre>
+
+<h3>2. destroy()：销毁组件</h3>
+<pre><code>pager.destroy();
+// 移除事件委托、清空容器DOM；销毁后再调用任何方法都会被忽略，重复调用不报错</code></pre>
+
+<h3>3. 只读属性</h3>
+<pre><code>pager.pageNo        // 当前页码
+pager.pageSize      // 每页条数
+pager.total         // 总条数
+pager.maxPage       // 最大合法页码 = Math.max(1, Math.ceil(total / pageSize))
+pager.enable        // 是否启用
+pager.isDestroyed   // 是否已销毁</code></pre>
+</div>
+
+<!-- ==================== onChange 用法 ==================== -->
+<h2>onChange 回调的三种常用写法</h2>
+<div class="note">
+    注意：onChange 抛出的 pageNo 永远是钳位后的合法页码（1 ~ maxPage 之间），业务不需要再判断越界。
+    </div>
+<div class="block">
+
+<h3>写法A：后台标准写法 —— 切换「每页条数」时强制回到第1页</h3>
+<h4> 场景：用户从界面上手动更改【每页_条】 这个下拉项，即更改每页显示的记录数，要强制回到第1页时 </h4>
+<p class="desc">利用回调自带的 oldPageSize 判断是否换了条数，不需要再去读外部 state：</p>
+<pre><code>var state = { pageNo: 1, pageSize: 20, total: 200 };
+
+var pager = MelUi.Pagination({
+    el: '#pager',
+    total: state.total,
+    pageNo: state.pageNo,
+    pageSize: state.pageSize,
+    onChange: function(res) {
+        // 对比新旧每页条数，变了就强制回第1页
+        if (res.pageSize !== res.oldPageSize) {
+            state.pageNo = 1;
+        } else {
+            state.pageNo = res.pageNo;
+        }
+        state.pageSize = res.pageSize;
+
+        loadList(state.pageNo, state.pageSize); // 请求后端 / 本地切片。(请求第1页数据)
+        pager.setOption(state); // 同步视图（不触发 onChange）（界面上显示在第1页）
+    }
+});</code></pre>
+
+<h3>写法B：保留当前页码，切条数时不强制回第1页</h3>
+<h4>使用场景：用户从界面上手动更改【每页_条】 这个下拉项，即更改每页显示的记录数，不强制回第1页，比如当前是停在最后一页(比如第5页)那就停在第5页（但是因为每页记录数是用户可能改大，改大后肯定不可能有5页了，此时插件会自动修正页数，不再是第5页）</h4>
+<pre><code>var pager = MelUi.Pagination({
+    el: '#pager',
+    total: 200,
+    pageNo: 1,
+    pageSize: 20,
+    onChange: function(res) {
+        // res.pageNo 已经是钳位后的合法页码，直接用
+        loadList(res.pageNo, res.pageSize);
+        pager.setOption({ pageNo: res.pageNo, pageSize: res.pageSize });
+    }
+});</code></pre>
+
+<h3>写法C：最简写法</h3>
+<pre><code>var pager = MelUi.Pagination({
+    el: '#pager',
+    total: 200,
+    onChange: function(res) {
+        loadList(res.pageNo, res.pageSize);
+    }
+});</code></pre>
+
+
+</div>
+
+<!-- ==================== 在线示例 ==================== -->
+<h2>在线示例</h2>
+<p class="desc">每个示例下方的代码块既是文档展示、也是点击"运行示例"后实际执行的代码；直接改代码块再点运行，即可看到改动效果。</p>
+
+<!-- 示例1 -->
+<div class="block demo-run">
+<h3>示例1：基础用法（本地切片，全部默认控件）</h3>
+<div class="result" id="demo1-result"></div>
+<div id="demo1-pager"></div>
+<div class="info" id="demo1-info"></div>
+<pre><code>// 先销毁旧实例，防止多次运行重复挂载
+if (window._p1 && window._p1.destroy) window._p1.destroy();
+
+var allData1 = [];
+for (var i = 1; i &lt;= 137; i++) { allData1.push('数据-' + i); }
+
+window._p1 = MelUi.Pagination({
+    el: '#demo1-pager',
+    total: allData1.length,
+    pageSize: 20,
+    pageNo: 1,
+    pageSizeOptions: [10, 20, 50],
+    onChange: function(res) {
+        var start = (res.pageNo - 1) * res.pageSize;
+        var slice = allData1.slice(start, start + res.pageSize);
+        document.getElementById('demo1-result').innerHTML = slice.join('、');
+        document.getElementById('demo1-info').innerHTML =
+            'pageNo=' + res.pageNo + ' ｜ pageSize=' + res.pageSize +
+            ' ｜ oldPageNo=' + res.oldPageNo + ' ｜ oldPageSize=' + res.oldPageSize +
+            ' ｜ maxPage=' + window._p1.maxPage;
+    }
+});
+// 首次渲染
+(function(){
+    var res = { pageNo: 1, pageSize: 20 };
+    var start = (res.pageNo - 1) * res.pageSize;
+    var slice = allData1.slice(start, start + res.pageSize);
+    document.getElementById('demo1-result').innerHTML = slice.join('、');
+    document.getElementById('demo1-info').innerHTML =
+        'pageNo=1 ｜ pageSize=20 ｜ maxPage=' + window._p1.maxPage;
+})();</code></pre>
+</div>
+
+<!-- 示例2 -->
+<div class="block demo-run">
+<h3>示例2：模拟远程分页（total=0 起始，setOption 回写总数）</h3>
+<div class="result" id="demo2-result"></div>
+<div id="demo2-pager"></div>
+<div class="info" id="demo2-info"></div>
+<pre><code>if (window._p2 && window._p2.destroy) window._p2.destroy();
+
+window._p2 = MelUi.Pagination({
+    el: '#demo2-pager',
+    total: 0,                  // 一开始不知道总数，先传0
+    pageSize: 10,
+    pageNo: 1,
+    showJumpDrop: false,
+    pageSizeOptions: [10, 20],
+    onChange: function(res) {
+        document.getElementById('demo2-result').innerHTML = '加载中...';
+        // 模拟 ajax 请求
+        setTimeout(function() {
+            var fakeTotal = 86;   // 后端返回的真实总数
+            var list = [];
+            for (var i = (res.pageNo - 1) * res.pageSize + 1;
+                 i &lt;= Math.min(res.pageNo * res.pageSize, fakeTotal); i++) {
+                list.push('远程数据-' + i);
+            }
+            // 关键：拿到总数后 setOption 回写分页条（不触发 onChange）
+            window._p2.setOption({ total: fakeTotal });
+            document.getElementById('demo2-result').innerHTML = list.join('、') || '（空）';
+            document.getElementById('demo2-info').innerHTML =
+                'pageNo=' + res.pageNo + ' ｜ pageSize=' + res.pageSize +
+                ' ｜ total=' + fakeTotal + ' ｜ maxPage=' + window._p2.maxPage;
+        }, 200);
+    }
+});
+// 初始化加载第1页
+window._p2.options.onChange({ pageNo: 1, pageSize: 10, oldPageNo: 1, oldPageSize: 10 });</code></pre>
+</div>
+
+<!-- 示例3 -->
+<div class="block demo-run">
+<h3>示例3：紧凑模式（showListSize=false，用页码下拉跳转）</h3>
+<div class="result" id="demo3-result"></div>
+<div id="demo3-pager"></div>
+<div class="info" id="demo3-info"></div>
+<pre><code>if (window._p3 && window._p3.destroy) window._p3.destroy();
+
+var allData3 = [];
+for (var j = 1; j &lt;= 63; j++) { allData3.push('紧凑-' + j); }
+
+window._p3 = MelUi.Pagination({
+    el: '#demo3-pager',
+    total: allData3.length,
+    pageSize: 15,
+    pageNo: 1,
+    showListSize: false,       // 关键：去掉数字页码行
+    showJumpInput: false,
+    pageSizeOptions: [15, 30],
+    onChange: function(res) {
+        var start = (res.pageNo - 1) * res.pageSize;
+        var slice = allData3.slice(start, start + res.pageSize);
+        document.getElementById('demo3-result').innerHTML = slice.join('、');
+        document.getElementById('demo3-info').innerHTML =
+            'pageNo=' + res.pageNo + ' ｜ pageSize=' + res.pageSize +
+            ' ｜ maxPage=' + window._p3.maxPage;
+    }
+});
+window._p3.options.onChange({ pageNo: 1, pageSize: 15, oldPageNo: 1, oldPageSize: 15 });</code></pre>
+</div>
+
+<!-- 示例4 -->
+<div class="block demo-run">
+<h3>示例4：写法A落地 —— 切每页条数自动回到第1页</h3>
+<div class="result" id="demo4-result"></div>
+<div id="demo4-pager"></div>
+<div class="info" id="demo4-info"></div>
+<pre><code>if (window._p4 && window._p4.destroy) window._p4.destroy();
+
+var allData4 = [];
+for (var k = 1; k &lt;= 200; k++) { allData4.push('标准-' + k); }
+var state4 = { pageNo: 1, pageSize: 20, total: allData4.length };
+
+window._p4 = MelUi.Pagination({
+    el: '#demo4-pager',
+    total: state4.total,
+    pageNo: state4.pageNo,
+    pageSize: state4.pageSize,
+    pageSizeOptions: [10, 20, 50],
+    onChange: function(res) {
+        // 切每页条数 → 强制回第1页
+        if (res.pageSize !== res.oldPageSize) {
+            state4.pageNo = 1;
+        } else {
+            state4.pageNo = res.pageNo;
+        }
+        state4.pageSize = res.pageSize;
+        window._p4.setOption(state4);
+
+        var start = (state4.pageNo - 1) * state4.pageSize;
+        var slice = allData4.slice(start, start + state4.pageSize);
+        document.getElementById('demo4-result').innerHTML = slice.join('、');
+        document.getElementById('demo4-info').innerHTML =
+            'pageNo=' + state4.pageNo + ' ｜ pageSize=' + state4.pageSize +
+            ' ｜ maxPage=' + window._p4.maxPage + '（切每页条数时自动回到第1页）';
+    }
+});
+window._p4.options.onChange({ pageNo: 1, pageSize: 20, oldPageNo: 1, oldPageSize: 20 });</code></pre>
+</div>
+
+<!-- 示例5 -->
+<div class="block demo-run">
+<h3>示例5：空状态与禁用态</h3>
+<div style="margin-bottom:8px;color:#666;">total=0：所有交互控件自动置灰</div>
+<div id="demo5a-pager" style="margin-bottom:16px;"></div>
+<div style="margin-bottom:8px;color:#666;">enable=false：DOM保留但全部不可点</div>
+<div id="demo5b-pager"></div>
+<pre><code>if (window._p5a && window._p5a.destroy) window._p5a.destroy();
+if (window._p5b && window._p5b.destroy) window._p5b.destroy();
+
+window._p5a = MelUi.Pagination({
+    el: '#demo5a-pager',
+    total: 0,
+    pageSize: 20
+});
+window._p5b = MelUi.Pagination({
+    el: '#demo5b-pager',
+    total: 100,
+    pageSize: 20,
+    pageNo: 3,
+    enable: false
+});</code></pre>
+</div>
+
+<script src="../src/components/pagination/index.js"></script>
+<script>
+// ============================================================
+// 通用执行器：扫描所有 .demo-run 块，读取 code 文本执行
+// 代码块既是文档展示、也是实际运行的源码 —— 只维护一份
+// ============================================================
+(function() {
+    var blocks = document.querySelectorAll('.demo-run');
+    for (var i = 0; i < blocks.length; i++) {
+        (function(block) {
+            // var btn = block.querySelector('.run-btn');
+            // var codeDom = block.querySelector('code');
+            // if (!btn || !codeDom) return;
+            var codeDom = block.querySelector('code');
+            if (!codeDom) return;
+
+            var run = function() {
+                var text = codeDom.textContent.replace(/^\s+|\s+$/g, '');
+                try {
+                    eval(text);
+                } catch (err) {
+                    alert('代码执行错误：' + err.message);
+                }
+            };
+
+            // btn.onclick = run;
+            // 页面加载完自动跑一次，让示例直接可见
+            run();
+        })(blocks[i]);
+    }
+})();
+</script>
+</body>

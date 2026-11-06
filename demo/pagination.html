@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+    <title> MelUi Pagination 独立分页组件 演示 </title>
+
+    <!--[======== 打包发布版：正式发布时使用 ========] -->
+    <!-- <link rel="stylesheet" href="../dist/pagination/pagination.min.css"> -->
+    <!-- <link rel="stylesheet" href="../dist/melui.min.css"> -->
+
+    <!--[======== 本地演示版：没发打包发布时本地演示时使用 ========] -->
+    <link rel="stylesheet" href="../src/components/pagination/index.css">
+</head>
+<body>
+
+    <style>
+        body { font-family: "Microsoft YaHei", Arial, sans-serif; background:#f5f7fa; color:#333; margin:0; padding:20px; font-size:14px; }
+        h1 { font-size:18px; margin:0 0 12px; }
+        .box { background:#fff; border:1px solid #e4e7ed; border-radius:4px; padding:16px; margin-bottom:16px; }
+        .log { background:#2d2d2d; color:#9fef9f; padding:12px; border-radius:4px; font-family:Consolas,monospace; font-size:13px; line-height:1.8; min-height:60px; white-space:pre-wrap; }
+        .note { background: #ecf5ff; border: 1px solid #d9ecff; border-radius: 3px; padding: 8px 12px; color: #409eff; margin: 10px 0; line-height: 1.7; }
+        #result { background: #f8f8f9; border: 1px dashed #dcdfe6; border-radius: 3px; padding: 10px; min-height: 24px; line-height: 1.8; margin: 12px 0; word-break: break-all; }
+    </style>
+
+    <h1> MelUi Pagination 独立分页组件 演示 </h1>
+    <p style="color:#909399;">本页直接渲染一个完整实例。想调哪个参数，直接改下方 script 里的配置，保存刷新页面即可看到效果。</p>
+
+    <div class="box">
+        <!-- 数据展示区 -->
+        <div id="result"></div>
+        <!-- 分页区 -->
+        <div id="pager-box"></div>
+    </div>
+
+    <div class="box">
+        <h3 style="margin-top:0;">onChange 回调日志</h3>
+        <h4> (请点击分页控件的页码、或从下拉中切换每页记录数，即可看到回调信息） </h4>
+        <div class="log" id="log">（暂无交互）</div>
+        <div class="note">
+    <pre><code>参数说明
+    pageNo / pageSize ：交互后的新值（页码已钳位到 1~maxPage 合法范围，业务不需要再判断越界。）
+    oldPageNo / oldPageSize ：交互前的旧值，业务据此判断是翻页还是切了每页条数
+    pageNo 当前页码， pageSize 当前每页记录数， oldPageNo 之前旧的页码， oldPageSize 之前旧的每页记录数。
+    </code></pre>
+        </div>
+    </div>
+
+
+    <!--[======== 打包发布版：正式发布时使用 ========] -->
+    <!-- <script src="../dist/pagination/pagination.min.js"></script> -->
+    <!-- <script src="../dist/melui.min.js"></script> -->
+
+    <!--[======== 本地演示版：没发打包发布时本地演示时使用 ========] -->
+    <script src="../src/components/pagination/index.js"></script>
+
+    <script>
+
+        /**
+         * 获取数据：模拟 ajax 请求
+         * @param {Number} ps_now_page 当前页码
+         * @param {Number} ps_page_size 每页记录数
+         * @returns {Object} 返回包含列表和总记录数的对象
+         */
+        function get_data(ps_now_page, ps_page_size) {
+            return new Promise(function(resole, reject){
+                setTimeout(function() {
+                    var total = 86; // Math.floor(100 * Math.random()); // 总记录数
+                    var list = []; // 列表数据
+                    for (var i = (ps_now_page - 1) * ps_page_size + 1; i <= Math.min(ps_now_page * ps_page_size, total); i++) {
+                        list.push('远程数据-' + i);
+                    }
+                    resole({
+                        code: 0,
+                        message: "success",
+                        data: {
+                            total: total,
+                            records: list
+                        }
+                    })
+                }, 100);
+            })
+        }
+
+
+        /**
+         * 加载数据
+         * @param {Instance} ps_instance 分页组件实例化对象
+         * @param {Number} ps_now_page 当前页码
+         * @param {Number} ps_page_size 每页记录数
+         */
+        async function load_data(ps_instance, ps_now_page, ps_page_size) {
+            var elResult = document.getElementById('result'),
+                elInfo = document.getElementById('info');
+            elResult.innerHTML = '加载中...';
+            var response = await get_data(ps_now_page, ps_page_size);
+            var result = response.data;
+            // console.log('result：', result)
+            var fakeTotal = result["total"],
+                listData = result["records"];
+            // console.log('fakeTotal：', fakeTotal, '\nlistData：', listData)
+            elResult.innerHTML = listData.join('、') || '（空）';
+            ps_instance.setOption({ total: fakeTotal}); // 关键：拿到总数后setOption回写分页条数
+        }
+
+
+
+
+        // ============================================================
+        // 想调试参数，改这里就行，改完保存刷新页面
+        // ============================================================
+        var PAGE_NO = 1; // 当前页码
+        var PAGE_SIZE = 20; // 每页条数
+        var pager = MelUi.Pagination({
+            el: '#pager-box', // 挂载容器(必填)。默认null，不渲染。支持选择器字符串'#id'或DOM元素。
+            enable: true, // 是否启用交互(可选)。false时所有按钮置灰禁用，DOM保留
+            total: 0, // 总条数(可选)。小于0时全部交互控件置灰。
+            pageSize: PAGE_SIZE, // 每页条数(可选)。小于1自动修正为20
+            pageNo: PAGE_NO, // 当前页码(可选)
+            pageListSize: 5, // 数字页码区域最多展示连续页码数量(可选)。最小值为3
+            showTotal: true, // 是否显示总条数文本(可选)
+            showListSize: true, // 是否展示中间连续数字页码(可选)。比如（1 2 3 4 5）这种
+            showJumpDrop: true, // 是否显示页码下拉选择器(可选)
+            showJumpInput: true, // 是否显示手动输入页码跳转框(可选)
+            showPageSize: true, // 是否显示每页条数下拉(可选)
+            pageSizeOptions: [10, 20, 50, 100], // 自定义每页条数下拉选项(可选)
+
+            // 事件
+            // 用户点击页码、切换每页条数、下拉选页码、输入框跳转都会触发。返回值：{pageNo,pageSize,oldPageNo,oldPageSize}
+            onChange: function(e) {
+                console.log('分页变化了e：', e)
+                var pageNo = e.pageNo, pageSize = e.pageSize;
+                var maxPage = pager.maxPage;
+                load_data(pager, pageNo, pageSize); // 重载数据
+                document.getElementById('log').innerHTML = JSON.stringify(e, null, 4); // 输出 onChange 回调日志
+            }
+        });
+
+
+        // 初始化加载数据
+        load_data(pager, PAGE_NO, PAGE_SIZE);
+
+    </script>
+
+</body>
+</html>

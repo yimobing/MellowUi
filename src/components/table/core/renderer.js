@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 核心渲染器
  * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.8.2
+ * @Version：v1.8.3
  * @Date：2026-10-10
- * @Pubdate：2026-11-04
+ * @PubDate：2026-11-06 10:46:28
  */
 
  (function(MelUi) {
@@ -94,9 +94,26 @@
                 self._adjustBodyHeight();
             }
         }, 0);
-
         this.isRenderComplete = true;
-        this.eventBus.emit('rendered');
+
+        // rendered 事件载荷：只对外给只读快照，不暴露 DataStore 实例，
+        // 避免业务拿到ds后绕开表格对外API直接改数据源，破坏封装。
+        // 字段口径：
+        //   rows     = 本次实际渲染的行（即 getVisibleRows 结果，含当前页临时追加的新增行）
+        //   total    = 统一走 getEffectiveTotal()，与分页栏展示总数同口径
+        //              （remotePaging + enableRemotePagingFallback 的矫正规则都在该方法内，此处不重复推导）
+        //   pageNo   = 当前页码，内部字段是 currentPage，对外统一叫 pageNo，与 pageChange 事件命名对应
+        //   pageSize = 每页条数
+        // 注意：rows 为浅拷贝数组，行对象本身仍是内部引用，业务只读，请勿修改行数据。
+        var ds = this.dataStore;
+        var visibleRows = ds.getVisibleRows();
+        var renderInfo = {
+            rows: visibleRows.slice(0),
+            total: ds.getEffectiveTotal(),
+            pageNo: ds.currentPage,
+            pageSize: ds.pageSize
+        };
+        this.eventBus.emit('rendered', renderInfo);
     };
 
     /**

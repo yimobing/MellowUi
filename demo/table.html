@@ -4,8 +4,14 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>MelUi Table 演示</title>
-    <link rel="stylesheet" href="../src/components/table/index.css">
     <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!--[======== 打包发布版：正式发布时使用 ========] -->
+    <!-- <link rel="stylesheet" href="../dist/table/table.min.css"> -->
+    <!-- <link rel="stylesheet" href="../dist/melui.min.css"> -->
+
+    <!--[======== 本地演示版：没发打包发布时本地演示时使用 ========] -->
+    <link rel="stylesheet" href="../src/components/table/index.css">
     <style>
         body {
             margin: 0;
@@ -109,6 +115,11 @@
 <div class="result" id="result1"></div>
 <div class="result" id="result2"></div>
 
+<!--[======== 打包发布版：正式发布时使用 ========] -->
+<!-- <script src="../dist/table/table.min.js"></script> -->
+<!-- <script src="../dist/melui.min.js"></script> -->
+
+<!--[======== 本地演示版：没发打包发布时本地演示时使用 ========] -->
 <!-- 入口 -->
 <script src="../src/components/table/index.js"></script>
 
@@ -230,7 +241,8 @@
             { // 分页
                 name: 'Pagination',
                 pageSize: 20,
-                pageMode: 'list',
+                pageMode: 'list', // 'list'：数字页码按钮；'select'：页码下拉选择。
+                pageListSize: 5, // 数字列表模式显示几个页码按钮
                 position: 'fixed', // top/bottom/fixed
                 align: 'center',
                 showQuickJumper: true, // 是否显示页码快速跳转下拉
@@ -245,6 +257,18 @@
             'Export'
         ],
         events: {
+            // 表格完成一次整体渲染后触发。适合在渲染完成后做二次处理（如调整列宽、定位）。
+            onRendered: function(data) {
+                console.log('表格完成渲染时xxx:', data);
+            },
+            onSort: function(data) {
+                console.log('表格排序时：', data);
+            },
+            // testing5
+            // onRowAdd: function(data) {
+            //     console.log('新增一行时：', data)
+            // },
+
             onCellChange: function(data) {
                 console.log('单元格变化：', data);
             },
@@ -255,7 +279,7 @@
                 console.log('分页变化：', data);
 
                 // console.log('分页时，全局数据源：', table.getData());
-                console.log('table.isFallbackPaging:', table.isFallbackPaging); // 
+                // console.log('table.isFallbackPaging:', table.isFallbackPaging); // 
                 
                 // 仅后端远程分页(remotePaging = true)才请求后端且兜底降级时不请求后端
                 // 可使用setData回填数据
@@ -306,6 +330,14 @@
         }, 'first'); // first 最前面, last 最后面
         // console.log('新增行时，全局数据源：', table.getData());
     }
+
+    // 新增行完成后触发。注意不要和 table.addRow() 写在一个函数里，并放在table.addRow() 之后，否则监听不到
+    // 也可以在 options 的 events 事件里使用 onRowAdd: function(data) {} 进行监听
+    table.on('rowAdd', function(e){
+        console.log('新增完了，新增新行后返回的数据为：', e);
+    });
+
+
     // 保存数据(只保存有修改过的数据)
     function saveData() {
         var elResult = document.getElementById('result1');
@@ -386,6 +418,10 @@
     // deleteRow：删除指定行(触发 onDeleteRow 回调)
     function testDeleteRow() {
         if (!table) return;
+
+        var elResult = document.getElementById('result1');
+        elResult.style.display = 'block';
+
         table.deleteRow(0);
         elResult.innerHTML = 'deleteRow(0)：已删除第1行（触发onDeleteRow）';
     }

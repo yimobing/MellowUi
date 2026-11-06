@@ -1,0 +1,87 @@
+/**
+ * MelUi 独立分页组件样式
+ * 类名统一以 .mel-paging 开头。
+ * @Version：v1.0.2
+ * @Date：2026-11-06
+ * @PubDate：2026-11-06 18:17:54
+ */
+
+ .mel-paging {
+    font-size: 14px;
+    color: #606266;
+    line-height: 1.6;
+    vertical-align: middle;
+}
+
+/* 总条数文本 */
+.mel-paging-total {
+    margin-right: 15px;
+    vertical-align: middle;
+}
+
+/* 基础按钮（首页/上一页/下一页/尾页）与数字页码 */
+.mel-paging-btn,
+.mel-paging-num {
+    display: inline-block;
+    padding: 3px 10px;
+    margin: 0 2px;
+    border: 1px solid #dcdfe6;
+    border-radius: 2px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    background: transparent;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+    vertical-align: middle;
+    color: #606266;
+}
+
+.mel-paging-btn[disabled],
+.mel-paging-num[disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+    color: #a8abb2;
+}
+
+.mel-paging-num.active {
+    background-color: #409eff;
+    color: #fff;
+    border-color: #409eff;
+}
+
+/* 交互控件分组：页码下拉 / 跳页输入框 / 每页条数下拉 */
+.mel-paging-jump,
+.mel-paging-jumpinput,
+.mel-paging-size {
+    margin-left: 12px;
+    color: #606266;
+    vertical-align: middle;
+}
+
+.mel-paging-jump-select,
+.mel-paging-size-select,
+.mel-paging-jump-input-box {
+    padding: 3px 6px;
+    border: 1px solid #dcdfe6;
+    border-radius: 2px;
+    margin: 0 4px;
+    vertical-align: middle;
+    font-family: inherit;
+    font-size: inherit;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+}
+
+.mel-paging-jump-input-box {
+    width: 50px;
+}
+
+.mel-paging-jump-select[disabled],
+.mel-paging-size-select[disabled],
+.mel-paging-jump-input-box[disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+    color: #a8abb2;
+}

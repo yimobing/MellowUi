@@ -1,0 +1,45 @@
+// 保存当前页所有table实例引用，翻页前用来销毁
+var tableInstanceList = [];
+
+// 外层分页切换回调
+function outerPageChange(pageNum){
+    // 1. 销毁上一页全部子表格实例
+    tableInstanceList.forEach(function(ins){
+        ins.destroy();
+    });
+    tableInstanceList = [];
+
+    // 请求后端获取当前外层分页的询价单数据
+    getInquiryList(pageNum).then(function(res){
+        var list = res.data;
+        var html = '';
+        // 渲染外层卡片容器DOM
+        list.forEach(function(item){
+            html += `<div class="card">
+                <div>询价单号：${item.inquiryNo}</div>
+                <div id="mort_${item.inquiryNo}"></div>
+            </div>`;
+        });
+        document.querySelector('#cardWrap').innerHTML = html;
+
+        // 循环创建每个卡片内的table实例
+        list.forEach(function(item){
+            var ins = new MelUi.Table({
+                el:'#mort_'+item.inquiryNo,
+                columns:mortColumns,
+                data: item.mortgageList,
+                fitViewport: false, // ⚠️内嵌子表格禁止开启fitViewport！
+                bodyHeight:220,
+                plugins:[
+                    'SerialNo',
+                    'Checkbox'
+                ]
+            });
+            tableInstanceList.push(ins);
+
+            // 如果有缓存选中状态，手动恢复勾选
+            var cacheSelected = selectCacheMap[item.inquiryNo] || [];
+            ins.setSelectedKeys(cacheSelected);
+        })
+    })
+}

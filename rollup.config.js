@@ -218,6 +218,32 @@ export default [
 
 
     //--------------------------------
+    //    · pagination 组件
+    //--------------------------------
+    // pagination 开发版
+    {
+      input: 'src/components/pagination/index.js',
+        output: {
+            file: 'dist/pagination/pagination.js',
+            format: 'umd',
+            name: 'MelUi'
+        },
+        plugins: [createCssDev()]
+    },
+    // pagination 压缩版
+    {
+        input: 'src/components/pagination/index.js',
+        output: {
+            file: 'dist/pagination/pagination.min.js',
+            format: 'umd',
+            name: 'MelUi'
+        },
+        plugins: [createCssProd(), terser(terserConfig)]
+    },
+
+
+
+    //--------------------------------
     //    · table 组件
     //--------------------------------
     // table 开发版
@@ -239,9 +265,7 @@ export default [
             name: 'MelUi'
         },
         plugins: [createCssProd(), terser(terserConfig)]
-    },  
-
-
+    },
 
     //======================== 二. 全局完整库打包 ======================== 
     // 即：将各个组件的JS合并打包成一个JS

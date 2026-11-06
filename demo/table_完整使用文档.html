@@ -329,6 +329,17 @@
     <h3>引入文件</h3>
     <p>按下面的顺序引入（渲染器 → 核心 → 插件 → 入口），入口 <span class="inline-code">index.js</span> 负责把各模块挂到 <span class="inline-code">MelUi.Table</span> 命名空间。插件打包发布后给用户使用时只需要此js文件，未打包前需按需引入其它js文件。</p>
 <pre><code>
+
+&lt;!--[======== 打包发布版：正式发布时使用 ========] --&gt;
+&lt;!-- 正式发布时只要引入 table.min.js(css) 或 melui.min.js(css) 即可 --&gt;
+&lt;link rel="stylesheet" href="./dist/table.min.css"&gt;
+&lt;script src="./dist/table.min.js"&gt;&lt;/script&gt;
+
+&lt;!-- 或者 --&gt;
+&lt;link rel="stylesheet" href="./dist/melui.min.css"&gt;
+&lt;script src="./dist/melui.min.js"&gt;&lt;/script&gt;
+
+&lt;!--[======== 本地演示版：没发打包发布时本地演示时使用 ========] --&gt;
 &lt;!-- 入口 --&gt;
 &lt;link rel="stylesheet" href="./table/index.css"&gt;
 &lt;script src="./table/index.js"&gt;&lt;/script&gt;
@@ -431,7 +442,7 @@ var table = MelUi.Table({
     <h3>布局与尺寸</h3>
     <table class="cfg">
         <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">fitViewport</td><td>Boolean</td><td>true</td><td>是否垂直适配视口。true 时 bodyHeight、el 自定义高度失效，表格自动占满页面剩余高度且页面不出现垂直滚动条。</td></tr>
+        <tr><td class="code-cell">fitViewport</td><td>Boolean</td><td>true</td><td>是否垂直适配视口。true 时 bodyHeight、el 自定义高度失效，表格自动占满页面剩余高度且页面不出现垂直滚动条。同一个页面只能最多一个表格开启 fitViewport，如有多个表格请关闭 fitViewport 。</td></tr>
         <tr><td class="code-cell">viewportBottomGap</td><td>Number</td><td>16</td><td>仅 fitViewport=true 生效。表格与视口底边之间预留的间隙（px），露出 body 背景色。</td></tr>
         <tr><td class="code-cell">bodyHeight</td><td>Number</td><td>0</td><td>表身固定高度（px）。0 表示不限制，由 el 节点控制。fitViewport=true 时本参数无效；fitViewport=false 且 &gt;0 时会把 el 高度强制为 auto!important。</td></tr>
         <tr><td class="code-cell">fitWidth</td><td>Boolean</td><td>false</td><td>false 为固定列宽模式，使用 columns 的 width(px)；true 为弹性模式，列宽总和小于容器时按 width 权重拉伸填满，大于容器时不拉伸并出现横向滚动条。</td></tr>
@@ -456,6 +467,7 @@ var table = MelUi.Table({
     <h3>实例只读属性</h3>
     <table class="cfg">
         <tr><th style="width:210px">属性</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+        <tr><td class="code-cell">table.isDestroyed</td><td>Boolean</td><td>—</td><td>表格实例是否已销毁。true = 实例已销毁，此时不可调用实例API，false 表格实例正常使用。</td></tr>
         <tr><td class="code-cell">table.isFallbackPaging</td><td>Boolean</td><td>—</td><td>当前是否处于「降级兜底分页」状态。true 表示后端 total 不可信、组件在用当前这批数据做前端本地分页；业务应在 onPageChange 中据此判断：true 时不要再请求后端，false 时才请求后端。<br>每次 setData / setRows 后自动重新计算。</td></tr>
     </table>
 </section>
@@ -867,7 +879,11 @@ commit(table.getDirtyData());</code></pre>
     <h3>事件列表</h3>
     <table class="cfg">
         <tr><th style="width:210px">事件名</th><th style="width:210px">events 配置里的函数名</th><th style="width:300px">回调参数</th><th>触发时机</th></tr>
-        <tr><td class="code-cell">rendered</td><td>—</td><td>—</td><td>表格完成一次整体渲染后触发。适合在渲染完成后做二次处理（如调整列宽、定位）。</td></tr>
+        <tr><td class="code-cell">rendered</td><td>onRendered</td><td>{rows,total,pageNo,pageSize}</td><td>表格完成一次整体渲染后触发。适合在渲染完成后做二次处理（如调整列宽、定位）。
+            参数说明：rows 当前页渲染行数据；
+            total 分页的列表数据总记录数（按remotePaging+enableRemotePagingFallback规则计算）；
+            pageNo 分页的页码；
+            pageSize 分页的每页条数。</td></tr>
         <tr><td class="code-cell">rowAdd</td><td>onRowAdd</td><td>{rowData, rowIndex}</td><td>新增行完成后触发。</td></tr>
         <tr><td class="code-cell">rowDelete</td><td>onRowDelete或onDeleteRow</td><td>{rowIndex, rowData}</td><td>删除行完成后触发。</td></tr>
         <tr><td class="code-cell">cellClick</td><td>onCellClick</td><td>{rowData, cell:{rowIndex, field, element}}</td><td>点击单元格时触发（任何列都会触发）。</td></tr>
@@ -880,11 +896,42 @@ commit(table.getDirtyData());</code></pre>
 
     <div class="tip">
         <b>两种方式的对应关系：</b>
-        <span class="inline-code">events</span> 里写 <span class="inline-code">onXxx</span>，对应 <span class="inline-code">table.on('xxx')</span>。
+        <span class="inline-code">events</span> 里写 <span class="inline-code">onXxx</span>，对应 事件监听<span class="inline-code">table.on('xxx')</span>。
         例如 events: onCellChange ↔ table.on('cellChange')；events: onRowAdd ↔ table.on('rowAdd')。
-        <br><b>排序例外：</b>events 中的 onSort 是预留映射，排序插件实际抛出的事件名是 <span class="inline-code">sortChange</span>，请用 <span class="inline-code">table.on('sortChange', fn)</span> 监听。
+        <br><b>排序例外：</b>events 中的 onSort 是预留映射，排序插件实际抛出的事件名是 <span class="inline-code">sortChange</span>，请用 <span class="inline-code">table.on('sortChange', fn)</span> 进行事件监听。
     </div>
 
+    <div class="tip">
+        <b>⚠️重要时序提醒：</b>
+        如果不在events里写事件，而是使用 table.on('事件名', fn) 进行事件监听，则事件监听需要<strong>先注册好，再执行操作</strong>。
+        
+        <br>❌错误写法：把 <code>table.on('rowAdd', 回调)</code> 写在按钮点击函数内部、<code>table.addRow()</code> 的后面。
+        <br>执行顺序：先执行新增行 <code>table.addRow()</code>，立刻抛出 rowAdd 事件；这时还没有注册监听，本次新增的事件直接错过，收不到回调。多次点击还会重复注册多份监听，出现重复打印。
+        <pre>// 错误示例：on写在点击函数里面
+function btnAddClick(){
+    table.addRow({name:'测试'},'first');
+    // 事件已经触发完毕，才注册监听，本次事件接收不到
+    table.on('rowAdd',function(e){
+        console.log('新增行',e); // 这里是接收不到的
+    })
+}
+        </pre>
+            <br>✅正确写法：<code>table.on()</code> 写在按钮点击函数<strong>外面</strong>，表格创建完成之后只注册一次；点击函数里面只调用 <code>addRow()</code> 执行业务动作。
+        <pre>// 正确示例：on写在函数外部
+var table = new MelUi.Table.Core({...});
+// 表格初始化完成，提前注册监听（只写一次）
+table.on('rowAdd',function(e){
+    console.log('新增行',e); // 这里可以接收到
+});
+// 按钮点击函数内部只做新增，不要再写 table.on
+function btnAddClick(){
+    table.addRow({name:'测试'},'first');
+}
+        </pre>
+    </div>
+    
+
+    
     <h3>两种监听方式（以 pageChange 为例）</h3>
     <p>方式一：初始化时通过 <span class="inline-code">events</span> 配置（事件名前面加 on）。</p>
 <pre><code>var table = MelUi.Table({

@@ -40,13 +40,13 @@
      * MelUi Table 表格组件 - 数据存储
      * 负责管理表格所有数据：行数据、列配置、选中状态、排序状态
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.10.3
+     * @Version：v1.10.4
      * @Date：2026-10-10
-     * @Pubdate：2026-11-04
+     * @PubDate：2026-11-06 10:46:28
      */
 
      (function(MelUi) {
-
+     
         /**
          * DataStore 构造函数
          * @param {Object} options 配置项
@@ -54,6 +54,9 @@
          * @param {Number} options.total 远程分页时的总记录数（由外部传入）
          */
         function DataStore(options) {
+            // 销毁状态标记，由 TableCore.destroy 触发 destroy() 时置true
+            this._isDestroyed = false;
+
             this.columns = options.columns || [];
             this.rows = [];
             this.sortField = '';
@@ -87,6 +90,49 @@
         }
 
         /**
+         * 只读销毁状态：true=数据源已销毁，不可再读写
+         * 只暴露 getter，业务只能读不能改
+         */
+        Object.defineProperty(DataStore.prototype, 'isDestroyed', {
+            get: function() {
+                return this._isDestroyed;
+            },
+            enumerable: true
+        });
+
+        /**
+         * 销毁守卫（内部用）：已销毁返回 true，调用方应立即 return
+         * 各方法按自身返回类型给出对应的空值，避免业务拿到 undefined 后继续参与计算
+         * @param {String} methodName 方法名，仅用于告警日志定位
+         * @return {Boolean} true=已销毁，跳过执行；false=正常执行
+         */
+        DataStore.prototype._guardDestroyed = function(methodName) {
+            if (!this._isDestroyed) return false;
+            if (window.console && console.warn) {
+                console.warn('[MelUi.Table] DataStore 已销毁，' + methodName + ' 调用被忽略');
+            }
+            return true;
+        };
+
+        /**
+         * 销毁数据源（由 TableCore.destroy 统一调用，业务无需手动调用）
+         * 清空 rows / 选中集合 / 当前页临时插队集合：
+         * 行对象里的 _node 持有表身 DOM 节点引用，必须随 rows 一起释放，
+         * 否则已销毁实例的整棵行元素会被 DataStore 持有而无法回收。
+         * 重复调用不会报错。
+         */
+        DataStore.prototype.destroy = function() {
+            if (this._isDestroyed) return;
+            this._isDestroyed = true;
+
+            this.rows = [];
+            this.selectedRowIndexes = [];
+            this._tempAppendRows = [];
+            this.sortField = '';
+            this.sortOrder = '';
+        };
+
+        /**
          * 降级兜底时自动对齐 pageSize（统一入口）
          * 规则：仅 remotePaging=true 且 enableRemotePagingFallback=true 且后端 total 不可信
          *   （total=0 或 < 当前返回列表长度）时，把 pageSize 设为当前 rows 长度，
@@ -113,6 +159,7 @@
          * @return {Boolean}
          */
         DataStore.prototype.isFallbackPaging = function() {
+            if (this._guardDestroyed('isFallbackPaging')) return false;
             if (!this.remotePaging) return false;
             if (!this.enableRemotePagingFallback) return false;
             var bt = this.remoteTotal || 0;
@@ -153,6 +200,7 @@
          * @return {Object|null}
          */
         DataStore.prototype.getRow = function(rowIndex) {
+            if (this._guardDestroyed('getRow')) return null;
             // 负数索引：草稿行定位到临时插队集合
             if (rowIndex < 0) {
                 if (this._tempAppendRows) {
@@ -175,6 +223,7 @@
          * @return {*}
          */
         DataStore.prototype.getCell = function(rowIndex, field) {
+            if (this._guardDestroyed('getCell')) return '';
             var row = this.getRow(rowIndex);
             if (!row) return '';
             return row[field] || '';
@@ -187,6 +236,7 @@
          * @param {*} value 新值
          */
         DataStore.prototype.setCell = function(rowIndex, field, value) {
+            if (this._guardDestroyed('setCell')) return;
             var row = this.getRow(rowIndex);
             if (!row) return;
 
@@ -217,6 +267,7 @@
          * @return {Object} 新增的行对象
          */
         DataStore.prototype.addRow = function(data, position) {
+            if (this._guardDestroyed('addRow')) return null;
             position = position || 'last';
             var rowData = data || {};
 
@@ -281,6 +332,7 @@
          * 数据本身已写入全局 rows，不会丢失，只是不再"插队"显示在当前页首/尾。
          */
         DataStore.prototype.clearTempAppend = function() {
+            if (this._guardDestroyed('clearTempAppend')) return;
             if (this._tempAppendRows && this._tempAppendRows.length) {
                 for (var i = 0; i < this._tempAppendRows.length; i++) {
                     var row = this._tempAppendRows[i];
@@ -298,6 +350,7 @@
          * @param {Number} rowIndex 行索引
          */
         DataStore.prototype.removeRow = function(rowIndex) {
+            if (this._guardDestroyed('removeRow')) return;
             if (rowIndex < 0 || rowIndex >= this.rows.length) return;
 
             var row = this.rows[rowIndex];
@@ -319,6 +372,7 @@
          * 清空所有行
          */
         DataStore.prototype.clearRows = function() {
+            if (this._guardDestroyed('clearRows')) return;
             this.rows = [];
             this.selectedRowIndexes = [];
             this.clearTempAppend();
@@ -338,6 +392,7 @@
          * @return {Array}
          */
         DataStore.prototype.getDirtyRows = function() {
+            if (this._guardDestroyed('getDirtyRows')) return [];
             var result = [];
             for (var i = 0; i < this.rows.length; i++) {
                 if (this.rows[i]._status === 'i' || this.rows[i]._status === 'u') {
@@ -352,6 +407,7 @@
          * @param {Number|String} rowIndex 行索引，传 'all' 表示全部
          */
         DataStore.prototype.markSaved = function(rowIndex) {
+            if (this._guardDestroyed('markSaved')) return;
             if (rowIndex === 'all') {
                 for (var i = 0; i < this.rows.length; i++) {
                     this.rows[i]._status = 's';
@@ -368,6 +424,7 @@
          * @param {Boolean} selected 是否选中
          */
         DataStore.prototype.setRowSelected = function(rowIndex, selected) {
+            if (this._guardDestroyed('setRowSelected')) return;
             var row = this.getRow(rowIndex);
             if (!row) return;
 
@@ -395,6 +452,7 @@
          * @return {Array}
          */
         DataStore.prototype.getSelectedRows = function() {
+            if (this._guardDestroyed('getSelectedRows')) return [];
             var result = [];
             for (var i = 0; i < this.rows.length; i++) {
                 if (this.rows[i]._selected) {
@@ -410,6 +468,7 @@
          * @param {Boolean} selected 是否选中
          */
         DataStore.prototype.selectAll = function(selected) {
+            if (this._guardDestroyed('selectAll')) return;
             if (this.selectMode === 'single') return;
 
             this.selectedRowIndexes = [];
@@ -424,6 +483,7 @@
          * 单选模式：反选操作静默忽略（不console.warn，兼容IE）
          */
         DataStore.prototype.invertSelect = function() {
+            if (this._guardDestroyed('invertSelect')) return;
             if (this.selectMode === 'single') return;
 
             this.selectedRowIndexes = [];
@@ -437,6 +497,7 @@
          * 清空所有选中（单选/多选都适用）
          */
         DataStore.prototype.clearSelection = function() {
+            if (this._guardDestroyed('clearSelection')) return;
             this.selectedRowIndexes = [];
             for (var i = 0; i < this.rows.length; i++) {
                 this.rows[i]._selected = false;
@@ -454,6 +515,7 @@
          *   remotePaging=true 或未分页时本参数无效，等价于全量排序。
          */
         DataStore.prototype.sort = function(field, order, currentPageOnly) {
+            if (this._guardDestroyed('sort')) return;
             this.sortField = field;
             this.sortOrder = order;
 
@@ -511,6 +573,7 @@
          * @param {Number} size 每页条数，0表示关闭分页
          */
         DataStore.prototype.setPageSize = function(size) {
+            if (this._guardDestroyed('setPageSize')) return;
             this.pageSize = size || 0;
             this.currentPage = 1;
         };
@@ -526,6 +589,7 @@
          * @return {Array}
          */
         DataStore.prototype.getVisibleRows = function() {
+            if (this._guardDestroyed('getVisibleRows')) return [];
             var base = null;
 
             if (this.remotePaging) {
@@ -605,6 +669,7 @@
          * @return {Number}
          */
         DataStore.prototype.getEffectiveTotal = function() {
+            if (this._guardDestroyed('getEffectiveTotal')) return 0;
             if (!this.remotePaging) return this.rows.length;
             var backendTotal = this.remoteTotal || 0;
             var listLen = this.rows.length;
@@ -627,6 +692,7 @@
          * @return {Number}
          */
         DataStore.prototype.getEffectivePageSize = function() {
+            if (this._guardDestroyed('getEffectivePageSize')) return 0;
             return this.pageSize;
         };
 
@@ -636,6 +702,7 @@
          * @return {Number}
          */
         DataStore.prototype.getTotalPages = function() {
+            if (this._guardDestroyed('getTotalPages')) return 1;
             var effPageSize = this.getEffectivePageSize();
             if (!effPageSize || effPageSize <= 0) return 1;
             var total = this.getEffectiveTotal();
@@ -654,6 +721,7 @@
          * @return {Object} 新增的行对象
          */
         DataStore.prototype.addRowToCurrentPage = function(data, position) {
+            if (this._guardDestroyed('addRowToCurrentPage')) return null;
             return this.addRow(data, position);
         };
 
@@ -662,6 +730,7 @@
          * @param {Array} data 行数据数组
          */
         DataStore.prototype.setRows = function(data) {
+            if (this._guardDestroyed('setRows')) return;
             this.rows = [];
             if (data && data.length) {
                 for (var i = 0; i < data.length; i++) {
@@ -769,9 +838,9 @@
      * MelUi Table 表格组件 - 核心渲染器
      * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.8.2
+     * @Version：v1.8.3
      * @Date：2026-10-10
-     * @Pubdate：2026-11-04
+     * @PubDate：2026-11-06 10:46:28
      */
 
      (function(MelUi) {
@@ -861,9 +930,26 @@
                     self._adjustBodyHeight();
                 }
             }, 0);
-
             this.isRenderComplete = true;
-            this.eventBus.emit('rendered');
+
+            // rendered 事件载荷：只对外给只读快照，不暴露 DataStore 实例，
+            // 避免业务拿到ds后绕开表格对外API直接改数据源，破坏封装。
+            // 字段口径：
+            //   rows     = 本次实际渲染的行（即 getVisibleRows 结果，含当前页临时追加的新增行）
+            //   total    = 统一走 getEffectiveTotal()，与分页栏展示总数同口径
+            //              （remotePaging + enableRemotePagingFallback 的矫正规则都在该方法内，此处不重复推导）
+            //   pageNo   = 当前页码，内部字段是 currentPage，对外统一叫 pageNo，与 pageChange 事件命名对应
+            //   pageSize = 每页条数
+            // 注意：rows 为浅拷贝数组，行对象本身仍是内部引用，业务只读，请勿修改行数据。
+            var ds = this.dataStore;
+            var visibleRows = ds.getVisibleRows();
+            var renderInfo = {
+                rows: visibleRows.slice(0),
+                total: ds.getEffectiveTotal(),
+                pageNo: ds.currentPage,
+                pageSize: ds.pageSize
+            };
+            this.eventBus.emit('rendered', renderInfo);
         };
 
         /**
@@ -2276,9 +2362,9 @@
      * MelUi Table 表格组件 - 主类
      * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.7.5
+     * @Version：v1.7.6
      * @Date：2026-10-10
-     * @PubDate：2026-11-05 10:07:38
+     * @PubDate：2026-11-06 10:46:28
      */
 
      (function(MelUi) {
@@ -2288,6 +2374,10 @@
          * @param {Object} options 配置项
          */
         function TableCore(options) {
+            // 销毁状态标记。destroy() 置true后，所有对外API入口据此短路，
+            // 防止业务代码/异步回调继续操作已经释放DOM、已经清空数据源的实例。
+            this._isDestroyed = false;
+
             // 默认配置
             var defaults = {
                 el: null, // 表格挂载节点(必填)。传CSS选择器字符串或DOM元素
@@ -2374,6 +2464,31 @@
         };
 
         /**
+         * 只读销毁状态：true=实例已销毁，不可再调用表格API
+         * 只暴露 getter，业务只能读不能改，避免外部篡改内部标记导致守卫失效
+         */
+        Object.defineProperty(TableCore.prototype, 'isDestroyed', {
+            get: function() {
+                return this._isDestroyed;
+            },
+            enumerable: true
+        });
+
+        /**
+         * 销毁守卫（内部用）：实例已销毁返回 true，调用方应立即 return
+         * 统一入口的好处：所有API短路口径一致，不会出现"有的方法拦、有的方法漏拦"
+         * @param {String} methodName 方法名，仅用于告警日志定位
+         * @return {Boolean} true=已销毁，跳过执行；false=正常执行
+         */
+        TableCore.prototype._guardDestroyed = function(methodName) {
+            if (!this._isDestroyed) return false;
+            if (window.console && console.warn) {
+                console.warn('[MelUi.Table] 实例已销毁，' + methodName + ' 调用被忽略');
+            }
+            return true;
+        };
+
+        /**
          * 绑定用户配置的事件
          */
         TableCore.prototype._bindUserEvents = function() {
@@ -2382,6 +2497,7 @@
 
             // 建立事件名映射：用户配置的事件名 -> 内部事件名
             var eventMap = {
+                onRendered: 'rendered',
                 onCellClick: 'cellClick',
                 onCellChange: 'cellChange',
                 onRowClick: 'rowClick',
@@ -2389,7 +2505,7 @@
                 onRowAdd: 'rowAdd',
                 onRowDelete: 'rowDelete',
                 onDeleteRow: 'rowDelete', // deleteRow方法删除成功后抛出的回调事件
-                onSort: 'sort',
+                onSort: 'sortChange',
                 onPageChange: 'pageChange'
             };
 
@@ -2449,6 +2565,7 @@
          * @return {Array}
          */
         TableCore.prototype.getData = function() {
+            if (this._guardDestroyed('getData')) return [];
             return this.dataStore.rows;
         };
 
@@ -2458,6 +2575,7 @@
          * @return {Object|null}
          */
         TableCore.prototype.getRowData = function(rowIndex) {
+            if (this._guardDestroyed('getRowData')) return null;
             return this.dataStore.getRow(rowIndex);
         };
 
@@ -2466,6 +2584,7 @@
          * @return {Array}
          */
         TableCore.prototype.getSelectedData = function() {
+            if (this._guardDestroyed('getSelectedData')) return [];
             return this.dataStore.getSelectedRows();
         };
 
@@ -2474,6 +2593,7 @@
          * @return {Array}
          */
         TableCore.prototype.getDirtyData = function() {
+            if (this._guardDestroyed('getDirtyData')) return [];
             return this.dataStore.getDirtyRows();
         };
 
@@ -2486,6 +2606,7 @@
          * @param {*} value 新值
          */
         TableCore.prototype.setCellValue = function(rowIndex, field, value) {
+            if (this._guardDestroyed('setCellValue')) return;
             this.dataStore.setCell(rowIndex, field, value);
             this.renderer.renderCell(rowIndex, field);
         };
@@ -2496,6 +2617,7 @@
          * @param {Object} data {field1: val1, field2: val2}
          */
         TableCore.prototype.setRowData = function(rowIndex, data) {
+            if (this._guardDestroyed('setRowData')) return;
             for (var field in data) {
                 if (data.hasOwnProperty(field)) {
                     this.dataStore.setCell(rowIndex, field, data[field]);
@@ -2513,6 +2635,7 @@
          *   - global：插入全局原始 data 数组首/尾
          */
         TableCore.prototype.addRow = function(data, position) {
+            if (this._guardDestroyed('addRow')) return null;
             var row = null;
             if (this.options.addRowMode === 'global') {
                 // 全局模式：直接操作原始数据数组
@@ -2617,6 +2740,7 @@
          * @param {Number} rowIndex 行索引
          */
         TableCore.prototype.deleteRow = function(rowIndex) {
+            if (this._guardDestroyed('deleteRow')) return;
             var row = this.dataStore.getRow(rowIndex);
             if (!row) return;
             this.dataStore.removeRow(rowIndex);
@@ -2631,6 +2755,7 @@
          * 清空所有数据
          */
         TableCore.prototype.clearData = function() {
+            if (this._guardDestroyed('clearData')) return;
             this.dataStore.clearRows();
             this.renderer.renderBodyAll();
         };
@@ -2641,6 +2766,7 @@
          * @param {Array} data 行数据数组
          */
         TableCore.prototype.setData = function(data) {
+            if (this._guardDestroyed('setData')) return;
             this.dataStore.setRows(data);
             // 数据替换可能改变降级兜底状态（rows 数量变化影响 isFallbackPaging 判定），重新同步
             this.isFallbackPaging = this.dataStore.isFallbackPaging();
@@ -2654,6 +2780,7 @@
          * @param {Number|String} rowIndex 行索引，传 'all' 表示全部
          */
         TableCore.prototype.markSaved = function(rowIndex) {
+            if (this._guardDestroyed('markSaved')) return;
             this.dataStore.markSaved(rowIndex);
         };
 
@@ -2664,6 +2791,7 @@
          * @param {Boolean} readonly 是否只读
          */
         TableCore.prototype.setCellReadonly = function(rowIndex, field, readonly) {
+            if (this._guardDestroyed('setCellReadonly')) return;
             var row = this.dataStore.getRow(rowIndex);
             if (!row || !row._node) return;
 
@@ -2685,6 +2813,7 @@
          * 单选模式：静默忽略（不console.warn，兼容IE）
          */
         TableCore.prototype.selectAll = function() {
+            if (this._guardDestroyed('selectAll')) return;
             if (this.dataStore.selectMode === 'single') return;
 
             this.dataStore.selectAll(true);
@@ -2697,6 +2826,7 @@
          * 单选模式：静默忽略（不console.warn，兼容IE）
          */
         TableCore.prototype.selectNone = function() {
+            if (this._guardDestroyed('selectNone')) return;
             if (this.dataStore.selectMode === 'single') return;
 
             this.dataStore.selectAll(false);
@@ -2709,6 +2839,7 @@
          * 单选模式：静默忽略（不console.warn，兼容IE）
          */
         TableCore.prototype.invertSelect = function() {
+            if (this._guardDestroyed('invertSelect')) return;
             if (this.dataStore.selectMode === 'single') return;
 
             this.dataStore.invertSelect();
@@ -2737,6 +2868,7 @@
          * @param {Array} rowIndexes 行索引数组
          */
         TableCore.prototype.setSelectedKeys = function(rowIndexes) {
+            if (this._guardDestroyed('setSelectedKeys')) return;
             var keys = rowIndexes || [];
             if (!keys.length) {
                 this.dataStore.clearSelection();
@@ -2762,6 +2894,7 @@
          * 清空选中（单选/多选都适用）
          */
         TableCore.prototype.clearSelection = function() {
+            if (this._guardDestroyed('clearSelection')) return;
             this.dataStore.clearSelection();
             this._refreshSelectedRows();
             this.eventBus.emit('selectChange', {selectedRows: []});
@@ -2775,6 +2908,7 @@
          * @return {String} 错误提示，空字符串表示通过
          */
         TableCore.prototype.validate = function(rowIndex) {
+            if (this._guardDestroyed('validate')) return '';
             var columns = this.dataStore.columns;
             var rows = this.dataStore.rows;
             var tips = '';
@@ -2808,6 +2942,7 @@
          * @return {String} 错误提示，空字符串表示通过
          */
         TableCore.prototype.validateUnique = function() {
+            if (this._guardDestroyed('validateUnique')) return '';
             var columns = this.dataStore.columns;
             var rows = this.dataStore.rows;
             var tips = '';
@@ -2838,6 +2973,7 @@
          * 全量重绘
          */
         TableCore.prototype.render = function() {
+            if (this._guardDestroyed('render')) return;
             this.renderer.render();
         };
 
@@ -2846,6 +2982,7 @@
          * @param {Number} rowIndex 行索引
          */
         TableCore.prototype.renderRow = function(rowIndex) {
+            if (this._guardDestroyed('renderRow')) return;
             this.renderer.renderRow(rowIndex);
         };
 
@@ -2855,6 +2992,7 @@
          * @param {String} field 字段名
          */
         TableCore.prototype.renderCell = function(rowIndex, field) {
+            if (this._guardDestroyed('renderCell')) return;
             this.renderer.renderCell(rowIndex, field);
         };
 
@@ -2866,6 +3004,7 @@
          * @param {Function} handler 回调
          */
         TableCore.prototype.on = function(eventName, handler) {
+            if (this._guardDestroyed('on')) return;
             this.eventBus.on(eventName, handler);
         };
 
@@ -2875,6 +3014,7 @@
          * @param {Function} handler 回调
          */
         TableCore.prototype.off = function(eventName, handler) {
+            if (this._guardDestroyed('off')) return;
             this.eventBus.off(eventName, handler);
         };
 
@@ -2882,8 +3022,9 @@
 
         /**
          * 销毁表格(可选)
-         * 清理window.resize、表身scroll事件监听，恢复body样式，销毁插件，清空容器DOM。
+         * 清理window.resize、表身scroll事件监听，恢复body样式，销毁插件，清空容器DOM，同步销毁DataStore。
          * 【重要】SPA路由切换、弹窗关闭、容器复用重新new实例场景必须手动调用；整页刷新无需调用。
+         * 销毁后实例的 isDestroyed 变为 true，再调用任何对外API都会被守卫拦住（开发期会打warn提示）。
          * 重复调用不会报错。
          */
         TableCore.prototype.destroy = function() {
@@ -2897,11 +3038,18 @@
                         this._pluginInstances[i].destroy();
                     }
                 }
+                this._pluginInstances = [];
             }
 
             // renderer统一清理：移除resize/scroll监听、恢复body样式、清空容器DOM
             if (this.renderer && this.renderer._destroy) {
                 this.renderer._destroy();
+            }
+
+            // 数据源同步销毁：清空rows（行对象里的_node持有DOM节点引用，必须一并释放）、
+            // 清空选中集合与当前页临时插队集合，避免已销毁实例被异步闭包继续持有导致内存上涨。
+            if (this.dataStore && this.dataStore.destroy) {
+                this.dataStore.destroy();
             }
         };
 

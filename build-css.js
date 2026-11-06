@@ -25,6 +25,7 @@ const components = [
   { name: 'dialog', src: 'src/components/dialog/index.css', outDir: 'dist/dialog' },
   { name: 'datePicker', src: 'src/components/datePicker/index.css', outDir: 'dist/datePicker' },
   { name: 'drawer', src: 'src/components/drawer/index.css', outDir: 'dist/drawer' },
+  { name: 'pagination', src: 'src/components/pagination/index.css', outDir: 'dist/pagination' },
   { name: 'table', src: 'src/components/table/index.css', outDir: 'dist/table' }
 ];
 

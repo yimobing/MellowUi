@@ -21,6 +21,10 @@ import './components/datePicker/index.css';
 import './components/drawer/index.js';
 import './components/drawer/index.css';
 
+// pagination 组件
+import './components/pagination/index.js';
+import './components/pagination/index.css';
+
 // table 组件
 import './components/table/build-entry.js';
 import './components/table/index.css';

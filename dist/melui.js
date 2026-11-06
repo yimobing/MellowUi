@@ -3173,6 +3173,521 @@
     })(window);
 
     /**
+     * MelUi 独立分页组件
+     * 通用分页UI组件：负责渲染分页条、捕获交互、抛出变更事件；不处理数据请求、不做数据切片，
+     * 数据加载与渲染由业务自己控制。
+     * 分页UI样式统一放在 index.css（.mel-paging-* 系列），本组件不写内联样式
+     * 兼容性：IE9 / IE10 / IE11 / Edge
+     * @Version：v1.0.2
+     * @Date：2026-11-06
+     * @PubDate：2026-11-06 18:17:54
+     */
+
+     (function(MelUi) {
+
+        /**
+         * 默认配置
+         */
+        var DEFAULTS = {
+            el: null, // 挂载容器(必填)。默认null，不渲染。支持选择器字符串'#id'或DOM元素。
+            enable: true, // 是否启用交互(可选)。false时所有按钮置灰禁用，DOM保留
+            total: 0, // 总条数(可选)。小于0时全部交互控件置灰。
+            pageSize: 20, // 每页条数(可选)。小于1自动修正为20
+            pageNo: 1, // 当前页码(可选)
+            pageListSize: 5, // 数字页码区域最多展示连续页码数量(可选)。最小值为3
+            showTotal: true, // 是否显示总条数文本(可选)
+            showListSize: true, // 是否展示中间连续数字页码(可选)。比如（1 2 3 4 5）这种
+            showJumpDrop: true, // 是否显示页码下拉选择器(可选)
+            showJumpInput: true, // 是否显示手动输入页码跳转框(可选)
+            showPageSize: true, // 是否显示每页条数下拉(可选)
+            pageSizeOptions: [10, 20, 50, 100], // 自定义每页条数下拉选项(可选)
+
+            // 事件
+            onChange: null // 用户点击页码 / 切换每页条数 / 下拉选页码 / 输入框跳转 都会触发；function({pageNo, pageSize, oldPageNo, oldPageSize})
+        };
+
+        /**
+         * Pagination 构造函数
+         * 支持两种调用方式：
+         *   var pager = new MelUi.Pagination({...});
+         *   var pager = MelUi.Pagination({...});   // 省略new，内部自动处理
+         * @param {Object} options 配置项，见 DEFAULTS
+         */
+        function Pagination(options) {
+            // 支持无 new 调用：MelUi.Pagination({...}) 等价于 new MelUi.Pagination({...})
+            if (!(this instanceof Pagination)) {
+                return new Pagination(options);
+            }
+
+            this.options = this._extend({}, DEFAULTS, options || {});
+
+            // 销毁标记
+            this._isDestroyed = false;
+
+            // 解析挂载容器
+            var el = this.options.el;
+            this.el = typeof el === 'string' ? document.querySelector(el) : el;
+            if (!this.el) {
+                if (window.console && console.warn) {
+                    console.warn('[MelUi.Pagination] el 未找到，组件不渲染');
+                }
+                this._ready = false;
+                return;
+            }
+            this._ready = true;
+
+            // 归一化参数（pageSize/pageListSize 兜底、maxPage计算、pageNo钳位）
+            this._norm();
+
+            // 渲染 + 绑定事件委托
+            this._render();
+            this._bindEvents();
+        }
+
+        /**
+         * 只读属性：当前页码 / 每页条数 / 总条数 / 是否启用 / 是否已销毁
+         * 只暴露 getter，业务只能读不能改
+         */
+        Object.defineProperty(Pagination.prototype, 'pageNo', {
+            get: function() { return this.options.pageNo; },
+            enumerable: true
+        });
+        Object.defineProperty(Pagination.prototype, 'pageSize', {
+            get: function() { return this.options.pageSize; },
+            enumerable: true
+        });
+        Object.defineProperty(Pagination.prototype, 'total', {
+            get: function() { return this.options.total; },
+            enumerable: true
+        });
+        Object.defineProperty(Pagination.prototype, 'enable', {
+            get: function() { return !!this.options.enable; },
+            enumerable: true
+        });
+        Object.defineProperty(Pagination.prototype, 'isDestroyed', {
+            get: function() { return this._isDestroyed; },
+            enumerable: true
+        });
+
+        /**
+         * 简单第一层合并
+         */
+        Pagination.prototype._extend = function(target) {
+            var sources = Array.prototype.slice.call(arguments, 1);
+            for (var i = 0; i < sources.length; i++) {
+                var src = sources[i];
+                if (!src) continue;
+                for (var key in src) {
+                    if (src.hasOwnProperty(key)) {
+                        target[key] = src[key];
+                    }
+                }
+            }
+            return target;
+        };
+
+        /**
+         * 参数归一化 + 派生值计算
+         * 规则：
+         *   pageSize < 1            → 修正为 20
+         *   pageListSize < 3        → 修正为 3
+         *   pageSizeOptions 非空数组才允许显示每页条数下拉
+         *   当前 pageSize 不在 pageSizeOptions 中 → 自动追加进去，保证下拉有选中项
+         *   maxPage = Math.max(1, Math.ceil(total / pageSize))
+         *   pageNo 钳位到 [1, maxPage]
+         *   total<=0 或 enable=false → _allDisabled=true，全部交互控件置灰
+         */
+        Pagination.prototype._norm = function() {
+            var o = this.options;
+
+            // pageSize 兜底
+            if (typeof o.pageSize !== 'number' || o.pageSize < 1) {
+                o.pageSize = 20;
+            }
+
+            // pageListSize 兜底（最小3）
+            if (typeof o.pageListSize !== 'number' || isNaN(o.pageListSize)) {
+                o.pageListSize = 5;
+            }
+            if (o.pageListSize < 3) {
+                o.pageListSize = 3;
+            }
+
+            // pageSizeOptions 校验：必须是非空数组，否则自动关闭每页条数下拉
+            if (!o.pageSizeOptions || !o.pageSizeOptions.length) {
+                o.showPageSize = false;
+            } else {
+                // 当前 pageSize 不在下拉选项中 → 自动追加，保证 select 能选中当前页大小
+                var _has = false;
+                for (var _pi = 0; _pi < o.pageSizeOptions.length; _pi++) {
+                    if (o.pageSizeOptions[_pi] === o.pageSize) { _has = true; break; }
+                }
+                if (!_has) {
+                    o.pageSizeOptions.push(o.pageSize);
+                }
+            }
+
+            // 最大合法页码：total<=0 时保底为1，避免出现 0 页 / NaN
+            this.maxPage = Math.max(1, Math.ceil((o.total || 0) / o.pageSize));
+
+            // 当前页码钳位到 [1, maxPage]
+            var pn = parseInt(o.pageNo, 10);
+            if (isNaN(pn) || pn < 1) pn = 1;
+            if (pn > this.maxPage) pn = this.maxPage;
+            o.pageNo = pn;
+
+            // 全部置灰条件：未启用 / total<=0
+            this._allDisabled = (!o.enable) || (o.total <= 0);
+        };
+
+        /**
+         * 计算数字页码窗口 [start, end]
+         */
+        Pagination.prototype._getPageWindow = function() {
+            var size = this.options.pageListSize;
+            var mp = this.maxPage;
+            var pn = this.options.pageNo;
+            var start, end;
+
+            if (mp <= size) {
+                start = 1;
+                end = mp;
+            } else {
+                var half = Math.floor(size / 2);
+                start = pn - half;
+                if (start < 1) start = 1;
+                end = start + size - 1;
+                if (end > mp) {
+                    end = mp;
+                    start = end - size + 1;
+                }
+            }
+            return { start: start, end: end };
+        };
+
+        /**
+         * 渲染整个分页条
+         */
+        Pagination.prototype._render = function() {
+            if (!this._ready || this._isDestroyed) return;
+
+            var o = this.options;
+            var pn = o.pageNo;
+            var mp = this.maxPage;
+            var dis = this._allDisabled;
+
+            // 首页/上一页 置灰条件：当前在第1页 或 整体禁用
+            var prevDis = dis || pn <= 1;
+            // 下一页/尾页 置灰条件：当前已是最后一页 或 整体禁用
+            var nextDis = dis || pn >= mp;
+
+            var html = '<div class="mel-paging">';
+
+            // 1. 总条数文本
+            if (o.showTotal) {
+                var showTotal = o.total < 0 ? 0 : o.total;
+                html += '<span class="mel-paging-total">共 ' + showTotal + ' 条</span>';
+            }
+
+            // 2. 基础按钮：首页 / 上一页
+            html += '<button type="button" class="mel-paging-btn" data-act="first"' + (prevDis ? ' disabled' : '') + '>首页</button>';
+            html += '<button type="button" class="mel-paging-btn" data-act="prev"' + (prevDis ? ' disabled' : '') + '>上一页</button>';
+
+            // 3. 连续数字页码
+            if (o.showListSize) {
+                var win = this._getPageWindow();
+                html += '<span class="mel-paging-nums">';
+                for (var i = win.start; i <= win.end; i++) {
+                    html += '<button type="button" class="mel-paging-num' + (i === pn ? ' active' : '') + '" data-page="' + i + '"' + (dis ? ' disabled' : '') + '>' + i + '</button>';
+                }
+                html += '</span>';
+            }
+
+            // 4. 下一页 / 尾页
+            html += '<button type="button" class="mel-paging-btn" data-act="next"' + (nextDis ? ' disabled' : '') + '>下一页</button>';
+            html += '<button type="button" class="mel-paging-btn" data-act="last"' + (nextDis ? ' disabled' : '') + '>尾页</button>';
+
+            // 5. 页码下拉选择器（showJumpDrop）
+            if (o.showJumpDrop) {
+                var dropHtml = '';
+                for (var d = 1; d <= mp; d++) {
+                    dropHtml += '<option value="' + d + '"' + (d === pn ? ' selected' : '') + '>' + d + '</option>';
+                }
+                html += '<span class="mel-paging-jump">前往'
+                     +  '<select class="mel-paging-jump-select"' + (dis ? ' disabled' : '') + '>' + dropHtml + '</select>'
+                     +  '页</span>';
+            }
+
+            // 6. 手动输入页码跳转框（showJumpInput）
+            if (o.showJumpInput) {
+                html += '<span class="mel-paging-jumpinput">前往'
+                     +  '<input type="text" class="mel-paging-jump-input-box" value="' + pn + '"' + (dis ? ' disabled' : '') + ' />'
+                     +  '页</span>';
+            }
+
+            // 7. 每页条数下拉（showPageSize）
+            if (o.showPageSize) {
+                var sizeHtml = '';
+                for (var s = 0; s < o.pageSizeOptions.length; s++) {
+                    var sv = o.pageSizeOptions[s];
+                    sizeHtml += '<option value="' + sv + '"' + (sv === o.pageSize ? ' selected' : '') + '>' + sv + '</option>';
+                }
+                html += '<span class="mel-paging-size">每页'
+                     +  '<select class="mel-paging-size-select"' + (dis ? ' disabled' : '') + '>' + sizeHtml + '</select>'
+                     +  '条</span>';
+            }
+
+            html += '</div>';
+
+            this.el.innerHTML = html;
+        };
+
+        /**
+         * 事件委托绑定（click 委托按钮、change 委托下拉、键盘/失焦委托输入框）
+         * 委托挂在容器上，_render 重建 innerHTML 后无需重新绑定
+         */
+        Pagination.prototype._bindEvents = function() {
+            if (!this.el) return;
+            var self = this;
+
+            var onClick = function(e) {
+                if (self._isDestroyed) return;
+                e = e || window.event;
+                var target = e.target || e.srcElement;
+
+                // 向上找到最近的按钮
+                var node = target;
+                while (node && node !== self.el) {
+                    if (node.tagName === 'BUTTON') {
+                        if (node.disabled) return;
+                        var act = node.getAttribute('data-act');
+                        if (act === 'first') { self._go(1); return; }
+                        if (act === 'prev')  { self._go(self.options.pageNo - 1); return; }
+                        if (act === 'next')  { self._go(self.options.pageNo + 1); return; }
+                        if (act === 'last')  { self._go(self.maxPage); return; }
+                        var page = node.getAttribute('data-page');
+                        if (page !== null) { self._go(page); return; }
+                        return;
+                    }
+                    node = node.parentNode;
+                }
+            };
+
+            var onChange = function(e) {
+                if (self._isDestroyed) return;
+                e = e || window.event;
+                var target = e.target || e.srcElement;
+                if (target.tagName !== 'SELECT') return;
+                if (target.disabled) return;
+
+                if (target.className === 'mel-paging-size-select') {
+                    self._changePageSize(target.value);
+                } else if (target.className === 'mel-paging-jump-select') {
+                    self._go(target.value);
+                }
+            };
+
+            // 输入框：回车跳转；失焦也跳转（两次都走同一个校验，值没变则不重复触发）
+            var onInputKeydown = function(e) {
+                if (self._isDestroyed) return;
+                e = e || window.event;
+                var target = e.target || e.srcElement;
+                if (target.className !== 'mel-paging-jump-input-box') return;
+                var key = e.keyCode || e.which;
+                if (key === 13) {
+                    self._jumpInput(target);
+                    // IE9 回车在表单内可能触发表单提交，阻止默认
+                    if (e.preventDefault) { e.preventDefault(); } else { e.returnValue = false; }
+                }
+            };
+            var onInputBlur = function(e) {
+                if (self._isDestroyed) return;
+                e = e || window.event;
+                var target = e.target || e.srcElement;
+                if (target.className !== 'mel-paging-jump-input-box') return;
+                self._jumpInput(target);
+            };
+
+            // 保存handler引用，destroy时移除
+            this._handlers = {
+                click: onClick,
+                change: onChange,
+                keydown: onInputKeydown,
+                blur: onInputBlur
+            };
+
+            if (this.el.addEventListener) {
+                this.el.addEventListener('click', onClick, false);
+                this.el.addEventListener('change', onChange, false);
+                this.el.addEventListener('keydown', onInputKeydown, false);
+                this.el.addEventListener('blur', onInputBlur, true); // 捕获阶段，兼容IE9 blur冒泡问题
+            } else if (this.el.attachEvent) {
+                this.el.attachEvent('onclick', onClick);
+                this.el.attachEvent('onchange', onChange);
+                this.el.attachEvent('onkeydown', onInputKeydown);
+                this.el.attachEvent('onblur', onInputBlur);
+            }
+        };
+
+        /**
+         * 跳转到指定页码（内部统一入口）
+         * 自动钳位到 [1, maxPage]；目标页与当前页相同则忽略；
+         * 先乐观刷新视图，再抛出 onChange。
+         * @param {Number|String} page 目标页码
+         */
+        Pagination.prototype._go = function(page) {
+            if (this._isDestroyed) return;
+            if (this._allDisabled) return;
+
+            var target = parseInt(page, 10);
+            if (isNaN(target)) return;
+
+            // 交互前快照旧值（页码变化时，pageSize 不变）
+            var oldPageNo = this.options.pageNo;
+            var oldPageSize = this.options.pageSize;
+
+            // 钳位
+            if (target < 1) target = 1;
+            if (target > this.maxPage) target = this.maxPage;
+
+            // 与当前页相同：不重复触发
+            if (target === oldPageNo) return;
+
+            this.options.pageNo = target;
+            this._render();
+            this._emitChange(oldPageNo, oldPageSize);
+        };
+
+        /**
+         * 切换每页条数
+         * 组件不自动把 pageNo 重置为1：切完后重新计算 maxPage 并把 pageNo 钳位到合法范围，
+         * 把钳位结果连同 pageSize 一起抛给业务。是否强制回到第1页由业务自己决定（文档给标准写法）。
+         * @param {Number|String} size 新每页条数
+         */
+        Pagination.prototype._changePageSize = function(size) {
+            if (this._isDestroyed) return;
+            if (this._allDisabled) return;
+
+            var target = parseInt(size, 10);
+            if (isNaN(target) || target < 1) return;
+
+            // 交互前快照旧值（切条数会引起 maxPage 重算、pageNo 被钳位，必须先存）
+            var oldPageNo = this.options.pageNo;
+            var oldPageSize = this.options.pageSize;
+
+            this.options.pageSize = target;
+            // 重算 maxPage + 钳位 pageNo
+            this._norm();
+
+            // 新旧完全一致：不触发（例如切的条数和当前相同，或钳位后页码/条数都没变）
+            if (this.options.pageNo === oldPageNo && this.options.pageSize === oldPageSize) return;
+
+            this._render();
+            this._emitChange(oldPageNo, oldPageSize);
+        };
+
+        /**
+         * 输入框跳转校验
+         * 规则：
+         *   非数字 / 空值        → 回退为当前页码，不触发事件
+         *   < 1                  → 钳位为1
+         *   > maxPage            → 钳位为 maxPage
+         *   与当前页相同         → 回退输入值，不重复触发
+         * @param {HTMLElement} inputEl 输入框元素
+         */
+        Pagination.prototype._jumpInput = function(inputEl) {
+            if (this._isDestroyed) return;
+            if (!inputEl || inputEl.disabled) return;
+
+            var raw = (inputEl.value || '').replace(/[^\d]/g, '');
+            var target = parseInt(raw, 10);
+
+            if (isNaN(target)) {
+                inputEl.value = this.options.pageNo; // 非法输入回退，不触发
+                return;
+            }
+            if (target < 1) target = 1;
+            if (target > this.maxPage) target = this.maxPage;
+            if (target === this.options.pageNo) {
+                inputEl.value = this.options.pageNo; // 相同页回退，不重复触发
+                return;
+            }
+            // 合法跳转：_go 内部会重绘并 emit
+            this._go(target);
+        };
+
+        /**
+         * 抛出 onChange
+         * 只在用户交互（点页码/切条数/选下拉/输入跳转）时调用；
+         * setOption 不触发本方法，避免"业务setOption → onChange → 业务再setOption"死循环。
+         * @param {Number} oldPageNo 交互前的页码
+         * @param {Number} oldPageSize 交互前的每页条数
+         */
+        Pagination.prototype._emitChange = function(oldPageNo, oldPageSize) {
+            if (typeof this.options.onChange === 'function') {
+                this.options.onChange({
+                    pageNo: this.options.pageNo,
+                    pageSize: this.options.pageSize,
+                    oldPageNo: oldPageNo,
+                    oldPageSize: oldPageSize
+                });
+            }
+        };
+
+        /**
+         * 更新状态（业务主动驱动视图）
+         * 支持局部更新：传哪些字段就更新哪些，不需要每次全量传入。
+         * 可更新字段：enable / total / pageSize / pageNo / pageListSize /
+         *            showTotal / showListSize / showJumpDrop / showJumpInput /
+         *            showPageSize / pageSizeOptions
+         * 调用后重新归一化并刷新UI；【不会触发 onChange】。
+         * @param {Object} patch 状态补丁
+         */
+        Pagination.prototype.setOption = function(patch) {
+            if (this._isDestroyed || !this._ready) return;
+            if (!patch) return;
+
+            this._extend(this.options, patch);
+            this._norm();
+            this._render();
+        };
+
+        /**
+         * 销毁组件
+         * 移除容器上的事件委托监听、清空容器DOM、标记销毁状态；
+         * 销毁后再调用 setOption / 交互均被忽略，重复调用不报错。
+         */
+        Pagination.prototype.destroy = function() {
+            if (this._isDestroyed) return;
+            this._isDestroyed = true;
+
+            if (this.el && this._handlers) {
+                var h = this._handlers;
+                if (this.el.removeEventListener) {
+                    this.el.removeEventListener('click', h.click, false);
+                    this.el.removeEventListener('change', h.change, false);
+                    this.el.removeEventListener('keydown', h.keydown, false);
+                    this.el.removeEventListener('blur', h.blur, true);
+                } else if (this.el.detachEvent) {
+                    this.el.detachEvent('onclick', h.click);
+                    this.el.detachEvent('onchange', h.change);
+                    this.el.detachEvent('onkeydown', h.keydown);
+                    this.el.detachEvent('onblur', h.blur);
+                }
+                this._handlers = null;
+            }
+
+            if (this.el) {
+                this.el.innerHTML = '';
+            }
+        };
+
+        // 暴露到命名空间
+        MelUi.Pagination = Pagination;
+
+     })(window.MelUi = window.MelUi || {});
+
+    /**
      * MelUi Table 表格组件 - 入口文件
      * 负责挂载构造函数到全局命名空间
      * 兼容性：IE9 / IE10 / IE11 / Edge
@@ -3209,13 +3724,13 @@
      * MelUi Table 表格组件 - 数据存储
      * 负责管理表格所有数据：行数据、列配置、选中状态、排序状态
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.10.3
+     * @Version：v1.10.4
      * @Date：2026-10-10
-     * @Pubdate：2026-11-04
+     * @PubDate：2026-11-06 10:46:28
      */
 
      (function(MelUi) {
-
+     
         /**
          * DataStore 构造函数
          * @param {Object} options 配置项
@@ -3223,6 +3738,9 @@
          * @param {Number} options.total 远程分页时的总记录数（由外部传入）
          */
         function DataStore(options) {
+            // 销毁状态标记，由 TableCore.destroy 触发 destroy() 时置true
+            this._isDestroyed = false;
+
             this.columns = options.columns || [];
             this.rows = [];
             this.sortField = '';
@@ -3256,6 +3774,49 @@
         }
 
         /**
+         * 只读销毁状态：true=数据源已销毁，不可再读写
+         * 只暴露 getter，业务只能读不能改
+         */
+        Object.defineProperty(DataStore.prototype, 'isDestroyed', {
+            get: function() {
+                return this._isDestroyed;
+            },
+            enumerable: true
+        });
+
+        /**
+         * 销毁守卫（内部用）：已销毁返回 true，调用方应立即 return
+         * 各方法按自身返回类型给出对应的空值，避免业务拿到 undefined 后继续参与计算
+         * @param {String} methodName 方法名，仅用于告警日志定位
+         * @return {Boolean} true=已销毁，跳过执行；false=正常执行
+         */
+        DataStore.prototype._guardDestroyed = function(methodName) {
+            if (!this._isDestroyed) return false;
+            if (window.console && console.warn) {
+                console.warn('[MelUi.Table] DataStore 已销毁，' + methodName + ' 调用被忽略');
+            }
+            return true;
+        };
+
+        /**
+         * 销毁数据源（由 TableCore.destroy 统一调用，业务无需手动调用）
+         * 清空 rows / 选中集合 / 当前页临时插队集合：
+         * 行对象里的 _node 持有表身 DOM 节点引用，必须随 rows 一起释放，
+         * 否则已销毁实例的整棵行元素会被 DataStore 持有而无法回收。
+         * 重复调用不会报错。
+         */
+        DataStore.prototype.destroy = function() {
+            if (this._isDestroyed) return;
+            this._isDestroyed = true;
+
+            this.rows = [];
+            this.selectedRowIndexes = [];
+            this._tempAppendRows = [];
+            this.sortField = '';
+            this.sortOrder = '';
+        };
+
+        /**
          * 降级兜底时自动对齐 pageSize（统一入口）
          * 规则：仅 remotePaging=true 且 enableRemotePagingFallback=true 且后端 total 不可信
          *   （total=0 或 < 当前返回列表长度）时，把 pageSize 设为当前 rows 长度，
@@ -3282,6 +3843,7 @@
          * @return {Boolean}
          */
         DataStore.prototype.isFallbackPaging = function() {
+            if (this._guardDestroyed('isFallbackPaging')) return false;
             if (!this.remotePaging) return false;
             if (!this.enableRemotePagingFallback) return false;
             var bt = this.remoteTotal || 0;
@@ -3322,6 +3884,7 @@
          * @return {Object|null}
          */
         DataStore.prototype.getRow = function(rowIndex) {
+            if (this._guardDestroyed('getRow')) return null;
             // 负数索引：草稿行定位到临时插队集合
             if (rowIndex < 0) {
                 if (this._tempAppendRows) {
@@ -3344,6 +3907,7 @@
          * @return {*}
          */
         DataStore.prototype.getCell = function(rowIndex, field) {
+            if (this._guardDestroyed('getCell')) return '';
             var row = this.getRow(rowIndex);
             if (!row) return '';
             return row[field] || '';
@@ -3356,6 +3920,7 @@
          * @param {*} value 新值
          */
         DataStore.prototype.setCell = function(rowIndex, field, value) {
+            if (this._guardDestroyed('setCell')) return;
             var row = this.getRow(rowIndex);
             if (!row) return;
 
@@ -3386,6 +3951,7 @@
          * @return {Object} 新增的行对象
          */
         DataStore.prototype.addRow = function(data, position) {
+            if (this._guardDestroyed('addRow')) return null;
             position = position || 'last';
             var rowData = data || {};
 
@@ -3450,6 +4016,7 @@
          * 数据本身已写入全局 rows，不会丢失，只是不再"插队"显示在当前页首/尾。
          */
         DataStore.prototype.clearTempAppend = function() {
+            if (this._guardDestroyed('clearTempAppend')) return;
             if (this._tempAppendRows && this._tempAppendRows.length) {
                 for (var i = 0; i < this._tempAppendRows.length; i++) {
                     var row = this._tempAppendRows[i];
@@ -3467,6 +4034,7 @@
          * @param {Number} rowIndex 行索引
          */
         DataStore.prototype.removeRow = function(rowIndex) {
+            if (this._guardDestroyed('removeRow')) return;
             if (rowIndex < 0 || rowIndex >= this.rows.length) return;
 
             var row = this.rows[rowIndex];
@@ -3488,6 +4056,7 @@
          * 清空所有行
          */
         DataStore.prototype.clearRows = function() {
+            if (this._guardDestroyed('clearRows')) return;
             this.rows = [];
             this.selectedRowIndexes = [];
             this.clearTempAppend();
@@ -3507,6 +4076,7 @@
          * @return {Array}
          */
         DataStore.prototype.getDirtyRows = function() {
+            if (this._guardDestroyed('getDirtyRows')) return [];
             var result = [];
             for (var i = 0; i < this.rows.length; i++) {
                 if (this.rows[i]._status === 'i' || this.rows[i]._status === 'u') {
@@ -3521,6 +4091,7 @@
          * @param {Number|String} rowIndex 行索引，传 'all' 表示全部
          */
         DataStore.prototype.markSaved = function(rowIndex) {
+            if (this._guardDestroyed('markSaved')) return;
             if (rowIndex === 'all') {
                 for (var i = 0; i < this.rows.length; i++) {
                     this.rows[i]._status = 's';
@@ -3537,6 +4108,7 @@
          * @param {Boolean} selected 是否选中
          */
         DataStore.prototype.setRowSelected = function(rowIndex, selected) {
+            if (this._guardDestroyed('setRowSelected')) return;
             var row = this.getRow(rowIndex);
             if (!row) return;
 
@@ -3564,6 +4136,7 @@
          * @return {Array}
          */
         DataStore.prototype.getSelectedRows = function() {
+            if (this._guardDestroyed('getSelectedRows')) return [];
             var result = [];
             for (var i = 0; i < this.rows.length; i++) {
                 if (this.rows[i]._selected) {
@@ -3579,6 +4152,7 @@
          * @param {Boolean} selected 是否选中
          */
         DataStore.prototype.selectAll = function(selected) {
+            if (this._guardDestroyed('selectAll')) return;
             if (this.selectMode === 'single') return;
 
             this.selectedRowIndexes = [];
@@ -3593,6 +4167,7 @@
          * 单选模式：反选操作静默忽略（不console.warn，兼容IE）
          */
         DataStore.prototype.invertSelect = function() {
+            if (this._guardDestroyed('invertSelect')) return;
             if (this.selectMode === 'single') return;
 
             this.selectedRowIndexes = [];
@@ -3606,6 +4181,7 @@
          * 清空所有选中（单选/多选都适用）
          */
         DataStore.prototype.clearSelection = function() {
+            if (this._guardDestroyed('clearSelection')) return;
             this.selectedRowIndexes = [];
             for (var i = 0; i < this.rows.length; i++) {
                 this.rows[i]._selected = false;
@@ -3623,6 +4199,7 @@
          *   remotePaging=true 或未分页时本参数无效，等价于全量排序。
          */
         DataStore.prototype.sort = function(field, order, currentPageOnly) {
+            if (this._guardDestroyed('sort')) return;
             this.sortField = field;
             this.sortOrder = order;
 
@@ -3680,6 +4257,7 @@
          * @param {Number} size 每页条数，0表示关闭分页
          */
         DataStore.prototype.setPageSize = function(size) {
+            if (this._guardDestroyed('setPageSize')) return;
             this.pageSize = size || 0;
             this.currentPage = 1;
         };
@@ -3695,6 +4273,7 @@
          * @return {Array}
          */
         DataStore.prototype.getVisibleRows = function() {
+            if (this._guardDestroyed('getVisibleRows')) return [];
             var base = null;
 
             if (this.remotePaging) {
@@ -3774,6 +4353,7 @@
          * @return {Number}
          */
         DataStore.prototype.getEffectiveTotal = function() {
+            if (this._guardDestroyed('getEffectiveTotal')) return 0;
             if (!this.remotePaging) return this.rows.length;
             var backendTotal = this.remoteTotal || 0;
             var listLen = this.rows.length;
@@ -3796,6 +4376,7 @@
          * @return {Number}
          */
         DataStore.prototype.getEffectivePageSize = function() {
+            if (this._guardDestroyed('getEffectivePageSize')) return 0;
             return this.pageSize;
         };
 
@@ -3805,6 +4386,7 @@
          * @return {Number}
          */
         DataStore.prototype.getTotalPages = function() {
+            if (this._guardDestroyed('getTotalPages')) return 1;
             var effPageSize = this.getEffectivePageSize();
             if (!effPageSize || effPageSize <= 0) return 1;
             var total = this.getEffectiveTotal();
@@ -3823,6 +4405,7 @@
          * @return {Object} 新增的行对象
          */
         DataStore.prototype.addRowToCurrentPage = function(data, position) {
+            if (this._guardDestroyed('addRowToCurrentPage')) return null;
             return this.addRow(data, position);
         };
 
@@ -3831,6 +4414,7 @@
          * @param {Array} data 行数据数组
          */
         DataStore.prototype.setRows = function(data) {
+            if (this._guardDestroyed('setRows')) return;
             this.rows = [];
             if (data && data.length) {
                 for (var i = 0; i < data.length; i++) {
@@ -3938,9 +4522,9 @@
      * MelUi Table 表格组件 - 核心渲染器
      * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.8.2
+     * @Version：v1.8.3
      * @Date：2026-10-10
-     * @Pubdate：2026-11-04
+     * @PubDate：2026-11-06 10:46:28
      */
 
      (function(MelUi) {
@@ -4030,9 +4614,26 @@
                     self._adjustBodyHeight();
                 }
             }, 0);
-
             this.isRenderComplete = true;
-            this.eventBus.emit('rendered');
+
+            // rendered 事件载荷：只对外给只读快照，不暴露 DataStore 实例，
+            // 避免业务拿到ds后绕开表格对外API直接改数据源，破坏封装。
+            // 字段口径：
+            //   rows     = 本次实际渲染的行（即 getVisibleRows 结果，含当前页临时追加的新增行）
+            //   total    = 统一走 getEffectiveTotal()，与分页栏展示总数同口径
+            //              （remotePaging + enableRemotePagingFallback 的矫正规则都在该方法内，此处不重复推导）
+            //   pageNo   = 当前页码，内部字段是 currentPage，对外统一叫 pageNo，与 pageChange 事件命名对应
+            //   pageSize = 每页条数
+            // 注意：rows 为浅拷贝数组，行对象本身仍是内部引用，业务只读，请勿修改行数据。
+            var ds = this.dataStore;
+            var visibleRows = ds.getVisibleRows();
+            var renderInfo = {
+                rows: visibleRows.slice(0),
+                total: ds.getEffectiveTotal(),
+                pageNo: ds.currentPage,
+                pageSize: ds.pageSize
+            };
+            this.eventBus.emit('rendered', renderInfo);
         };
 
         /**
@@ -5445,9 +6046,9 @@
      * MelUi Table 表格组件 - 主类
      * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.7.5
+     * @Version：v1.7.6
      * @Date：2026-10-10
-     * @PubDate：2026-11-05 10:07:38
+     * @PubDate：2026-11-06 10:46:28
      */
 
      (function(MelUi) {
@@ -5457,6 +6058,10 @@
          * @param {Object} options 配置项
          */
         function TableCore(options) {
+            // 销毁状态标记。destroy() 置true后，所有对外API入口据此短路，
+            // 防止业务代码/异步回调继续操作已经释放DOM、已经清空数据源的实例。
+            this._isDestroyed = false;
+
             // 默认配置
             var defaults = {
                 el: null, // 表格挂载节点(必填)。传CSS选择器字符串或DOM元素
@@ -5543,6 +6148,31 @@
         };
 
         /**
+         * 只读销毁状态：true=实例已销毁，不可再调用表格API
+         * 只暴露 getter，业务只能读不能改，避免外部篡改内部标记导致守卫失效
+         */
+        Object.defineProperty(TableCore.prototype, 'isDestroyed', {
+            get: function() {
+                return this._isDestroyed;
+            },
+            enumerable: true
+        });
+
+        /**
+         * 销毁守卫（内部用）：实例已销毁返回 true，调用方应立即 return
+         * 统一入口的好处：所有API短路口径一致，不会出现"有的方法拦、有的方法漏拦"
+         * @param {String} methodName 方法名，仅用于告警日志定位
+         * @return {Boolean} true=已销毁，跳过执行；false=正常执行
+         */
+        TableCore.prototype._guardDestroyed = function(methodName) {
+            if (!this._isDestroyed) return false;
+            if (window.console && console.warn) {
+                console.warn('[MelUi.Table] 实例已销毁，' + methodName + ' 调用被忽略');
+            }
+            return true;
+        };
+
+        /**
          * 绑定用户配置的事件
          */
         TableCore.prototype._bindUserEvents = function() {
@@ -5551,6 +6181,7 @@
 
             // 建立事件名映射：用户配置的事件名 -> 内部事件名
             var eventMap = {
+                onRendered: 'rendered',
                 onCellClick: 'cellClick',
                 onCellChange: 'cellChange',
                 onRowClick: 'rowClick',
@@ -5558,7 +6189,7 @@
                 onRowAdd: 'rowAdd',
                 onRowDelete: 'rowDelete',
                 onDeleteRow: 'rowDelete', // deleteRow方法删除成功后抛出的回调事件
-                onSort: 'sort',
+                onSort: 'sortChange',
                 onPageChange: 'pageChange'
             };
 
@@ -5618,6 +6249,7 @@
          * @return {Array}
          */
         TableCore.prototype.getData = function() {
+            if (this._guardDestroyed('getData')) return [];
             return this.dataStore.rows;
         };
 
@@ -5627,6 +6259,7 @@
          * @return {Object|null}
          */
         TableCore.prototype.getRowData = function(rowIndex) {
+            if (this._guardDestroyed('getRowData')) return null;
             return this.dataStore.getRow(rowIndex);
         };
 
@@ -5635,6 +6268,7 @@
          * @return {Array}
          */
         TableCore.prototype.getSelectedData = function() {
+            if (this._guardDestroyed('getSelectedData')) return [];
             return this.dataStore.getSelectedRows();
         };
 
@@ -5643,6 +6277,7 @@
          * @return {Array}
          */
         TableCore.prototype.getDirtyData = function() {
+            if (this._guardDestroyed('getDirtyData')) return [];
             return this.dataStore.getDirtyRows();
         };
 
@@ -5655,6 +6290,7 @@
          * @param {*} value 新值
          */
         TableCore.prototype.setCellValue = function(rowIndex, field, value) {
+            if (this._guardDestroyed('setCellValue')) return;
             this.dataStore.setCell(rowIndex, field, value);
             this.renderer.renderCell(rowIndex, field);
         };
@@ -5665,6 +6301,7 @@
          * @param {Object} data {field1: val1, field2: val2}
          */
         TableCore.prototype.setRowData = function(rowIndex, data) {
+            if (this._guardDestroyed('setRowData')) return;
             for (var field in data) {
                 if (data.hasOwnProperty(field)) {
                     this.dataStore.setCell(rowIndex, field, data[field]);
@@ -5682,6 +6319,7 @@
          *   - global：插入全局原始 data 数组首/尾
          */
         TableCore.prototype.addRow = function(data, position) {
+            if (this._guardDestroyed('addRow')) return null;
             var row = null;
             if (this.options.addRowMode === 'global') {
                 // 全局模式：直接操作原始数据数组
@@ -5786,6 +6424,7 @@
          * @param {Number} rowIndex 行索引
          */
         TableCore.prototype.deleteRow = function(rowIndex) {
+            if (this._guardDestroyed('deleteRow')) return;
             var row = this.dataStore.getRow(rowIndex);
             if (!row) return;
             this.dataStore.removeRow(rowIndex);
@@ -5800,6 +6439,7 @@
          * 清空所有数据
          */
         TableCore.prototype.clearData = function() {
+            if (this._guardDestroyed('clearData')) return;
             this.dataStore.clearRows();
             this.renderer.renderBodyAll();
         };
@@ -5810,6 +6450,7 @@
          * @param {Array} data 行数据数组
          */
         TableCore.prototype.setData = function(data) {
+            if (this._guardDestroyed('setData')) return;
             this.dataStore.setRows(data);
             // 数据替换可能改变降级兜底状态（rows 数量变化影响 isFallbackPaging 判定），重新同步
             this.isFallbackPaging = this.dataStore.isFallbackPaging();
@@ -5823,6 +6464,7 @@
          * @param {Number|String} rowIndex 行索引，传 'all' 表示全部
          */
         TableCore.prototype.markSaved = function(rowIndex) {
+            if (this._guardDestroyed('markSaved')) return;
             this.dataStore.markSaved(rowIndex);
         };
 
@@ -5833,6 +6475,7 @@
          * @param {Boolean} readonly 是否只读
          */
         TableCore.prototype.setCellReadonly = function(rowIndex, field, readonly) {
+            if (this._guardDestroyed('setCellReadonly')) return;
             var row = this.dataStore.getRow(rowIndex);
             if (!row || !row._node) return;
 
@@ -5854,6 +6497,7 @@
          * 单选模式：静默忽略（不console.warn，兼容IE）
          */
         TableCore.prototype.selectAll = function() {
+            if (this._guardDestroyed('selectAll')) return;
             if (this.dataStore.selectMode === 'single') return;
 
             this.dataStore.selectAll(true);
@@ -5866,6 +6510,7 @@
          * 单选模式：静默忽略（不console.warn，兼容IE）
          */
         TableCore.prototype.selectNone = function() {
+            if (this._guardDestroyed('selectNone')) return;
             if (this.dataStore.selectMode === 'single') return;
 
             this.dataStore.selectAll(false);
@@ -5878,6 +6523,7 @@
          * 单选模式：静默忽略（不console.warn，兼容IE）
          */
         TableCore.prototype.invertSelect = function() {
+            if (this._guardDestroyed('invertSelect')) return;
             if (this.dataStore.selectMode === 'single') return;
 
             this.dataStore.invertSelect();
@@ -5906,6 +6552,7 @@
          * @param {Array} rowIndexes 行索引数组
          */
         TableCore.prototype.setSelectedKeys = function(rowIndexes) {
+            if (this._guardDestroyed('setSelectedKeys')) return;
             var keys = rowIndexes || [];
             if (!keys.length) {
                 this.dataStore.clearSelection();
@@ -5931,6 +6578,7 @@
          * 清空选中（单选/多选都适用）
          */
         TableCore.prototype.clearSelection = function() {
+            if (this._guardDestroyed('clearSelection')) return;
             this.dataStore.clearSelection();
             this._refreshSelectedRows();
             this.eventBus.emit('selectChange', {selectedRows: []});
@@ -5944,6 +6592,7 @@
          * @return {String} 错误提示，空字符串表示通过
          */
         TableCore.prototype.validate = function(rowIndex) {
+            if (this._guardDestroyed('validate')) return '';
             var columns = this.dataStore.columns;
             var rows = this.dataStore.rows;
             var tips = '';
@@ -5977,6 +6626,7 @@
          * @return {String} 错误提示，空字符串表示通过
          */
         TableCore.prototype.validateUnique = function() {
+            if (this._guardDestroyed('validateUnique')) return '';
             var columns = this.dataStore.columns;
             var rows = this.dataStore.rows;
             var tips = '';
@@ -6007,6 +6657,7 @@
          * 全量重绘
          */
         TableCore.prototype.render = function() {
+            if (this._guardDestroyed('render')) return;
             this.renderer.render();
         };
 
@@ -6015,6 +6666,7 @@
          * @param {Number} rowIndex 行索引
          */
         TableCore.prototype.renderRow = function(rowIndex) {
+            if (this._guardDestroyed('renderRow')) return;
             this.renderer.renderRow(rowIndex);
         };
 
@@ -6024,6 +6676,7 @@
          * @param {String} field 字段名
          */
         TableCore.prototype.renderCell = function(rowIndex, field) {
+            if (this._guardDestroyed('renderCell')) return;
             this.renderer.renderCell(rowIndex, field);
         };
 
@@ -6035,6 +6688,7 @@
          * @param {Function} handler 回调
          */
         TableCore.prototype.on = function(eventName, handler) {
+            if (this._guardDestroyed('on')) return;
             this.eventBus.on(eventName, handler);
         };
 
@@ -6044,6 +6698,7 @@
          * @param {Function} handler 回调
          */
         TableCore.prototype.off = function(eventName, handler) {
+            if (this._guardDestroyed('off')) return;
             this.eventBus.off(eventName, handler);
         };
 
@@ -6051,8 +6706,9 @@
 
         /**
          * 销毁表格(可选)
-         * 清理window.resize、表身scroll事件监听，恢复body样式，销毁插件，清空容器DOM。
+         * 清理window.resize、表身scroll事件监听，恢复body样式，销毁插件，清空容器DOM，同步销毁DataStore。
          * 【重要】SPA路由切换、弹窗关闭、容器复用重新new实例场景必须手动调用；整页刷新无需调用。
+         * 销毁后实例的 isDestroyed 变为 true，再调用任何对外API都会被守卫拦住（开发期会打warn提示）。
          * 重复调用不会报错。
          */
         TableCore.prototype.destroy = function() {
@@ -6066,11 +6722,18 @@
                         this._pluginInstances[i].destroy();
                     }
                 }
+                this._pluginInstances = [];
             }
 
             // renderer统一清理：移除resize/scroll监听、恢复body样式、清空容器DOM
             if (this.renderer && this.renderer._destroy) {
                 this.renderer._destroy();
+            }
+
+            // 数据源同步销毁：清空rows（行对象里的_node持有DOM节点引用，必须一并释放）、
+            // 清空选中集合与当前页临时插队集合，避免已销毁实例被异步闭包继续持有导致内存上涨。
+            if (this.dataStore && this.dataStore.destroy) {
+                this.dataStore.destroy();
             }
         };
 
