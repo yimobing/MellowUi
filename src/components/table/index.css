@@ -1,9 +1,9 @@
 /**
  * MelUi Table 表格组件 - 基础样式
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.5.1
+ * @Version：v1.5.6
  * @Date：2026-10-10
- * @Pubdate：2026-11-04
+ * @Pubdate：2026-11-09 18:40:59
  */
 
 /* ===== 容器 ===== */
@@ -314,4 +314,49 @@
     border: 1px solid #dcdfe6;
     border-radius: 2px;
     margin: 0 4px;
+}
+
+/* ===== 表格上下额外区块（extraBefore / extraAfter） ===== */
+/* 仅提供基础间距，视觉完全交给业务自定义覆盖；区块内不参与表格列对齐、固定列等布局 */
+.mel-table-extra-before {
+    margin-bottom: 8px;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.mel-table-extra-after {
+    margin-top: 8px;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+/* ===== 合并表头（HeaderMerge 插件） ===== */
+/* 分组表头单元格（父级 th）：叶子单元格沿用原有 th 样式，分组仅补齐边框与背景 */
+.mel-table-header th.mel-th-group {
+    background-color: #f5f7fa;
+    border-right: 1px solid #e4e7ed;
+    border-bottom: 1px solid #e4e7ed;
+}
+
+/* 合并表头边框修复：HeaderMerge.borderPatch=true 时挂到表头 table 上，
+   给每一行显式补底边，规避 IE9 下 colspan 单元格边线缺失 */
+.mel-table-header.mel-header-merge-fix th {
+    border-bottom: 1px solid #e4e7ed;
+}
+
+/* ===== 合并表头：每行最后一列的右边框 =====
+   上面的 th:last-child{border-right:0} 是给单级表头收边用的（右边线由 table 外框承担）。
+   多级表头下，每个 tr 都会各自命中一次 :last-child，分组行最后一格与叶子行最后一格
+   并不是同一列，整列右边线被逐行抹掉 —— 这就是合并表头后“最后一列没有右边框”的原因。
+   修法：HeaderMerge 渲染时给每一行的逻辑最后一列 th 打上 mel-th-merge-lastcol，
+   由下面这条规则把被抹掉的右边框补回来；单级表头没有这个类，行为保持原样。 */
+.mel-table-header th.mel-th-merge-lastcol {
+    border-right: 1px solid #e4e7ed;
+}
+
+/* 表身最后一列同步收边：表头/表身是两张独立 table，css 没法从表头选中表身，
+   所以 HeaderMerge 给共同父容器挂 mel-table-merge-head 标记，表身最后一格跟着补右边框，
+   否则一条竖线会在表头和表身的交界处断色（表头深、表身浅）。 */
+.mel-table-container.mel-table-merge-head .mel-table-body td:last-child {
+    border-right: 1px solid #e4e7ed;
 }

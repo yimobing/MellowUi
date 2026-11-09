@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 主类
  * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.7.6
+ * @Version：v1.7.8
  * @Date：2026-10-10
- * @PubDate：2026-11-06 10:46:28
+ * @PubDate：2026-11-09 17:08:09
  */
 
  (function(MelUi) {
@@ -62,11 +62,22 @@
 
             // ·插件及事件
             plugins: [], // 插件数组(可选)。字符串简写启用+默认配置，或对象{name, ...}启用+自定义配置
-            events: {} // 事件配置(可选)。如 onCellClick/onCellChange/onRowClick 等回调
+            events: {}, // 事件配置(可选)。如 onCellClick/onCellChange/onRowClick 等回调
+
+            // ·表格上下额外区块
+            extraBefore: '', // 表格上方额外内容(可选)。String 直接作为html渲染；Function 以表格实例为参数，返回html字符串。取值或返回值为空则不渲染该区块
+            extraAfter: '' // 表格下方额外内容(可选)。用法同 extraBefore
         };
 
         // 合并配置
         this.options = this._extend({}, defaults, options);
+
+        // 多级表头支持：columns 允许用 children 描述分组表头（树形）。
+        // 数据源只认叶子列，必须在创建 DataStore 之前把树拍平成叶子列，
+        // 否则列宽汇总、colgroup、行渲染、字段取值、固定列都会把分组节点当成一列而错位。
+        // 表头树单独保留在 _columnTree，供 HeaderMerge 插件渲染多行表头使用；不改动用户传入的配置对象。
+        this._columnTree = this.options.columns || [];
+        this.options.columns = this._flattenColumns(this._columnTree);
 
         // 初始化核心模块
         this.eventBus = new MelUi.Table.EventBus();
@@ -78,7 +89,7 @@
             addRowMode: this.options.addRowMode,
             enableRemotePagingFallback: this.options.enableRemotePagingFallback
         });
-        this.renderer = new MelUi.Table.Renderer(this.options, this.dataStore, this.eventBus);
+        this.renderer = new MelUi.Table.Renderer(this.options, this.dataStore, this.eventBus, this);
 
         // 挂载降级兜底状态到表格实例，供业务在 onPageChange 等回调中判断：
         // true = 当前处于降级兜底分页（无需请求后端，组件内部前端切片）；
@@ -109,6 +120,43 @@
             }
         }
         return target;
+    };
+
+    /**
+     * 把 columns 树拍平成叶子列数组
+     * - 叶子列 = 没有 children 的列（带 field，参与列宽、渲染、取值）；
+     * - 普通扁平 columns 原样返回（同一个数组引用，不做无谓拷贝，零开销）；
+     * - 分组节点（含 children）不进入返回值，仅用于表头渲染。
+     * @param {Array} columns 列配置（可含 children 分组）
+     * @return {Array} 叶子列数组
+     */
+    TableCore.prototype._flattenColumns = function(columns) {
+        if (!columns || !columns.length) return columns || [];
+
+        // 先探测是否存在分组，没有分组直接原样返回，保证原有行为完全不变
+        var hasGroup = false;
+        for (var i = 0; i < columns.length; i++) {
+            if (columns[i] && columns[i].children && columns[i].children.length) {
+                hasGroup = true;
+                break;
+            }
+        }
+        if (!hasGroup) return columns;
+
+        var leaves = [];
+        var walk = function(list) {
+            for (var j = 0; j < list.length; j++) {
+                var col = list[j];
+                if (!col) continue;
+                if (col.children && col.children.length) {
+                    walk(col.children);
+                } else {
+                    leaves.push(col);
+                }
+            }
+        };
+        walk(columns);
+        return leaves;
     };
 
     /**
@@ -154,7 +202,8 @@
             onRowDelete: 'rowDelete',
             onDeleteRow: 'rowDelete', // deleteRow方法删除成功后抛出的回调事件
             onSort: 'sortChange',
-            onPageChange: 'pageChange'
+            onPageChange: 'pageChange',
+            onGroupHeaderClick: 'groupHeaderClick' // 合并表头时点击分组表头（父级 th）触发
         };
 
         for (var userEvent in eventMap) {

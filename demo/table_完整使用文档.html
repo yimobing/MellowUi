@@ -1,991 +1,1045 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-cmn-Hans">
 <head>
-<meta charset="UTF-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MelUi Table 表格控件 · 使用文档</title>
-<style>
-    * { box-sizing: border-box; }
-    body {
-        margin: 0;
-        padding: 0;
-        font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
-        font-size: 14px;
-        line-height: 1.75;
-        color: #2c3138;
-        background: #f5f6f8;
-    }
-    .wrap {
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 0 24px 80px;
-    }
-    header.top {
-        background: #ffffff;
-        border-bottom: 1px solid #e3e7ec;
-        padding: 28px 24px 20px;
-        margin-bottom: 24px;
-    }
-    header.top .inner { max-width: 1180px; margin: 0 auto; }
-    header.top h1 {
-        margin: 0 0 6px;
-        font-size: 26px;
-        font-weight: 600;
-        color: #1f2937;
-    }
-    header.top p { margin: 0; color: #6b7280; font-size: 13px; }
-    .version-tag {
-        display: inline-block;
-        margin-left: 8px;
-        padding: 1px 8px;
-        border-radius: 3px;
-        background: #eef4ff;
-        color: #2f6bbd;
-        font-size: 12px;
-        font-weight: normal;
-        vertical-align: middle;
-    }
-
-    /* 顶部导航 */
-    nav.top-nav {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        background: #ffffff;
-        border-bottom: 1px solid #e3e7ec;
-        padding: 10px 0;
-        margin-bottom: 28px;
-        box-shadow: 0 1px 4px rgba(0,0,0,.04);
-    }
-    nav.top-nav .inner {
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 0 24px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px 10px;
-    }
-    nav.top-nav a {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 4px;
-        color: #4b5563;
-        text-decoration: none;
-        font-size: 13px;
-        border: 1px solid transparent;
-    }
-    nav.top-nav a:hover {
-        color: #1d4ed8;
-        background: #f2f6fd;
-        border-color: #dbe7fb;
-    }
-
-    section {
-        background: #ffffff;
-        border: 1px solid #e5e8ee;
-        border-radius: 6px;
-        padding: 22px 26px 26px;
-        margin-bottom: 22px;
-    }
-    section h2 {
-        margin: 0 0 16px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #edf0f4;
-        font-size: 19px;
-        font-weight: 600;
-        color: #1f2937;
-        scroll-margin-top: 70px;
-    }
-    section h2 .num {
-        display: inline-block;
-        width: 24px;
-        height: 24px;
-        line-height: 24px;
-        margin-right: 8px;
-        border-radius: 4px;
-        background: #2f6bbd;
-        color: #fff;
-        font-size: 13px;
-        text-align: center;
-        font-weight: normal;
-        vertical-align: 2px;
-    }
-    h3 {
-        margin: 22px 0 10px;
-        font-size: 15px;
-        font-weight: 600;
-        color: #1f2937;
-        scroll-margin-top: 70px;
-    }
-    h3::before {
-        content: "";
-        display: inline-block;
-        width: 3px;
-        height: 13px;
-        margin-right: 8px;
-        background: #2f6bbd;
-        vertical-align: -2px;
-    }
-    h4 { margin: 16px 0 8px; font-size: 14px; font-weight: 600; color: #374151; }
-
-    p { margin: 8px 0; }
-    ul, ol { margin: 8px 0; padding-left: 22px; }
-    li { margin: 4px 0; }
-
-    pre {
-        margin: 12px 0;
-        padding: 14px 16px;
-        background: #f8fafc;
-        border: 1px solid #e3e8ef;
-        border-left: 3px solid #2f6bbd;
-        border-radius: 4px;
-        overflow-x: auto;
-        font-size: 13px;
-        line-height: 1.7;
-    }
-    code {
-        font-family: Consolas, "Courier New", monospace;
-        color: #1f2937;
-    }
-    pre code { color: #1f2937; }
-    .inline-code {
-        padding: 1px 5px;
-        background: #f1f4f8;
-        border: 1px solid #e1e6ed;
-        border-radius: 3px;
-        font-size: 13px;
-        color: #b42318;
-    }
-
-    table.cfg {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 12px 0 6px;
-        font-size: 13px;
-    }
-    table.cfg th {
-        background: #f3f6fa;
-        color: #374151;
-        font-weight: 600;
-        text-align: left;
-        padding: 9px 12px;
-        border: 1px solid #e3e8ef;
-        white-space: nowrap;
-    }
-    table.cfg td {
-        padding: 9px 12px;
-        border: 1px solid #e8ecf2;
-        vertical-align: top;
-        color: #374151;
-    }
-    table.cfg td.code-cell {
-        font-family: Consolas, "Courier New", monospace;
-        color: #1d4ed8;
-        white-space: nowrap;
-    }
-    table.cfg tr:nth-child(even) td { background: #fbfcfe; }
-
-    .tip {
-        margin: 14px 0;
-        padding: 12px 16px;
-        background: #f3f8ff;
-        border: 1px solid #d7e5fb;
-        border-radius: 4px;
-        font-size: 13px;
-        color: #1e40af;
-    }
-    .tip b { color: #1d4ed8; }
-    .warn {
-        margin: 14px 0;
-        padding: 12px 16px;
-        background: #fff8ee;
-        border: 1px solid #f5dfbb;
-        border-radius: 4px;
-        font-size: 13px;
-        color: #92400e;
-    }
-    .warn b { color: #b45309; }
-
-    .tag {
-        display: inline-block;
-        padding: 0 6px;
-        border-radius: 3px;
-        font-size: 12px;
-        line-height: 20px;
-    }
-    .tag-req { background: #fdecec; color: #b42318; }
-    .tag-opt { background: #eef2f7; color: #4b5563; }
-
-    .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 12px;
-        margin: 14px 0 4px;
-    }
-    .feature-card {
-        border: 1px solid #e5e8ee;
-        border-radius: 5px;
-        padding: 14px 16px;
-        background: #fbfcfe;
-    }
-    .feature-card strong { display: block; margin-bottom: 4px; color: #1f2937; }
-    .feature-card span { color: #6b7280; font-size: 13px; }
-
-    .backtop {
-        position: fixed;
-        right: 22px;
-        bottom: 22px;
-        z-index: 30;
-    }
-    .backtop a {
-        display: block;
-        padding: 7px 12px;
-        background: #2f6bbd;
-        color: #fff;
-        text-decoration: none;
-        border-radius: 4px;
-        font-size: 12px;
-        box-shadow: 0 2px 8px rgba(47,107,189,.3);
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="网站名称">
+    <meta name="applicable-device" content="pc,mobile">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>MelUi Table 表格控件 · 使用文档</title>
+    <meta name="keywords" content="">
+    <meta name="description" content="">
 </head>
 <body>
 
-<header class="top" id="top">
-    <div class="inner">
-        <h1>MelUi Table 表格控件 <span class="version-tag">v1.x · 原生JS</span></h1>
-        <p>数据驱动的录入 / 展示双用表格，兼容 IE9 / IE10 / IE11 / Edge，无第三方依赖。</p>
-    </div>
-</header>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.75;
+            color: #2c3138;
+            background: #f5f6f8;
+        }
+        .wrap {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 24px 80px;
+        }
+        header.top {
+            background: #ffffff;
+            border-bottom: 1px solid #e3e7ec;
+            padding: 28px 24px 20px;
+            margin-bottom: 24px;
+        }
+        header.top .inner { max-width: 1180px; margin: 0 auto; }
+        header.top h1 {
+            margin: 0 0 6px;
+            font-size: 26px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        header.top p { margin: 0; color: #6b7280; font-size: 13px; }
+        .version-tag {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 1px 8px;
+            border-radius: 3px;
+            background: #eef4ff;
+            color: #2f6bbd;
+            font-size: 12px;
+            font-weight: normal;
+            vertical-align: middle;
+        }
 
-<nav class="top-nav">
-    <div class="inner">
-        <a href="#s1">1. 功能概览</a>
-        <a href="#s2">2. 快速开始</a>
-        <a href="#s3">3. 主配置项</a>
-        <a href="#s4">4. 列配置 columns</a>
-        <a href="#s5">5. 单元格渲染器</a>
-        <a href="#s6">6. 插件机制</a>
-        <a href="#s7">7. 插件详解</a>
-        <a href="#s8">8. 实例 API</a>
-        <a href="#s9">9. 事件</a>
-        <a href="#s10">10. 注意事项</a>
-    </div>
-</nav>
+        /* 顶部导航 */
+        nav.top-nav {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: #ffffff;
+            border-bottom: 1px solid #e3e7ec;
+            padding: 10px 0;
+            margin-bottom: 28px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.04);
+        }
+        nav.top-nav .inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 10px;
+        }
+        nav.top-nav a {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            color: #4b5563;
+            text-decoration: none;
+            font-size: 13px;
+            border: 1px solid transparent;
+        }
+        nav.top-nav a:hover {
+            color: #1d4ed8;
+            background: #f2f6fd;
+            border-color: #dbe7fb;
+        }
 
-<div class="wrap">
+        section {
+            background: #ffffff;
+            border: 1px solid #e5e8ee;
+            border-radius: 6px;
+            padding: 22px 26px 26px;
+            margin-bottom: 22px;
+        }
+        section h2 {
+            margin: 0 0 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #edf0f4;
+            font-size: 19px;
+            font-weight: 600;
+            color: #1f2937;
+            scroll-margin-top: 70px;
+        }
+        section h2 .num {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            margin-right: 8px;
+            border-radius: 4px;
+            background: #2f6bbd;
+            color: #fff;
+            font-size: 13px;
+            text-align: center;
+            font-weight: normal;
+            vertical-align: 2px;
+        }
+        h3 {
+            margin: 22px 0 10px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f2937;
+            scroll-margin-top: 70px;
+        }
+        h3::before {
+            content: "";
+            display: inline-block;
+            width: 3px;
+            height: 13px;
+            margin-right: 8px;
+            background: #2f6bbd;
+            vertical-align: -2px;
+        }
+        h4 { margin: 16px 0 8px; font-size: 14px; font-weight: 600; color: #374151; }
 
-<!-- ============================ 1 ============================ -->
-<section id="s1">
-    <h2><span class="num">1</span>功能概览</h2>
+        p { margin: 8px 0; }
+        ul, ol { margin: 8px 0; padding-left: 22px; }
+        li { margin: 4px 0; }
 
-    <h3>核心优势</h3>
-    <div class="feature-grid">
-        <div class="feature-card">
-            <strong>IE9+ 全兼容</strong>
-            <span>纯原生 JS 实现，不依赖 jQuery / 框架；不用 let / const / 箭头函数 / 模板字符串，可直接跑在老旧内网环境。</span>
+        pre {
+            margin: 12px 0;
+            padding: 14px 16px;
+            background: #f8fafc;
+            border: 1px solid #e3e8ef;
+            border-left: 3px solid #2f6bbd;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        code {
+            font-family: Consolas, "Courier New", monospace;
+            color: #1f2937;
+        }
+        pre code { color: #1f2937; }
+        .inline-code {
+            padding: 1px 5px;
+            background: #f1f4f8;
+            border: 1px solid #e1e6ed;
+            border-radius: 3px;
+            font-size: 13px;
+            color: #b42318;
+        }
+
+        table.cfg {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 6px;
+            font-size: 13px;
+        }
+        table.cfg th {
+            background: #f3f6fa;
+            color: #374151;
+            font-weight: 600;
+            text-align: left;
+            padding: 9px 12px;
+            border: 1px solid #e3e8ef;
+            white-space: nowrap;
+        }
+        table.cfg td {
+            padding: 9px 12px;
+            border: 1px solid #e8ecf2;
+            vertical-align: top;
+            color: #374151;
+        }
+        table.cfg td.code-cell {
+            font-family: Consolas, "Courier New", monospace;
+            color: #1d4ed8;
+            white-space: nowrap;
+        }
+        table.cfg tr:nth-child(even) td { background: #fbfcfe; }
+
+        .tip {
+            margin: 14px 0;
+            padding: 12px 16px;
+            background: #f3f8ff;
+            border: 1px solid #d7e5fb;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+        .tip b { color: #1d4ed8; }
+        .warn {
+            margin: 14px 0;
+            padding: 12px 16px;
+            background: #fff8ee;
+            border: 1px solid #f5dfbb;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #92400e;
+        }
+        .warn b { color: #b45309; }
+
+        .tag {
+            display: inline-block;
+            padding: 0 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            line-height: 20px;
+        }
+        .tag-req { background: #fdecec; color: #b42318; }
+        .tag-opt { background: #eef2f7; color: #4b5563; }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 12px;
+            margin: 14px 0 4px;
+        }
+        .feature-card {
+            border: 1px solid #e5e8ee;
+            border-radius: 5px;
+            padding: 14px 16px;
+            background: #fbfcfe;
+        }
+        .feature-card strong { display: block; margin-bottom: 4px; color: #1f2937; }
+        .feature-card span { color: #6b7280; font-size: 13px; }
+
+        .backtop {
+            position: fixed;
+            right: 22px;
+            bottom: 22px;
+            z-index: 30;
+        }
+        .backtop a {
+            display: block;
+            padding: 7px 12px;
+            background: #2f6bbd;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 12px;
+            box-shadow: 0 2px 8px rgba(47,107,189,.3);
+        }
+    </style>
+    <header class="top" id="top">
+        <div class="inner">
+            <h1>MelUi Table 表格控件 <span class="version-tag">v1.x · 原生JS</span></h1>
+            <p>数据驱动的录入 / 展示双用表格，兼容 IE9 / IE10 / IE11 / Edge，无第三方依赖。</p>
         </div>
-        <div class="feature-card">
-            <strong>数据驱动，DOM 只是投影</strong>
-            <span>业务数据统一存放在 DataStore，读取、保存、导出全部走数据层，不从 DOM 反查 input 的值，大数据量操作更快。</span>
+    </header>
+
+    <nav class="top-nav">
+        <div class="inner">
+            <a href="#s1">1. 功能概览</a>
+            <a href="#s2">2. 快速开始</a>
+            <a href="#s3">3. 主配置项</a>
+            <a href="#s4">4. 列配置 columns</a>
+            <a href="#s5">5. 单元格渲染器</a>
+            <a href="#s6">6. 插件机制</a>
+            <a href="#s7">7. 插件详解</a>
+            <a href="#s8">8. 实例 API</a>
+            <a href="#s9">9. 事件</a>
+            <a href="#s10">10. 注意事项</a>
         </div>
-        <div class="feature-card">
-            <strong>原生 table-layout:fixed</strong>
-            <span>列宽由浏览器原生表格布局计算，避免 JS 反复测量 DOM 造成重排重绘。</span>
+    </nav>
+
+    <div class="wrap">
+
+    <!-- ============================ 1 ============================ -->
+    <section id="s1">
+        <h2><span class="num">1</span>功能概览</h2>
+
+        <h3>核心优势</h3>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <strong>IE9+ 全兼容</strong>
+                <span>纯原生 JS 实现，不依赖 jQuery / 框架；不用 let / const / 箭头函数 / 模板字符串，可直接跑在老旧内网环境。</span>
+            </div>
+            <div class="feature-card">
+                <strong>数据驱动，DOM 只是投影</strong>
+                <span>业务数据统一存放在 DataStore，读取、保存、导出全部走数据层，不从 DOM 反查 input 的值，大数据量操作更快。</span>
+            </div>
+            <div class="feature-card">
+                <strong>原生 table-layout:fixed</strong>
+                <span>列宽由浏览器原生表格布局计算，避免 JS 反复测量 DOM 造成重排重绘。</span>
+            </div>
+            <div class="feature-card">
+                <strong>插件化分层</strong>
+                <span>核心层只保留表格骨架，序号、状态列、多选、排序、分页、合计、导出全部按需启用，不用的插件不加载。</span>
+            </div>
+            <div class="feature-card">
+                <strong>录入 / 展示双用</strong>
+                <span>同一套组件既能做纯文本展示表，也能做大量 input / radio / checkbox 的录入表。</span>
+            </div>
+            <div class="feature-card">
+                <strong>完整销毁机制</strong>
+                <span>destroy() 清理 resize 监听、表身滚动监听、恢复 body 样式，避免内存泄漏。</span>
+            </div>
         </div>
-        <div class="feature-card">
-            <strong>插件化分层</strong>
-            <span>核心层只保留表格骨架，序号、状态列、多选、排序、分页、合计、导出全部按需启用，不用的插件不加载。</span>
+
+        <h3>基础表格能力</h3>
+        <ol>
+            <li>传入 <span class="inline-code">columns</span> 配置列，支持标题 <span class="inline-code">title</span>、副标题 <span class="inline-code">subtitle</span>、字段 <span class="inline-code">field</span>、列宽 <span class="inline-code">width</span>、对齐 <span class="inline-code">align</span>（left / center / right）。</li>
+            <li>列配置同时支持：<span class="inline-code">readonly</span> 只读、<span class="inline-code">disabled</span> 禁用、<span class="inline-code">defaultValue</span> 新增行默认值、<span class="inline-code">required</span> 必填、<span class="inline-code">unique</span> 唯一值、<span class="inline-code">type</span> 数据类型（int / float）、<span class="inline-code">digit</span> 小数位数、<span class="inline-code">formatter</span> 显示格式化。</li>
+            <li>传入数组 <span class="inline-code">data</span> 渲染表格；提供新增行、删除行、清空、整表替换等 API。</li>
+            <li>表格外观：边框 <span class="inline-code">bordered</span>、斑马纹 <span class="inline-code">stripe</span>、行悬浮高亮 <span class="inline-code">hoverHighlight</span>。</li>
+            <li>单元格渲染：纯文本、单行输入框、多行文本域、按钮、radio、checkbox；单元格文字溢出省略。</li>
+            <li>合计行、序号列、状态列、多选列、表头排序、分页、Excel 导出（均以插件形式启用）。</li>
+            <li>左侧连续 N 列冻结 <span class="inline-code">fixedLeftColumns</span>；列宽自适应 <span class="inline-code">fitWidth</span>。</li>
+            <li>窗口自适应：<span class="inline-code">fitViewport</span> 视口高度自适应 + 底部留白 <span class="inline-code">viewportBottomGap</span> + resize 节流刷新。</li>
+            <li>新增行自动滚动定位 + 自动聚焦第一个可输入文本框（自动跳过 checkbox / radio / button）。</li>
+        </ol>
+    </section>
+
+    <!-- ============================ 2 ============================ -->
+    <section id="s2">
+        <h2><span class="num">2</span>快速开始</h2>
+
+        <h3>引入文件</h3>
+        <p>按下面的顺序引入（渲染器 → 核心 → 插件 → 入口），入口 <span class="inline-code">index.js</span> 负责把各模块挂到 <span class="inline-code">MelUi.Table</span> 命名空间。插件打包发布后给用户使用时只需要此js文件，未打包前需按需引入其它js文件。</p>
+    <pre><code>
+
+    &lt;!--[======== 打包发布版：正式发布时使用 ========] --&gt;
+    &lt;!-- 正式发布时只要引入 table.min.js(css) 或 melui.min.js(css) 即可 --&gt;
+    &lt;link rel="stylesheet" href="./dist/table.min.css"&gt;
+    &lt;script src="./dist/table.min.js"&gt;&lt;/script&gt;
+
+    &lt;!-- 或者 --&gt;
+    &lt;link rel="stylesheet" href="./dist/melui.min.css"&gt;
+    &lt;script src="./dist/melui.min.js"&gt;&lt;/script&gt;
+
+    &lt;!--[======== 本地演示版：没发打包发布时本地演示时使用 ========] --&gt;
+    &lt;!-- 入口 --&gt;
+    &lt;link rel="stylesheet" href="./table/index.css"&gt;
+    &lt;script src="./table/index.js"&gt;&lt;/script&gt;
+
+    &lt;!-- 单元格渲染器 --&gt;
+    &lt;script src="./table/cell-renderers/text.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/cell-renderers/input.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/cell-renderers/textarea.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/cell-renderers/radio.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/cell-renderers/checkbox-cell.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/cell-renderers/button.js"&gt;&lt;/script&gt;
+
+    &lt;!-- 核心 --&gt;
+    &lt;script src="./table/core/data-store.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/core/event-bus.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/core/renderer.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/core/layout.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/core/table.js"&gt;&lt;/script&gt;
+
+    &lt;!-- 插件（按需引入） --&gt;
+    &lt;script src="./table/plugins/plugin-base.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/plugins/serial-no.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/plugins/checkbox.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/plugins/state-column.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/plugins/sort.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/plugins/pagination.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/plugins/summary.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/plugins/export.js"&gt;&lt;/script&gt;
+    &lt;script src="./table/plugins/header-merge.js"&gt;&lt;/script&gt;
+
+    </code></pre>
+
+        <h3>最小示例</h3>
+    <pre><code>&lt;div id="table-box"&gt;&lt;/div&gt;
+
+    &lt;script&gt;
+    // 1. 列配置：一列对应一个字段
+    var columns = [
+        {field: "name", title: "名称", width: 160, renderer: "input", required: true, align: "left"},
+        {field: "price", title: "单价", subtitle: "(元)", width: 120, renderer: "input", type: "float", digit: 2, align: "right"}
+    ];
+
+    // 2. 行数据：对象数组，每一对象就是表格中的一行
+    //    对象里的 key 必须与 columns 中的 field 一一对应（name 对应第一列，price 对应第二列）
+    var data = [
+        {name: "测试项A", price: 100.00},
+        {name: "测试项B", price: 200.50}
+    ];
+
+    // 3. 初始化
+    var table = MelUi.Table(options); // options 主配置项，Object 类型
+    // eg.
+    var table = MelUi.Table({
+        el: "#table-box",
+        columns: columns,   // 表头 + 每列渲染方式
+        data: data,        // 表身每一行的数据
+        rowHeight: 40,
+        bordered: true,
+        stripe: true,
+        plugins: [
+            "SerialNo",
+            {name: "Pagination", pageSize: 20}
+        ]
+    });
+    &lt;/script&gt;</code></pre>
+
+        <div class="tip">
+            <b>data 与 columns 的关系：</b>
+            <span class="inline-code">data</span> 是行数据数组，每个元素是一行的数据对象；
+            对象里的 key 与 <span class="inline-code">columns</span> 中每一项的 <span class="inline-code">field</span> 对应。
+            上例中第一列 <span class="inline-code">field: "name"</span> 会读取每一行的 <span class="inline-code">name</span> 值渲染，第二列读取 <span class="inline-code">price</span>。
+            如果某行缺少某字段，会按该列的 <span class="inline-code">defaultValue</span> 补默认值（未配置则显示空）。
         </div>
-        <div class="feature-card">
-            <strong>录入 / 展示双用</strong>
-            <span>同一套组件既能做纯文本展示表，也能做大量 input / radio / checkbox 的录入表。</span>
+    </section>
+
+    <!-- ============================ 3 ============================ -->
+    <section id="s3">
+        <h2><span class="num">3</span>主配置项（options）</h2>
+        <p>下表中 <span class="tag tag-req">必填</span> 为必须传入，<span class="tag tag-opt">可选</span> 未传时取默认值。</p>
+
+        <h3>基础</h3>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">el</td><td>String / HTMLElement</td><td>—</td><td><span class="tag tag-req">必填</span> 表格挂载节点，传 CSS 选择器字符串或 DOM 元素。</td></tr>
+            <tr><td class="code-cell">columns</td><td>Array</td><td>[]</td><td><span class="tag tag-req">必填</span> 列配置数组，每一项描述一列（详见第 4 节）。</td></tr>
+            <tr><td class="code-cell">data</td><td>Array</td><td>[]</td><td><span class="tag tag-req">必填</span> 表格数据，对象数组，每个对象对应一行。</td></tr>
+        </table>
+
+        <h3>表格上下额外区块</h3>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">extraBefore</td><td>String / Function</td><td>空字符串</td><td> 表格上方额外内容。String 直接作为html渲染；Function 以表格实例为参数，返回html字符串。取值或返回值为空则不渲染该区块。eg. extraBefore: function(tb) { return '<a> 表格前面的内容</a>'}</td></tr>
+            <tr><td class="code-cell">extraAfter</td><td>String / Function</td><td>空字符串</td><td> 表格下方额外内容(可选)。用法同 extraBefore。</td></tr>
+        </table>
+
+        <h3>外观</h3>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">bordered</td><td>Boolean</td><td>true</td><td>是否显示单元格边框。</td></tr>
+            <tr><td class="code-cell">stripe</td><td>Boolean</td><td>false</td><td>是否隔行变色（斑马纹）。</td></tr>
+            <tr><td class="code-cell">hoverHighlight</td><td>Boolean</td><td>true</td><td>鼠标悬停行是否高亮。</td></tr>
+            <tr><td class="code-cell">showSelectAll</td><td>Boolean</td><td>true</td><td>多选列表头是否显示全选复选框（配合 Checkbox 插件）。</td></tr>
+            <tr><td class="code-cell">rowHeight</td><td>Number</td><td>40</td><td>行高，单位 px。</td></tr>
+            <tr><td class="code-cell">headerHeight</td><td>Number / 'auto'</td><td>'auto'</td><td>表头高度。'auto' 由内容自动撑开；传数值时使用固定高度（px）。</td></tr>
+            <tr><td class="code-cell">fixedLeftColumns</td><td>Number</td><td>0</td><td>左侧连续冻结列数量，0 表示不冻结，1 表示冻结第 1 列。</td></tr>
+        </table>
+
+        <h3>布局与尺寸</h3>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">fitViewport</td><td>Boolean</td><td>true</td><td>是否垂直适配视口。true 时 bodyHeight、el 自定义高度失效，表格自动占满页面剩余高度且页面不出现垂直滚动条。同一个页面只能最多一个表格开启 fitViewport，如有多个表格请关闭 fitViewport 。</td></tr>
+            <tr><td class="code-cell">viewportBottomGap</td><td>Number</td><td>16</td><td>仅 fitViewport=true 生效。表格与视口底边之间预留的间隙（px），露出 body 背景色。</td></tr>
+            <tr><td class="code-cell">bodyHeight</td><td>Number</td><td>0</td><td>表身固定高度（px）。0 表示不限制，由 el 节点控制。fitViewport=true 时本参数无效；fitViewport=false 且 &gt;0 时会把 el 高度强制为 auto!important。</td></tr>
+            <tr><td class="code-cell">fitWidth</td><td>Boolean</td><td>false</td><td>false 为固定列宽模式，使用 columns 的 width(px)；true 为弹性模式，列宽总和小于容器时按 width 权重拉伸填满，大于容器时不拉伸并出现横向滚动条。</td></tr>
+        </table>
+
+        <h3>分页</h3>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">remotePaging</td><td>Boolean</td><td>false</td><td>false：前端本地分页，一次性传全部 data，组件内部切片；true：后端远程分页，翻页 / 改每页条数时触发 onPageChange，由业务请求后端后 setData 回填。</td></tr>
+            <tr><td class="code-cell">total</td><td>Number</td><td>0</td><td>总记录数，仅 remotePaging=true 生效，由外部传入后端总条数，组件据此渲染分页栏。</td></tr>
+            <tr><td class="code-cell">enableRemotePagingFallback</td><td>Boolean</td><td>true</td><td>是否兜底后端远程分页，仅 remotePaging=true 生效。后端 total=0 或 total 小于当前返回列表条数时：true 则组件自动降级，用当前这批数据前端本地分页；false 则严格信任后端 total，不自动切换。<br>标准分页接口建议设 false；接口本身不支持一次性返回总记录数时设 true。</td></tr>
+            <tr><td class="code-cell">addRowMode</td><td>String</td><td>'currentPage'</td><td>新增行插入位置，仅 remotePaging=false 时有效。<br>'currentPage'：插入当前页数据集合，配合 addRow 的 position 控制当前页首 / 尾；<br>'global'：插入全局原始数据数组首 / 尾。<br>remotePaging=true 时本参数无效（自动按全局处理）。</td></tr>
+        </table>
+
+        <h3>插件与事件</h3>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">plugins</td><td>Array</td><td>[]</td><td>插件数组。支持字符串简写（启用 + 默认配置）和对象简写（启用 + 自定义配置），详见第 6 节。</td></tr>
+            <tr><td class="code-cell">events</td><td>Object</td><td>{}</td><td>事件回调集合，如 onCellClick / onCellChange / onRowClick / onSelectChange / onRowAdd / onRowDelete / onPageChange，详见第 9 节。</td></tr>
+        </table>
+
+        <h3>实例只读属性</h3>
+        <table class="cfg">
+            <tr><th style="width:210px">属性</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">table.isDestroyed</td><td>Boolean</td><td>—</td><td>表格实例是否已销毁。true = 实例已销毁，此时不可调用实例API，false 表格实例正常使用。</td></tr>
+            <tr><td class="code-cell">table.isFallbackPaging</td><td>Boolean</td><td>—</td><td>当前是否处于「降级兜底分页」状态。true 表示后端 total 不可信、组件在用当前这批数据做前端本地分页；业务应在 onPageChange 中据此判断：true 时不要再请求后端，false 时才请求后端。<br>每次 setData / setRows 后自动重新计算。</td></tr>
+        </table>
+    </section>
+
+    <!-- ============================ 4 ============================ -->
+    <section id="s4">
+        <h2><span class="num">4</span>列配置（columns）</h2>
+        <p>columns 中每一项描述表格的一列，字段与渲染方式都写在同一个对象里。</p>
+
+        <table class="cfg">
+            <tr><th style="width:200px">字段</th><th style="width:120px">类型</th><th style="width:130px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">field</td><td>String</td><td>—</td><td><span class="tag tag-req">必填</span> 字段名，数据读写唯一标识，必须与 data 对象中的 key 对应。内部列以 <span class="inline-code">_</span> 开头（如 _serialNo / _state / _checkbox）。</td></tr>
+            <tr><td class="code-cell">title</td><td>String</td><td>—</td><td><span class="tag tag-req">必填</span> 列标题，显示在表头。</td></tr>
+            <tr><td class="code-cell">subtitle</td><td>String</td><td>''</td><td>列副标题，显示在标题下方的小字，如 "(元)"、"(㎡)"。</td></tr>
+            <tr><td class="code-cell">width</td><td>Number</td><td>—</td><td>列宽（px）。table-layout:fixed 模式下由该值决定列宽。</td></tr>
+            <tr><td class="code-cell">align</td><td>String</td><td>'left'</td><td>单元格水平对齐：'left' / 'center' / 'right'。</td></tr>
+            <tr><td class="code-cell">renderer</td><td>String</td><td>'text'</td><td>单元格渲染器名称，可选 'text' / 'input' / 'textarea' / 'radio' / 'checkbox' / 'button'，或自定义渲染器名（见第 5 节）。不填则用 text。</td></tr>
+            <tr><td class="code-cell">readonly</td><td>Boolean</td><td>false</td><td>整列只读。input / textarea / radio 渲染时加 readonly 属性，不可编辑。</td></tr>
+            <tr><td class="code-cell">disabled</td><td>Boolean</td><td>false</td><td>整列禁用。input / textarea / radio / button 渲染时加 disabled 属性。</td></tr>
+            <tr><td class="code-cell">defaultValue</td><td>Any</td><td>—</td><td>新增行时该列的默认值。行数据中该字段为 undefined 时自动填入。</td></tr>
+            <tr><td class="code-cell">required</td><td>Boolean</td><td>false</td><td>必填标记。input / textarea 会生成"请输入xxx"的 placeholder；validate() 会校验该列不能为空。</td></tr>
+            <tr><td class="code-cell">unique</td><td>Boolean</td><td>false</td><td>唯一值标记。validateUnique() 会校验该列在整表中不允许重复。</td></tr>
+            <tr><td class="code-cell">type</td><td>String</td><td>—</td><td>数据类型过滤，支持 'int'（只允许整数和负号）/'float'（只允许数字、小数点和负号）。输入时实时过滤非法字符。不填则不过滤。</td></tr>
+            <tr><td class="code-cell">digit</td><td>Number</td><td>—</td><td>小数位数。input 渲染时按该值 toFixed 显示，如 2 表示保留两位小数。配合 type:'float' 使用。</td></tr>
+            <tr><td class="code-cell">formatter</td><td>Function</td><td>—</td><td>显示格式化函数 <span class="inline-code">function(value, rowData){ return 显示文本 }</span>。只影响显示与导出，不修改原始数据。text / radio 渲染器会调用。</td></tr>
+            <tr><td class="code-cell">radioOptions</td><td>Object</td><td>{yes:'1', no:'0'}</td><td>radio 渲染器专用：两个选项的值，如 <span class="inline-code">{yes:'1', no:'0'}</span>。显示文字可通过 formatter 定制。</td></tr>
+            <tr><td class="code-cell">buttonText</td><td>String</td><td>'按钮'</td><td>button 渲染器专用：按钮文字。</td></tr>
+            <tr><td class="code-cell">buttonIcon</td><td>String</td><td>''</td><td>button 渲染器专用：Font Awesome 图标名，渲染为 <span class="inline-code">&lt;i class="fa fa-图标名"&gt;</span>。</td></tr>
+        </table>
+
+        <div class="tip">
+            <b>提示：</b>插件会自动往 columns 里插入内部列（SerialNo 插 <span class="inline-code">_serialNo</span>，Checkbox 插 <span class="inline-code">_checkbox</span>，StateColumn 插 <span class="inline-code">_state</span>）。
+            如果你的 columns 是第一列就要冻结且同时启用了这些插件，冻结数量要把插件列算进去。
         </div>
-        <div class="feature-card">
-            <strong>完整销毁机制</strong>
-            <span>destroy() 清理 resize 监听、表身滚动监听、恢复 body 样式，避免内存泄漏。</span>
+    </section>
+
+    <!-- ============================ 5 ============================ -->
+    <section id="s5">
+        <h2><span class="num">5</span>单元格渲染器</h2>
+        <p>渲染器负责把「值 + 列配置 + 行数据」变成一个单元格的 HTML。内置 6 种，全部注册在 <span class="inline-code">MelUi.Table.cellRenderers</span> 上。</p>
+
+        <table class="cfg">
+            <tr><th style="width:170px">renderer 值</th><th style="width:220px">渲染结果</th><th>说明与相关列配置</th></tr>
+            <tr><td class="code-cell">'text'</td><td>纯文本 <span class="inline-code">&lt;span&gt;</span></td><td>默认渲染器。支持 formatter 格式化显示，空值显示为空。</td></tr>
+            <tr><td class="code-cell">'input'</td><td>单行输入框</td><td>支持 readonly / disabled / required(placeholder) / digit(小数位) / type(输入过滤)。</td></tr>
+            <tr><td class="code-cell">'textarea'</td><td>多行文本域</td><td>支持 readonly / disabled / required(placeholder)。</td></tr>
+            <tr><td class="code-cell">'radio'</td><td>是 / 否 单选按钮组</td><td>用 radioOptions 指定两个值；显示文字可用 formatter 定制；支持 readonly / disabled。</td></tr>
+            <tr><td class="code-cell">'checkbox'</td><td>勾选框（多选/单选）</td><td>主要在 Checkbox 插件的选择列使用； Checkbox 插件配置 mode:'single' 时渲染成radio，否则 checkbox。</td></tr>
+            <tr><td class="code-cell">'button'</td><td>操作按钮</td><td>用 buttonText 设置文字、buttonIcon 设置图标；支持 disabled。</td></tr>
+        </table>
+
+        <h3>自定义渲染器</h3>
+        <p>往 <span class="inline-code">MelUi.Table.cellRenderers</span> 上注册一个函数即可，函数签名 <span class="inline-code">function(value, column, rowData)</span>，返回 HTML 字符串；然后在 columns 的 <span class="inline-code">renderer</span> 里填这个名字。</p>
+    <pre><code>// 注册自定义渲染器：金额显示为红色，并带两位小数
+    MelUi.Table.cellRenderers.money = function(value, column, rowData) {
+        var num = parseFloat(value);
+        var text = isNaN(num) ? '' : num.toFixed(column.digit || 2);
+        return '&lt;span style="color:#c0392b;"&gt;' + text + '&lt;/span&gt;';
+    };
+
+    // 列配置里使用
+    var columns = [
+        {field: "amount", title: "金额", width: 120, renderer: "money", digit: 2, align: "right"}
+    ];</code></pre>
+
+        <div class="warn">
+            <b>注意：</b>自定义渲染器返回的 HTML 会被直接写入单元格，业务数据若来自用户输入，请先做转义，避免 XSS。
         </div>
-    </div>
+    </section>
 
-    <h3>基础表格能力</h3>
-    <ol>
-        <li>传入 <span class="inline-code">columns</span> 配置列，支持标题 <span class="inline-code">title</span>、副标题 <span class="inline-code">subtitle</span>、字段 <span class="inline-code">field</span>、列宽 <span class="inline-code">width</span>、对齐 <span class="inline-code">align</span>（left / center / right）。</li>
-        <li>列配置同时支持：<span class="inline-code">readonly</span> 只读、<span class="inline-code">disabled</span> 禁用、<span class="inline-code">defaultValue</span> 新增行默认值、<span class="inline-code">required</span> 必填、<span class="inline-code">unique</span> 唯一值、<span class="inline-code">type</span> 数据类型（int / float）、<span class="inline-code">digit</span> 小数位数、<span class="inline-code">formatter</span> 显示格式化。</li>
-        <li>传入数组 <span class="inline-code">data</span> 渲染表格；提供新增行、删除行、清空、整表替换等 API。</li>
-        <li>表格外观：边框 <span class="inline-code">bordered</span>、斑马纹 <span class="inline-code">stripe</span>、行悬浮高亮 <span class="inline-code">hoverHighlight</span>。</li>
-        <li>单元格渲染：纯文本、单行输入框、多行文本域、按钮、radio、checkbox；单元格文字溢出省略。</li>
-        <li>合计行、序号列、状态列、多选列、表头排序、分页、Excel 导出（均以插件形式启用）。</li>
-        <li>左侧连续 N 列冻结 <span class="inline-code">fixedLeftColumns</span>；列宽自适应 <span class="inline-code">fitWidth</span>。</li>
-        <li>窗口自适应：<span class="inline-code">fitViewport</span> 视口高度自适应 + 底部留白 <span class="inline-code">viewportBottomGap</span> + resize 节流刷新。</li>
-        <li>新增行自动滚动定位 + 自动聚焦第一个可输入文本框（自动跳过 checkbox / radio / button）。</li>
-    </ol>
-</section>
+    <!-- ============================ 6 ============================ -->
+    <section id="s6">
+        <h2><span class="num">6</span>插件机制</h2>
+        <p>核心层只负责数据、渲染、事件；扩展能力全部通过 <span class="inline-code">plugins</span> 数组注册。插件之间通过事件总线通信，不直接互相调用。</p>
 
-<!-- ============================ 2 ============================ -->
-<section id="s2">
-    <h2><span class="num">2</span>快速开始</h2>
+        <h3>两种注册写法</h3>
+        <p>写法一：字符串简写 —— 只写插件名，使用插件默认配置。</p>
+    <pre><code>plugins: [
+        'SerialNo',          // 启用序号列，全部用默认参数
+        'StateColumn',       // 启用状态列
+        'Export'             // 启用导出
+    ]</code></pre>
 
-    <h3>引入文件</h3>
-    <p>按下面的顺序引入（渲染器 → 核心 → 插件 → 入口），入口 <span class="inline-code">index.js</span> 负责把各模块挂到 <span class="inline-code">MelUi.Table</span> 命名空间。插件打包发布后给用户使用时只需要此js文件，未打包前需按需引入其它js文件。</p>
-<pre><code>
+        <p>写法二：对象简写 —— 用 <span class="inline-code">name</span> 指定插件名，其余属性作为该插件的配置项。</p>
+    <pre><code>plugins: [
+        {name: 'SerialNo', width: 60},
+        {
+            name: 'Pagination',
+            pageSize: 20,
+            pageMode: 'list',
+            position: 'fixed',
+            align: 'center'
+        },
+        {name: 'Checkbox', width: 60, mode: 'multi'}
+    ]</code></pre>
 
-&lt;!--[======== 打包发布版：正式发布时使用 ========] --&gt;
-&lt;!-- 正式发布时只要引入 table.min.js(css) 或 melui.min.js(css) 即可 --&gt;
-&lt;link rel="stylesheet" href="./dist/table.min.css"&gt;
-&lt;script src="./dist/table.min.js"&gt;&lt;/script&gt;
+        <div class="tip">
+            <b>说明：</b>两种写法完全等价，可混用。插件名就是全局注册表 <span class="inline-code">MelUi.Table.plugins[插件名]</span> 的键，例如 <span class="inline-code">'SerialNo'</span> 对应 <span class="inline-code">MelUi.Table.plugins.SerialNo</span>。
+            插件按数组顺序依次初始化；SerialNo / Checkbox / StateColumn 会往 columns 里插入列，因此它们与 columns 的先后关系会影响列顺序（默认插在最前 / 最后，见各插件说明）。
+        </div>
 
-&lt;!-- 或者 --&gt;
-&lt;link rel="stylesheet" href="./dist/melui.min.css"&gt;
-&lt;script src="./dist/melui.min.js"&gt;&lt;/script&gt;
+        <h3>内置插件一览</h3>
+        <table class="cfg">
+            <tr><th style="width:170px">插件名</th><th style="width:220px">作用</th><th>依赖 / 说明</th></tr>
+            <tr><td class="code-cell">SerialNo</td><td>最前面插入序号列</td><td>按当前页可见行计算序号；远程分页时跨页连续</td></tr>
+            <tr><td class="code-cell">Checkbox</td><td>最前面插入多选 / 单选列</td><td>配合 getSelectedData / selectAll 等 API</td></tr>
+            <tr><td class="code-cell">StateColumn</td><td>插入行状态列（新增 / 修改 / 已保存）</td><td>读取行 _status；配合 getDirtyData / markSaved</td></tr>
+            <tr><td class="code-cell">Sort</td><td>表头点击排序</td><td>修改数据源顺序；支持仅当前页排序</td></tr>
+            <tr><td class="code-cell">Pagination</td><td>底部分页栏</td><td>本地 / 远程分页；支持兜底降级</td></tr>
+            <tr><td class="code-cell">Summary</td><td>底部合计行</td><td>对指定字段求和</td></tr>
+            <tr><td class="code-cell">HeaderMerge</td><td>合并表头</td><td>对表头进行二级、三级、四级..合并，建议最多到三级</td></tr>
+            <tr><td class="code-cell">Export</td><td>导出 Excel（.xls）</td><td>读取数据源导出，不遍历 DOM</td></tr>
+        </table>
+    </section>
 
-&lt;!--[======== 本地演示版：没发打包发布时本地演示时使用 ========] --&gt;
-&lt;!-- 入口 --&gt;
-&lt;link rel="stylesheet" href="./table/index.css"&gt;
-&lt;script src="./table/index.js"&gt;&lt;/script&gt;
+    <!-- ============================ 7 ============================ -->
+    <section id="s7">
+        <h2><span class="num">7</span>插件详解</h2>
 
-&lt;!-- 单元格渲染器 --&gt;
-&lt;script src="./table/cell-renderers/text.js"&gt;&lt;/script&gt;
-&lt;script src="./table/cell-renderers/input.js"&gt;&lt;/script&gt;
-&lt;script src="./table/cell-renderers/textarea.js"&gt;&lt;/script&gt;
-&lt;script src="./table/cell-renderers/radio.js"&gt;&lt;/script&gt;
-&lt;script src="./table/cell-renderers/checkbox-cell.js"&gt;&lt;/script&gt;
-&lt;script src="./table/cell-renderers/button.js"&gt;&lt;/script&gt;
+        <!-- SerialNo -->
+        <h3>7.1 SerialNo · 序号列</h3>
+        <p>在表格最前面插入一列序号。增删行、翻页后自动重排；远程分页时按「页码 + 页容量」计算，跨页连续。</p>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">width</td><td>Number</td><td>50</td><td>序号列宽度（px）。</td></tr>
+            <tr><td class="code-cell">showNewRowSerialNumber</td><td>Boolean</td><td>false</td><td>新增行是否显示序号。false：新增行序号为空，便于一眼识别是新增行，且不占位（原有行序号不偏移）；true：新增行正常显示序号。</td></tr>
+        </table>
+    <pre><code>plugins: [
+        'SerialNo',
+        // 或自定义
+        {name: 'SerialNo', width: 60, showNewRowSerialNumber: false}
+    ]</code></pre>
 
-&lt;!-- 核心 --&gt;
-&lt;script src="./table/core/data-store.js"&gt;&lt;/script&gt;
-&lt;script src="./table/core/event-bus.js"&gt;&lt;/script&gt;
-&lt;script src="./table/core/renderer.js"&gt;&lt;/script&gt;
-&lt;script src="./table/core/layout.js"&gt;&lt;/script&gt;
-&lt;script src="./table/core/table.js"&gt;&lt;/script&gt;
+        <!-- Checkbox -->
+        <h3>7.2 Checkbox · 多选 / 单选列</h3>
+        <p>在表格最前面插入选择列。多选模式渲染 checkbox，单选模式渲染 radio 并自动互斥。</p>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">width</td><td>Number</td><td>60</td><td>选择列宽度（px）。</td></tr>
+            <tr><td class="code-cell">mode</td><td>String</td><td>'multi'</td><td>'multi' 多选（checkbox，表头有全选框）；'single' 单选（radio，选中某一行则其它行自动不选中，表头无全选框）。</td></tr>
+        </table>
+    <pre><code>// 多选
+    plugins: [{name: 'Checkbox', width: 60, mode: 'multi'}]
 
-&lt;!-- 插件（按需引入） --&gt;
-&lt;script src="./table/plugins/plugin-base.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/serial-no.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/checkbox.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/state-column.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/sort.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/pagination.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/summary.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/export.js"&gt;&lt;/script&gt;
+    // 单选
+    plugins: [{name: 'Checkbox', width: 60, mode: 'single'}]
 
-</code></pre>
+    // 配套 API
+    table.getSelectedData();   // 获取选中行数据
+    table.selectAll();         // 全选（单选模式静默忽略）
+    table.selectNone();        // 全不选
+    table.invertSelect();      // 反选
+    table.setSelectedKeys([0, 2, 4]); // 按行索引设置选中
+    table.clearSelection();    // 清空选中</code></pre>
 
-    <h3>最小示例</h3>
-<pre><code>&lt;div id="table-box"&gt;&lt;/div&gt;
-
-&lt;script&gt;
-// 1. 列配置：一列对应一个字段
-var columns = [
-    {field: "name", title: "名称", width: 160, renderer: "input", required: true, align: "left"},
-    {field: "price", title: "单价", subtitle: "(元)", width: 120, renderer: "input", type: "float", digit: 2, align: "right"}
-];
-
-// 2. 行数据：对象数组，每一对象就是表格中的一行
-//    对象里的 key 必须与 columns 中的 field 一一对应（name 对应第一列，price 对应第二列）
-var data = [
-    {name: "测试项A", price: 100.00},
-    {name: "测试项B", price: 200.50}
-];
-
-// 3. 初始化
-var table = MelUi.Table(options); // options 主配置项，Object 类型
-// eg.
-var table = MelUi.Table({
-    el: "#table-box",
-    columns: columns,   // 表头 + 每列渲染方式
-    data: data,        // 表身每一行的数据
-    rowHeight: 40,
-    bordered: true,
-    stripe: true,
-    plugins: [
-        "SerialNo",
-        {name: "Pagination", pageSize: 20}
+        <!-- StateColumn -->
+        <h3>7.3 StateColumn · 状态列</h3>
+        <p>插入一列展示行状态：新增（i）、修改（u）、已保存（s）。新增行自动标为「新」，编辑单元格自动变「改」，调用 markSaved 后变「已保存」。</p>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">width</td><td>Number</td><td>60</td><td>状态列宽度（px）。</td></tr>
+            <tr><td class="code-cell">newText</td><td>String</td><td>'新'</td><td>新增状态显示文字。</td></tr>
+            <tr><td class="code-cell">unsaveText</td><td>String</td><td>'改'</td><td>已修改未保存状态显示文字。</td></tr>
+            <tr><td class="code-cell">savedText</td><td>String</td><td>''</td><td>已保存状态显示文字，默认空字符串（不显示）。</td></tr>
+            <tr><td class="code-cell">columnPosition</td><td>String</td><td>'behind'</td><td>'behind'：状态列在所有数据列最后面；'front'：状态列插在最前面（在 checkbox / 序号列之前；没有这两列时在数据第 1 列前）。</td></tr>
+        </table>
+    <pre><code>plugins: [
+        {
+            name: 'StateColumn',
+            width: 60,
+            newText: '新',
+            unsaveText: '改',
+            savedText: '已保存',
+            columnPosition: 'behind'
+        }
     ]
-});
-&lt;/script&gt;</code></pre>
 
-    <div class="tip">
-        <b>data 与 columns 的关系：</b>
-        <span class="inline-code">data</span> 是行数据数组，每个元素是一行的数据对象；
-        对象里的 key 与 <span class="inline-code">columns</span> 中每一项的 <span class="inline-code">field</span> 对应。
-        上例中第一列 <span class="inline-code">field: "name"</span> 会读取每一行的 <span class="inline-code">name</span> 值渲染，第二列读取 <span class="inline-code">price</span>。
-        如果某行缺少某字段，会按该列的 <span class="inline-code">defaultValue</span> 补默认值（未配置则显示空）。
-    </div>
-</section>
+    // 配套 API
+    table.getDirtyData();        // 获取新增 + 修改的行
+    table.markSaved(0);          // 标记第 0 行为已保存
+    table.markSaved('all');      // 标记全部行为已保存</code></pre>
 
-<!-- ============================ 3 ============================ -->
-<section id="s3">
-    <h2><span class="num">3</span>主配置项（options）</h2>
-    <p>下表中 <span class="tag tag-req">必填</span> 为必须传入，<span class="tag tag-opt">可选</span> 未传时取默认值。</p>
+        <!-- Sort -->
+        <h3>7.4 Sort · 表头排序</h3>
+        <p>点击表头进行升序 / 降序切换，无排序箭头再点一次切换方向。只修改数据源顺序，不重建表头。</p>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">defaultField</td><td>String</td><td>''</td><td>初始化时默认排序列的字段名，空表示不默认排序。</td></tr>
+            <tr><td class="code-cell">defaultOrder</td><td>String</td><td>'asc'</td><td>默认排序方向：'asc' 升序 / 'desc' 降序。</td></tr>
+            <tr><td class="code-cell">sortCurrentPageOnly</td><td>Boolean</td><td>false</td><td>是否只对当前页排序。<b>仅 remotePaging=false 时有效</b>；remotePaging=true 时本参数无效，强制全量排序。<br>true：只排序当前页切片区间并回填该区间，其他页数据顺序不变，排序后数据不会跑到其他页；<br>false：对整个数据源排序，排序后重新分页切片。</td></tr>
+        </table>
+    <pre><code>plugins: [
+        {name: 'Sort', defaultField: 'scjj', defaultOrder: 'desc', sortCurrentPageOnly: true}
+    ]</code></pre>
 
-    <h3>基础</h3>
-    <table class="cfg">
-        <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">el</td><td>String / HTMLElement</td><td>—</td><td><span class="tag tag-req">必填</span> 表格挂载节点，传 CSS 选择器字符串或 DOM 元素。</td></tr>
-        <tr><td class="code-cell">columns</td><td>Array</td><td>[]</td><td><span class="tag tag-req">必填</span> 列配置数组，每一项描述一列（详见第 4 节）。</td></tr>
-        <tr><td class="code-cell">data</td><td>Array</td><td>[]</td><td><span class="tag tag-req">必填</span> 表格数据，对象数组，每个对象对应一行。</td></tr>
-    </table>
+        <div class="tip">
+            <b>排序事件：</b>排序完成后排序插件抛出的内部事件名是 <span class="inline-code">sortChange</span>，回调参数 <span class="inline-code">{field, order}</span>。
+            监听请用 <span class="inline-code">table.on('sortChange', fn)</span>。
+        </div>
 
-    <h3>外观</h3>
-    <table class="cfg">
-        <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">bordered</td><td>Boolean</td><td>true</td><td>是否显示单元格边框。</td></tr>
-        <tr><td class="code-cell">stripe</td><td>Boolean</td><td>false</td><td>是否隔行变色（斑马纹）。</td></tr>
-        <tr><td class="code-cell">hoverHighlight</td><td>Boolean</td><td>true</td><td>鼠标悬停行是否高亮。</td></tr>
-        <tr><td class="code-cell">showSelectAll</td><td>Boolean</td><td>true</td><td>多选列表头是否显示全选复选框（配合 Checkbox 插件）。</td></tr>
-        <tr><td class="code-cell">rowHeight</td><td>Number</td><td>40</td><td>行高，单位 px。</td></tr>
-        <tr><td class="code-cell">headerHeight</td><td>Number / 'auto'</td><td>'auto'</td><td>表头高度。'auto' 由内容自动撑开；传数值时使用固定高度（px）。</td></tr>
-        <tr><td class="code-cell">fixedLeftColumns</td><td>Number</td><td>0</td><td>左侧连续冻结列数量，0 表示不冻结，1 表示冻结第 1 列。</td></tr>
-    </table>
+        <!-- Pagination -->
+        <h3>7.5 Pagination · 分页</h3>
+        <p>底部分页栏，支持数字列表 / 下拉两种模式，支持本地分页、远程分页，以及后端 total 异常时的兜底降级。</p>
+        <table class="cfg">
+            <tr><th style="width:230px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">pageSize</td><td>Number</td><td>10</td><td>每页条数。</td></tr>
+            <tr><td class="code-cell">pageMode</td><td>String</td><td>'list'</td><td>'list'：数字页码按钮；'select'：页码下拉选择。</td></tr>
+            <tr><td class="code-cell">pageListSize</td><td>Number</td><td>5</td><td>数字列表模式显示几个页码按钮。</td></tr>
+            <tr><td class="code-cell">position</td><td>String</td><td>'bottom'</td><td>分页栏位置：'bottom' 表格下方 / 'top' 表格上方 / 'fixed' 固定页面底部。</td></tr>
+            <tr><td class="code-cell">align</td><td>String</td><td>'right'</td><td>分页内容对齐：'left' / 'center' / 'right'。</td></tr>
+            <tr><td class="code-cell">showQuickJumper</td><td>Boolean</td><td>true</td><td>是否显示「跳至 __ 页」的页码快速跳转下拉。</td></tr>
+            <tr><td class="code-cell">showSizeChanger</td><td>Boolean</td><td>true</td><td>是否显示「每页 __ 条」的每页条数切换下拉。候选条数：5 / 10 / 15 / 20 / 30 / 40 / 50 / 60 / 70 / 80 / 100 / 150 / 200 / 300 / 400 / 500 / 1000 / 2000 / 5000；当前 pageSize 不在候选内时会自动追加并选中。</td></tr>
+        </table>
+    <pre><code>plugins: [
+        {
+            name: 'Pagination',
+            pageSize: 20,
+            pageMode: 'list',
+            pageListSize: 5,
+            position: 'bottom',
+            align: 'right',
+            showQuickJumper: true,
+            showSizeChanger: true
+        }
+    ]</code></pre>
 
-    <h3>布局与尺寸</h3>
-    <table class="cfg">
-        <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">fitViewport</td><td>Boolean</td><td>true</td><td>是否垂直适配视口。true 时 bodyHeight、el 自定义高度失效，表格自动占满页面剩余高度且页面不出现垂直滚动条。同一个页面只能最多一个表格开启 fitViewport，如有多个表格请关闭 fitViewport 。</td></tr>
-        <tr><td class="code-cell">viewportBottomGap</td><td>Number</td><td>16</td><td>仅 fitViewport=true 生效。表格与视口底边之间预留的间隙（px），露出 body 背景色。</td></tr>
-        <tr><td class="code-cell">bodyHeight</td><td>Number</td><td>0</td><td>表身固定高度（px）。0 表示不限制，由 el 节点控制。fitViewport=true 时本参数无效；fitViewport=false 且 &gt;0 时会把 el 高度强制为 auto!important。</td></tr>
-        <tr><td class="code-cell">fitWidth</td><td>Boolean</td><td>false</td><td>false 为固定列宽模式，使用 columns 的 width(px)；true 为弹性模式，列宽总和小于容器时按 width 权重拉伸填满，大于容器时不拉伸并出现横向滚动条。</td></tr>
-    </table>
+        <h4>远程分页 + 兜底降级示例</h4>
+    <pre><code>// 标准后端分页接口：关闭兜底，严格信任后端 total
+    var table = MelUi.Table({
+        el: '#table-box',
+        columns: columns,
+        data: [],
+        remotePaging: true,
+        total: 100,
+        enableRemotePagingFallback: false,
+        plugins: [{name: 'Pagination', pageSize: 20}],
+        events: {
+            onPageChange: function(data) {
+                // data = {curpage: 当前页, pagesize: 每页条数}
 
-    <h3>分页</h3>
-    <table class="cfg">
-        <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">remotePaging</td><td>Boolean</td><td>false</td><td>false：前端本地分页，一次性传全部 data，组件内部切片；true：后端远程分页，翻页 / 改每页条数时触发 onPageChange，由业务请求后端后 setData 回填。</td></tr>
-        <tr><td class="code-cell">total</td><td>Number</td><td>0</td><td>总记录数，仅 remotePaging=true 生效，由外部传入后端总条数，组件据此渲染分页栏。</td></tr>
-        <tr><td class="code-cell">enableRemotePagingFallback</td><td>Boolean</td><td>true</td><td>是否兜底后端远程分页，仅 remotePaging=true 生效。后端 total=0 或 total 小于当前返回列表条数时：true 则组件自动降级，用当前这批数据前端本地分页；false 则严格信任后端 total，不自动切换。<br>标准分页接口建议设 false；接口本身不支持一次性返回总记录数时设 true。</td></tr>
-        <tr><td class="code-cell">addRowMode</td><td>String</td><td>'currentPage'</td><td>新增行插入位置，仅 remotePaging=false 时有效。<br>'currentPage'：插入当前页数据集合，配合 addRow 的 position 控制当前页首 / 尾；<br>'global'：插入全局原始数据数组首 / 尾。<br>remotePaging=true 时本参数无效（自动按全局处理）。</td></tr>
-    </table>
+                // 仅后端远程分页(remotePaging = true)才请求后端且兜底降级时不请求后端
+                // 可使用setData回填数据
+                if (table.options.remotePaging && !table.isFallbackPaging) {
+                    // 标准远程分页：请求后端，把返回的当页数据回填
+                    requestList(data.curpage, data.pagesize, function(res) {
+                        table.setData(res.list); // 使用setData回填
+                    });
+                }
+            }
+        }
+    });
 
-    <h3>插件与事件</h3>
-    <table class="cfg">
-        <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">plugins</td><td>Array</td><td>[]</td><td>插件数组。支持字符串简写（启用 + 默认配置）和对象简写（启用 + 自定义配置），详见第 6 节。</td></tr>
-        <tr><td class="code-cell">events</td><td>Object</td><td>{}</td><td>事件回调集合，如 onCellClick / onCellChange / onRowClick / onSelectChange / onRowAdd / onRowDelete / onPageChange，详见第 9 节。</td></tr>
-    </table>
-
-    <h3>实例只读属性</h3>
-    <table class="cfg">
-        <tr><th style="width:210px">属性</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">table.isDestroyed</td><td>Boolean</td><td>—</td><td>表格实例是否已销毁。true = 实例已销毁，此时不可调用实例API，false 表格实例正常使用。</td></tr>
-        <tr><td class="code-cell">table.isFallbackPaging</td><td>Boolean</td><td>—</td><td>当前是否处于「降级兜底分页」状态。true 表示后端 total 不可信、组件在用当前这批数据做前端本地分页；业务应在 onPageChange 中据此判断：true 时不要再请求后端，false 时才请求后端。<br>每次 setData / setRows 后自动重新计算。</td></tr>
-    </table>
-</section>
-
-<!-- ============================ 4 ============================ -->
-<section id="s4">
-    <h2><span class="num">4</span>列配置（columns）</h2>
-    <p>columns 中每一项描述表格的一列，字段与渲染方式都写在同一个对象里。</p>
-
-    <table class="cfg">
-        <tr><th style="width:200px">字段</th><th style="width:120px">类型</th><th style="width:130px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">field</td><td>String</td><td>—</td><td><span class="tag tag-req">必填</span> 字段名，数据读写唯一标识，必须与 data 对象中的 key 对应。内部列以 <span class="inline-code">_</span> 开头（如 _serialNo / _state / _checkbox）。</td></tr>
-        <tr><td class="code-cell">title</td><td>String</td><td>—</td><td><span class="tag tag-req">必填</span> 列标题，显示在表头。</td></tr>
-        <tr><td class="code-cell">subtitle</td><td>String</td><td>''</td><td>列副标题，显示在标题下方的小字，如 "(元)"、"(㎡)"。</td></tr>
-        <tr><td class="code-cell">width</td><td>Number</td><td>—</td><td>列宽（px）。table-layout:fixed 模式下由该值决定列宽。</td></tr>
-        <tr><td class="code-cell">align</td><td>String</td><td>'left'</td><td>单元格水平对齐：'left' / 'center' / 'right'。</td></tr>
-        <tr><td class="code-cell">renderer</td><td>String</td><td>'text'</td><td>单元格渲染器名称，可选 'text' / 'input' / 'textarea' / 'radio' / 'checkbox' / 'button'，或自定义渲染器名（见第 5 节）。不填则用 text。</td></tr>
-        <tr><td class="code-cell">readonly</td><td>Boolean</td><td>false</td><td>整列只读。input / textarea / radio 渲染时加 readonly 属性，不可编辑。</td></tr>
-        <tr><td class="code-cell">disabled</td><td>Boolean</td><td>false</td><td>整列禁用。input / textarea / radio / button 渲染时加 disabled 属性。</td></tr>
-        <tr><td class="code-cell">defaultValue</td><td>Any</td><td>—</td><td>新增行时该列的默认值。行数据中该字段为 undefined 时自动填入。</td></tr>
-        <tr><td class="code-cell">required</td><td>Boolean</td><td>false</td><td>必填标记。input / textarea 会生成"请输入xxx"的 placeholder；validate() 会校验该列不能为空。</td></tr>
-        <tr><td class="code-cell">unique</td><td>Boolean</td><td>false</td><td>唯一值标记。validateUnique() 会校验该列在整表中不允许重复。</td></tr>
-        <tr><td class="code-cell">type</td><td>String</td><td>—</td><td>数据类型过滤，支持 'int'（只允许整数和负号）/'float'（只允许数字、小数点和负号）。输入时实时过滤非法字符。不填则不过滤。</td></tr>
-        <tr><td class="code-cell">digit</td><td>Number</td><td>—</td><td>小数位数。input 渲染时按该值 toFixed 显示，如 2 表示保留两位小数。配合 type:'float' 使用。</td></tr>
-        <tr><td class="code-cell">formatter</td><td>Function</td><td>—</td><td>显示格式化函数 <span class="inline-code">function(value, rowData){ return 显示文本 }</span>。只影响显示与导出，不修改原始数据。text / radio 渲染器会调用。</td></tr>
-        <tr><td class="code-cell">radioOptions</td><td>Object</td><td>{yes:'1', no:'0'}</td><td>radio 渲染器专用：两个选项的值，如 <span class="inline-code">{yes:'1', no:'0'}</span>。显示文字可通过 formatter 定制。</td></tr>
-        <tr><td class="code-cell">buttonText</td><td>String</td><td>'按钮'</td><td>button 渲染器专用：按钮文字。</td></tr>
-        <tr><td class="code-cell">buttonIcon</td><td>String</td><td>''</td><td>button 渲染器专用：Font Awesome 图标名，渲染为 <span class="inline-code">&lt;i class="fa fa-图标名"&gt;</span>。</td></tr>
-    </table>
-
-    <div class="tip">
-        <b>提示：</b>插件会自动往 columns 里插入内部列（SerialNo 插 <span class="inline-code">_serialNo</span>，Checkbox 插 <span class="inline-code">_checkbox</span>，StateColumn 插 <span class="inline-code">_state</span>）。
-        如果你的 columns 是第一列就要冻结且同时启用了这些插件，冻结数量要把插件列算进去。
-    </div>
-</section>
-
-<!-- ============================ 5 ============================ -->
-<section id="s5">
-    <h2><span class="num">5</span>单元格渲染器</h2>
-    <p>渲染器负责把「值 + 列配置 + 行数据」变成一个单元格的 HTML。内置 6 种，全部注册在 <span class="inline-code">MelUi.Table.cellRenderers</span> 上。</p>
-
-    <table class="cfg">
-        <tr><th style="width:170px">renderer 值</th><th style="width:220px">渲染结果</th><th>说明与相关列配置</th></tr>
-        <tr><td class="code-cell">'text'</td><td>纯文本 <span class="inline-code">&lt;span&gt;</span></td><td>默认渲染器。支持 formatter 格式化显示，空值显示为空。</td></tr>
-        <tr><td class="code-cell">'input'</td><td>单行输入框</td><td>支持 readonly / disabled / required(placeholder) / digit(小数位) / type(输入过滤)。</td></tr>
-        <tr><td class="code-cell">'textarea'</td><td>多行文本域</td><td>支持 readonly / disabled / required(placeholder)。</td></tr>
-        <tr><td class="code-cell">'radio'</td><td>是 / 否 单选按钮组</td><td>用 radioOptions 指定两个值；显示文字可用 formatter 定制；支持 readonly / disabled。</td></tr>
-        <tr><td class="code-cell">'checkbox'</td><td>勾选框（多选/单选）</td><td>主要在 Checkbox 插件的选择列使用； Checkbox 插件配置 mode:'single' 时渲染成radio，否则 checkbox。</td></tr>
-        <tr><td class="code-cell">'button'</td><td>操作按钮</td><td>用 buttonText 设置文字、buttonIcon 设置图标；支持 disabled。</td></tr>
-    </table>
-
-    <h3>自定义渲染器</h3>
-    <p>往 <span class="inline-code">MelUi.Table.cellRenderers</span> 上注册一个函数即可，函数签名 <span class="inline-code">function(value, column, rowData)</span>，返回 HTML 字符串；然后在 columns 的 <span class="inline-code">renderer</span> 里填这个名字。</p>
-<pre><code>// 注册自定义渲染器：金额显示为红色，并带两位小数
-MelUi.Table.cellRenderers.money = function(value, column, rowData) {
-    var num = parseFloat(value);
-    var text = isNaN(num) ? '' : num.toFixed(column.digit || 2);
-    return '&lt;span style="color:#c0392b;"&gt;' + text + '&lt;/span&gt;';
-};
-
-// 列配置里使用
-var columns = [
-    {field: "amount", title: "金额", width: 120, renderer: "money", digit: 2, align: "right"}
-];</code></pre>
-
-    <div class="warn">
-        <b>注意：</b>自定义渲染器返回的 HTML 会被直接写入单元格，业务数据若来自用户输入，请先做转义，避免 XSS。
-    </div>
-</section>
-
-<!-- ============================ 6 ============================ -->
-<section id="s6">
-    <h2><span class="num">6</span>插件机制</h2>
-    <p>核心层只负责数据、渲染、事件；扩展能力全部通过 <span class="inline-code">plugins</span> 数组注册。插件之间通过事件总线通信，不直接互相调用。</p>
-
-    <h3>两种注册写法</h3>
-    <p>写法一：字符串简写 —— 只写插件名，使用插件默认配置。</p>
-<pre><code>plugins: [
-    'SerialNo',          // 启用序号列，全部用默认参数
-    'StateColumn',       // 启用状态列
-    'Export'             // 启用导出
-]</code></pre>
-
-    <p>写法二：对象简写 —— 用 <span class="inline-code">name</span> 指定插件名，其余属性作为该插件的配置项。</p>
-<pre><code>plugins: [
-    {name: 'SerialNo', width: 60},
-    {
-        name: 'Pagination',
-        pageSize: 20,
-        pageMode: 'list',
-        position: 'fixed',
-        align: 'center'
-    },
-    {name: 'Checkbox', width: 60, mode: 'multi'}
-]</code></pre>
-
-    <div class="tip">
-        <b>说明：</b>两种写法完全等价，可混用。插件名就是全局注册表 <span class="inline-code">MelUi.Table.plugins[插件名]</span> 的键，例如 <span class="inline-code">'SerialNo'</span> 对应 <span class="inline-code">MelUi.Table.plugins.SerialNo</span>。
-        插件按数组顺序依次初始化；SerialNo / Checkbox / StateColumn 会往 columns 里插入列，因此它们与 columns 的先后关系会影响列顺序（默认插在最前 / 最后，见各插件说明）。
-    </div>
-
-    <h3>内置插件一览</h3>
-    <table class="cfg">
-        <tr><th style="width:170px">插件名</th><th style="width:220px">作用</th><th>依赖 / 说明</th></tr>
-        <tr><td class="code-cell">SerialNo</td><td>最前面插入序号列</td><td>按当前页可见行计算序号；远程分页时跨页连续</td></tr>
-        <tr><td class="code-cell">Checkbox</td><td>最前面插入多选 / 单选列</td><td>配合 getSelectedData / selectAll 等 API</td></tr>
-        <tr><td class="code-cell">StateColumn</td><td>插入行状态列（新增 / 修改 / 已保存）</td><td>读取行 _status；配合 getDirtyData / markSaved</td></tr>
-        <tr><td class="code-cell">Sort</td><td>表头点击排序</td><td>修改数据源顺序；支持仅当前页排序</td></tr>
-        <tr><td class="code-cell">Pagination</td><td>底部分页栏</td><td>本地 / 远程分页；支持兜底降级</td></tr>
-        <tr><td class="code-cell">Summary</td><td>底部合计行</td><td>对指定字段求和</td></tr>
-        <tr><td class="code-cell">Export</td><td>导出 Excel（.xls）</td><td>读取数据源导出，不遍历 DOM</td></tr>
-    </table>
-</section>
-
-<!-- ============================ 7 ============================ -->
-<section id="s7">
-    <h2><span class="num">7</span>插件详解</h2>
-
-    <!-- SerialNo -->
-    <h3>7.1 SerialNo · 序号列</h3>
-    <p>在表格最前面插入一列序号。增删行、翻页后自动重排；远程分页时按「页码 + 页容量」计算，跨页连续。</p>
-    <table class="cfg">
-        <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">width</td><td>Number</td><td>50</td><td>序号列宽度（px）。</td></tr>
-        <tr><td class="code-cell">showNewRowSerialNumber</td><td>Boolean</td><td>false</td><td>新增行是否显示序号。false：新增行序号为空，便于一眼识别是新增行，且不占位（原有行序号不偏移）；true：新增行正常显示序号。</td></tr>
-    </table>
-<pre><code>plugins: [
-    'SerialNo',
-    // 或自定义
-    {name: 'SerialNo', width: 60, showNewRowSerialNumber: false}
-]</code></pre>
-
-    <!-- Checkbox -->
-    <h3>7.2 Checkbox · 多选 / 单选列</h3>
-    <p>在表格最前面插入选择列。多选模式渲染 checkbox，单选模式渲染 radio 并自动互斥。</p>
-    <table class="cfg">
-        <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">width</td><td>Number</td><td>60</td><td>选择列宽度（px）。</td></tr>
-        <tr><td class="code-cell">mode</td><td>String</td><td>'multi'</td><td>'multi' 多选（checkbox，表头有全选框）；'single' 单选（radio，选中某一行则其它行自动不选中，表头无全选框）。</td></tr>
-    </table>
-<pre><code>// 多选
-plugins: [{name: 'Checkbox', width: 60, mode: 'multi'}]
-
-// 单选
-plugins: [{name: 'Checkbox', width: 60, mode: 'single'}]
-
-// 配套 API
-table.getSelectedData();   // 获取选中行数据
-table.selectAll();         // 全选（单选模式静默忽略）
-table.selectNone();        // 全不选
-table.invertSelect();      // 反选
-table.setSelectedKeys([0, 2, 4]); // 按行索引设置选中
-table.clearSelection();    // 清空选中</code></pre>
-
-    <!-- StateColumn -->
-    <h3>7.3 StateColumn · 状态列</h3>
-    <p>插入一列展示行状态：新增（i）、修改（u）、已保存（s）。新增行自动标为「新」，编辑单元格自动变「改」，调用 markSaved 后变「已保存」。</p>
-    <table class="cfg">
-        <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">width</td><td>Number</td><td>60</td><td>状态列宽度（px）。</td></tr>
-        <tr><td class="code-cell">newText</td><td>String</td><td>'新'</td><td>新增状态显示文字。</td></tr>
-        <tr><td class="code-cell">unsaveText</td><td>String</td><td>'改'</td><td>已修改未保存状态显示文字。</td></tr>
-        <tr><td class="code-cell">savedText</td><td>String</td><td>''</td><td>已保存状态显示文字，默认空字符串（不显示）。</td></tr>
-        <tr><td class="code-cell">columnPosition</td><td>String</td><td>'behind'</td><td>'behind'：状态列在所有数据列最后面；'front'：状态列插在最前面（在 checkbox / 序号列之前；没有这两列时在数据第 1 列前）。</td></tr>
-    </table>
-<pre><code>plugins: [
-    {
-        name: 'StateColumn',
-        width: 60,
-        newText: '新',
-        unsaveText: '改',
-        savedText: '已保存',
-        columnPosition: 'behind'
-    }
-]
-
-// 配套 API
-table.getDirtyData();        // 获取新增 + 修改的行
-table.markSaved(0);          // 标记第 0 行为已保存
-table.markSaved('all');      // 标记全部行为已保存</code></pre>
-
-    <!-- Sort -->
-    <h3>7.4 Sort · 表头排序</h3>
-    <p>点击表头进行升序 / 降序切换，无排序箭头再点一次切换方向。只修改数据源顺序，不重建表头。</p>
-    <table class="cfg">
-        <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">defaultField</td><td>String</td><td>''</td><td>初始化时默认排序列的字段名，空表示不默认排序。</td></tr>
-        <tr><td class="code-cell">defaultOrder</td><td>String</td><td>'asc'</td><td>默认排序方向：'asc' 升序 / 'desc' 降序。</td></tr>
-        <tr><td class="code-cell">sortCurrentPageOnly</td><td>Boolean</td><td>false</td><td>是否只对当前页排序。<b>仅 remotePaging=false 时有效</b>；remotePaging=true 时本参数无效，强制全量排序。<br>true：只排序当前页切片区间并回填该区间，其他页数据顺序不变，排序后数据不会跑到其他页；<br>false：对整个数据源排序，排序后重新分页切片。</td></tr>
-    </table>
-<pre><code>plugins: [
-    {name: 'Sort', defaultField: 'scjj', defaultOrder: 'desc', sortCurrentPageOnly: true}
-]</code></pre>
-
-    <div class="tip">
-        <b>排序事件：</b>排序完成后排序插件抛出的内部事件名是 <span class="inline-code">sortChange</span>，回调参数 <span class="inline-code">{field, order}</span>。
-        监听请用 <span class="inline-code">table.on('sortChange', fn)</span>。
-    </div>
-
-    <!-- Pagination -->
-    <h3>7.5 Pagination · 分页</h3>
-    <p>底部分页栏，支持数字列表 / 下拉两种模式，支持本地分页、远程分页，以及后端 total 异常时的兜底降级。</p>
-    <table class="cfg">
-        <tr><th style="width:230px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">pageSize</td><td>Number</td><td>10</td><td>每页条数。</td></tr>
-        <tr><td class="code-cell">pageMode</td><td>String</td><td>'list'</td><td>'list'：数字页码按钮；'select'：页码下拉选择。</td></tr>
-        <tr><td class="code-cell">pageListSize</td><td>Number</td><td>5</td><td>数字列表模式显示几个页码按钮。</td></tr>
-        <tr><td class="code-cell">position</td><td>String</td><td>'bottom'</td><td>分页栏位置：'bottom' 表格下方 / 'top' 表格上方 / 'fixed' 固定页面底部。</td></tr>
-        <tr><td class="code-cell">align</td><td>String</td><td>'right'</td><td>分页内容对齐：'left' / 'center' / 'right'。</td></tr>
-        <tr><td class="code-cell">showQuickJumper</td><td>Boolean</td><td>true</td><td>是否显示「跳至 __ 页」的页码快速跳转下拉。</td></tr>
-        <tr><td class="code-cell">showSizeChanger</td><td>Boolean</td><td>true</td><td>是否显示「每页 __ 条」的每页条数切换下拉。候选条数：5 / 10 / 15 / 20 / 30 / 40 / 50 / 60 / 70 / 80 / 100 / 150 / 200 / 300 / 400 / 500 / 1000 / 2000 / 5000；当前 pageSize 不在候选内时会自动追加并选中。</td></tr>
-    </table>
-<pre><code>plugins: [
-    {
-        name: 'Pagination',
-        pageSize: 20,
-        pageMode: 'list',
-        pageListSize: 5,
-        position: 'bottom',
-        align: 'right',
-        showQuickJumper: true,
-        showSizeChanger: true
-    }
-]</code></pre>
-
-    <h4>远程分页 + 兜底降级示例</h4>
-<pre><code>// 标准后端分页接口：关闭兜底，严格信任后端 total
-var table = MelUi.Table({
-    el: '#table-box',
-    columns: columns,
-    data: [],
-    remotePaging: true,
-    total: 100,
-    enableRemotePagingFallback: false,
-    plugins: [{name: 'Pagination', pageSize: 20}],
-    events: {
-        onPageChange: function(data) {
-            // data = {curpage: 当前页, pagesize: 每页条数}
-
-            // 仅后端远程分页(remotePaging = true)才请求后端且兜底降级时不请求后端
-            // 可使用setData回填数据
-            if (table.options.remotePaging && !table.isFallbackPaging) {
-                // 标准远程分页：请求后端，把返回的当页数据回填
+    // 后端接口不支持返回总记录数：开启兜底
+    var table2 = MelUi.Table({
+        el: '#table-box2',
+        columns: columns,
+        data: allData,
+        remotePaging: true,
+        total: 0, // 这里本应返回总记录数，但如果是0或小于当前列表记录数的值，则设置enableRemotePagingFallback = true 时会开启兜底。兜底的意义：虽然后端返回数据错误，但前端会帮忙矫正过来，比如后端总记录数返回0，则分页栏上不会显示“共0条”，分页也不会按pagesize参数来分页，而是会显示当前列表实际的条数，分页页码显示1页。
+        enableRemotePagingFallback: true,
+        plugins: [{name: 'Pagination', pageSize: 20}],
+        events: {
+            onPageChange: function(data) {
+                if(table2.options.remotePaging == false) return;
+                // 处于兜底降级时：组件内部已对当前数据做前端切片，切勿再请求后端覆盖数据
+                if (table2.isFallbackPaging) return;
+                // 后端 total 恢复正常后才请求后端
                 requestList(data.curpage, data.pagesize, function(res) {
-                    table.setData(res.list); // 使用setData回填
+                    table2.setData(res.list);
                 });
             }
         }
-    }
-});
+    });</code></pre>
 
-// 后端接口不支持返回总记录数：开启兜底
-var table2 = MelUi.Table({
-    el: '#table-box2',
-    columns: columns,
-    data: allData,
-    remotePaging: true,
-    total: 0, // 这里本应返回总记录数，但如果是0或小于当前列表记录数的值，则设置enableRemotePagingFallback = true 时会开启兜底。兜底的意义：虽然后端返回数据错误，但前端会帮忙矫正过来，比如后端总记录数返回0，则分页栏上不会显示“共0条”，分页也不会按pagesize参数来分页，而是会显示当前列表实际的条数，分页页码显示1页。
-    enableRemotePagingFallback: true,
-    plugins: [{name: 'Pagination', pageSize: 20}],
-    events: {
-        onPageChange: function(data) {
-            if(table2.options.remotePaging == false) return;
-            // 处于兜底降级时：组件内部已对当前数据做前端切片，切勿再请求后端覆盖数据
-            if (table2.isFallbackPaging) return;
-            // 后端 total 恢复正常后才请求后端
-            requestList(data.curpage, data.pagesize, function(res) {
-                table2.setData(res.list);
-            });
+        <!-- Summary -->
+        <h3>7.6 Summary · 合计行</h3>
+        <p>在表身底部渲染一行合计，对指定字段求和；单元格值变化时自动重算。</p>
+        <table class="cfg">
+            <tr><th style="width:230px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">columns</td><td>Array</td><td>[]</td><td>需要合计的字段名数组，如 <span class="inline-code">['mj', 'scjj', 'zje']</span>。</td></tr>
+            <tr><td class="code-cell">title</td><td>String</td><td>'合计'</td><td>合计行标题文字。</td></tr>
+            <tr><td class="code-cell">titleColumn</td><td>Number</td><td>0</td><td>标题放在第几列（列索引，从 0 开始）。</td></tr>
+        </table>
+    <pre><code>plugins: [
+        {name: 'Summary', columns: ['mj', 'scjj', 'zje'], title: '合计', titleColumn: 2}
+    ]</code></pre>
+
+        <!-- Export -->
+        <h3>7.7 Header · 合并表头</h3>
+        <p>对表头进行二级、三级、四级..合并，建议最多到三级。</p>
+        <table class="cfg">
+            <tr><th style="width:230px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">groupHeaderClass</td><td>String</td><td>''</td><td>分组表头(父th)追加样式类</td></tr>
+            <tr><td class="code-cell">leafHeaderClass</td><td>Boolean</td><td>''</td><td>叶子表头追加样式类</td></tr>
+            <tr><td class="code-cell">borderPatch</td><td>Boolean</td><td>true</td><td>IE9 合并边框修复，默认true。</td></tr>
+        </table>
+        <pre><code>
+// 启用插件
+plugins: [{ name: 'HeaderMerge', groupHeaderClass: '', leafHeaderClass: '', borderPatch: true }]
+
+columns 参数改造：
+原先没有合并表头时如下：
+columns: [
+    {field: 'xh_self', title: '编号', width: 100, renderer: 'text', required: false, align: 'center'},
+    {field: 'mj', title: '面积', subtitle: '(㎡)', width: 100, renderer: 'input', type: 'float', digit: 2, required: true, align: 'center'},
+    {field: 'area', title: '省市区', width: 200, renderer: 'input', readonly: true, required: false, align: 'left'}
+]
+改成合并表头后如下（其实就是加了 title, children 两个属性）
+columns: [
+    {
+        title: '基础信息',
+        children: [
+            {field: 'xh_self', title: '编号', width: 100, renderer: 'text', required: false, align: 'center'},
+            {field: 'mj', title: '面积', subtitle: '(㎡)', width: 100, renderer: 'input', type: 'float', digit: 2, required: true, align: 'center'},
+            {field: 'area', title: '省市区', width: 200, renderer: 'input', readonly: true, required: false, align: 'left'},
+        ]
+    }
+]
+        </code></pre>
+
+        <!-- Export -->
+        <h3>7.8 Export · 导出 Excel</h3>
+        <p>读取数据源直接导出 .xls 文件，不遍历 DOM；导出时会应用列的 formatter。</p>
+        <table class="cfg">
+            <tr><th style="width:230px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">filename</td><td>String</td><td>'导出数据'</td><td>导出文件名（不含扩展名）。</td></tr>
+            <tr><td class="code-cell">extension</td><td>String</td><td>'.xls'</td><td>文件扩展名，'.xls' / '.xlsx'。</td></tr>
+            <tr><td class="code-cell">includeHiddenColumns</td><td>Boolean</td><td>false</td><td>是否导出内部列（field 以 _ 开头的列，如序号 / 状态 / 选择列）。</td></tr>
+        </table>
+    <pre><code>// 启用插件
+    plugins: [{name: 'Export', filename: '楼盘数据', extension: '.xls'}]
+
+    // 触发导出：先拿到 Export 插件实例再调用 export()
+    function exportData() {
+        for (var i = 0; i &lt; table._pluginInstances.length; i++) {
+            var plugin = table._pluginInstances[i];
+            if (plugin instanceof MelUi.Table.plugins.Export) {
+                plugin.export();
+                break;
+            }
         }
+        // 或者如下（二者等价）
+        table._pluginInstances.forEach(function(plugin) {
+            if (plugin instanceof MelUi.Table.plugins.Export) {
+                plugin.export();
+            }
+        });
+    }</code></pre>
+    </section>
+
+    <!-- ============================ 8 ============================ -->
+    <section id="s8">
+        <h2><span class="num">8</span>实例 API</h2>
+        <p>下面所有方法都挂在表格实例上；行索引 <span class="inline-code">rowIndex</span> 从 0 开始，与当前数据源中的行顺序对应。</p>
+
+        <h3>数据读取</h3>
+        <table class="cfg">
+            <tr><th style="width:250px">方法</th><th style="width:150px">返回</th><th>说明</th></tr>
+            <tr><td class="code-cell">getData()</td><td>Array</td><td>获取整表数据（数据源行数组）。</td></tr>
+            <tr><td class="code-cell">getRowData(rowIndex)</td><td>Object / null</td><td>获取指定行的数据对象。</td></tr>
+            <tr><td class="code-cell">getSelectedData()</td><td>Array</td><td>获取选中行的数据数组（需 Checkbox 插件）。</td></tr>
+            <tr><td class="code-cell">getDirtyData()</td><td>Array</td><td>获取有变动的行：新增（i）+ 修改（u）。常用于保存前只提交变更数据。</td></tr>
+        </table>
+
+        <h3>数据写入</h3>
+        <table class="cfg">
+            <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
+            <tr><td class="code-cell">setCellValue(rowIndex, field, value)</td><td>行索引, 字段, 新值</td><td>设置某行某列的值，并局部重绘该单元格。</td></tr>
+            <tr><td class="code-cell">setRowData(rowIndex, data)</td><td>行索引, {字段:值}</td><td>批量设置某行多个字段的值，并重绘该行。</td></tr>
+            <tr><td class="code-cell">addRow(data, position)</td><td>行数据(可选), 'first'/'last'</td><td>新增一行。插入位置由 addRowMode 决定：currentPage 插入当前页，global 插入全局数组；position 控制首 / 尾，默认 'last'。<br>新增后自动滚动到新增行，并自动聚焦行内第一个 text / password / textarea 输入框。</td></tr>
+            <tr><td class="code-cell">deleteRow(rowIndex)</td><td>行索引</td><td>删除指定行，重绘表身，并抛出 rowDelete 事件。</td></tr>
+            <tr><td class="code-cell">clearData()</td><td>—</td><td>清空全部数据。</td></tr>
+            <tr><td class="code-cell">setData(data)</td><td>行数据数组</td><td>整表替换数据并全量重绘。远程分页时用于回填后端返回的当页数据。</td></tr>
+        </table>
+
+        <h3>状态操作</h3>
+        <table class="cfg">
+            <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
+            <tr><td class="code-cell">markSaved(rowIndex)</td><td>行索引 或 'all'</td><td>标记行状态为已保存（s），'all' 表示全部行。</td></tr>
+            <tr><td class="code-cell">setCellReadonly(rowIndex, field, readonly)</td><td>行索引, 字段, Boolean</td><td>动态设置某格只读 / 可写。注意：本方法作用于当前 DOM 中的输入控件，行重绘后需重新设置。</td></tr>
+        </table>
+
+        <h3>选中操作（需 Checkbox 插件）</h3>
+        <table class="cfg">
+            <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
+            <tr><td class="code-cell">selectAll()</td><td>—</td><td>全选。单选模式下静默忽略。</td></tr>
+            <tr><td class="code-cell">selectNone()</td><td>—</td><td>全不选。单选模式下静默忽略。</td></tr>
+            <tr><td class="code-cell">invertSelect()</td><td>—</td><td>反选。单选模式下静默忽略。</td></tr>
+            <tr><td class="code-cell">setSelectedKeys(rowIndexes)</td><td>行索引数组</td><td>按行索引设置选中行。单选模式只取第一条；传空数组等于清空选中。</td></tr>
+            <tr><td class="code-cell">clearSelection()</td><td>—</td><td>清空全部选中。</td></tr>
+        </table>
+
+        <h3>校验</h3>
+        <table class="cfg">
+            <tr><th style="width:250px">方法</th><th style="width:150px">返回</th><th>说明</th></tr>
+            <tr><td class="code-cell">validate(rowIndex)</td><td>String</td><td>校验必填（必须先设置 columns 中 required:true）。rowIndex 传 'all' 校验全部行。返回错误提示文本，空字符串表示通过。每行每列一条提示，换行分隔。</td></tr>
+            <tr><td class="code-cell">validateUnique()</td><td>String</td><td>校验唯一值（必须先设置 columns 中 unique:true）。返回重复值提示文本，空字符串表示通过。</td></tr>
+        </table>
+    <pre><code>// 保存前校验示例
+    var err1 = table.validate('all');
+    var err2 = table.validateUnique();
+    if (err1 || err2) {
+        alert(err1 + err2);
+        return;
     }
-});</code></pre>
+    // 通过后提交 table.getDirtyData()
+    commit(table.getDirtyData());</code></pre>
 
-    <!-- Summary -->
-    <h3>7.6 Summary · 合计行</h3>
-    <p>在表身底部渲染一行合计，对指定字段求和；单元格值变化时自动重算。</p>
-    <table class="cfg">
-        <tr><th style="width:230px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">columns</td><td>Array</td><td>[]</td><td>需要合计的字段名数组，如 <span class="inline-code">['mj', 'scjj', 'zje']</span>。</td></tr>
-        <tr><td class="code-cell">title</td><td>String</td><td>'合计'</td><td>合计行标题文字。</td></tr>
-        <tr><td class="code-cell">titleColumn</td><td>Number</td><td>0</td><td>标题放在第几列（列索引，从 0 开始）。</td></tr>
-    </table>
-<pre><code>plugins: [
-    {name: 'Summary', columns: ['mj', 'scjj', 'zje'], title: '合计', titleColumn: 2}
-]</code></pre>
+        <h3>渲染控制</h3>
+        <table class="cfg">
+            <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
+            <tr><td class="code-cell">render()</td><td>—</td><td>全量重绘表格。</td></tr>
+            <tr><td class="code-cell">renderRow(rowIndex)</td><td>行索引</td><td>只重绘指定行。</td></tr>
+            <tr><td class="code-cell">renderCell(rowIndex, field)</td><td>行索引, 字段</td><td>只重绘指定单元格。</td></tr>
+        </table>
 
-    <!-- Export -->
-    <h3>7.7 Export · 导出 Excel</h3>
-    <p>读取数据源直接导出 .xls 文件，不遍历 DOM；导出时会应用列的 formatter。</p>
-    <table class="cfg">
-        <tr><th style="width:230px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">filename</td><td>String</td><td>'导出数据'</td><td>导出文件名（不含扩展名）。</td></tr>
-        <tr><td class="code-cell">extension</td><td>String</td><td>'.xls'</td><td>文件扩展名，'.xls' / '.xlsx'。</td></tr>
-        <tr><td class="code-cell">includeHiddenColumns</td><td>Boolean</td><td>false</td><td>是否导出内部列（field 以 _ 开头的列，如序号 / 状态 / 选择列）。</td></tr>
-    </table>
-<pre><code>// 启用插件
-plugins: [{name: 'Export', filename: '楼盘数据', extension: '.xls'}]
+        <h3>事件绑定</h3>
+        <table class="cfg">
+            <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
+            <tr><td class="code-cell">on(eventName, handler)</td><td>事件名, 回调</td><td>监听事件。</td></tr>
+            <tr><td class="code-cell">off(eventName, handler)</td><td>事件名, 回调</td><td>解绑事件，需传入同一个函数引用。</td></tr>
+        </table>
 
-// 触发导出：先拿到 Export 插件实例再调用 export()
-function exportData() {
-    for (var i = 0; i &lt; table._pluginInstances.length; i++) {
-        var plugin = table._pluginInstances[i];
-        if (plugin instanceof MelUi.Table.plugins.Export) {
-            plugin.export();
-            break;
+        <h3>销毁</h3>
+        <table class="cfg">
+            <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
+            <tr><td class="code-cell">destroy()</td><td>—</td><td>销毁实例。清理 window.resize 监听、表身 scroll 监听、恢复 body 样式、销毁插件、清空容器 DOM。重复调用不会报错。</td></tr>
+        </table>
+
+        <div class="warn">
+            <b>destroy() 调用时机：</b>
+            ① SPA 路由切换、页面跳转之前；② 弹窗 / 抽屉关闭时；③ 同一个容器要重新 new 一个表格实例之前；④ 组件卸载生命周期内。
+            <br>整页刷新（浏览器关闭 / 重新加载）无需手动调用。
+            <br>调用 destroy 之后不要再继续使用该实例的 addRow / setData / render 等 API。
+        </div>
+    </section>
+
+    <!-- ============================ 9 ============================ -->
+    <section id="s9">
+        <h2><span class="num">9</span>事件</h2>
+        <p>事件总线 <span class="inline-code">eventBus</span> 统一派发。表格类事件既可以在初始化时用 <span class="inline-code">events</span> 配置，也可以用实例 <span class="inline-code">on()</span> 动态监听。</p>
+
+        <h3>事件列表</h3>
+        <table class="cfg">
+            <tr><th style="width:210px">事件名</th><th style="width:210px">events 配置里的函数名</th><th style="width:300px">回调参数</th><th>触发时机</th></tr>
+            <tr><td class="code-cell">rendered</td><td>onRendered</td><td>{rows,total,pageNo,pageSize}</td><td>表格完成一次整体渲染后触发。适合在渲染完成后做二次处理（如调整列宽、定位）。
+                参数说明：rows 当前页渲染行数据；
+                total 分页的列表数据总记录数（按remotePaging+enableRemotePagingFallback规则计算）；
+                pageNo 分页的页码；
+                pageSize 分页的每页条数。</td></tr>
+            <tr><td class="code-cell">rowAdd</td><td>onRowAdd</td><td>{rowData, rowIndex}</td><td>新增行完成后触发。</td></tr>
+            <tr><td class="code-cell">rowDelete</td><td>onRowDelete或onDeleteRow</td><td>{rowIndex, rowData}</td><td>删除行完成后触发。</td></tr>
+            <tr><td class="code-cell">cellClick</td><td>onCellClick</td><td>{rowData, cell:{rowIndex, field, element}}</td><td>点击单元格时触发（任何列都会触发）。</td></tr>
+            <tr><td class="code-cell">cellChange</td><td>onCellChange</td><td>{rowIndex, field, newValue, oldValue}</td><td>单元格值发生变化时触发：用户输入、代码 setCellValue / setRowData 均会触发。</td></tr>
+            <tr><td class="code-cell">rowClick</td><td>onRowClick</td><td>{rowData, rowIndex}</td><td>点击行内任意单元格时触发。</td></tr>
+            <tr><td class="code-cell">selectChange</td><td>onSelectChange</td><td>{selectedRows}</td><td>选中行变化时触发（需 Checkbox 插件）。</td></tr>
+            <tr><td class="code-cell">sortChange</td><td>onSort</td><td>{field, order}</td><td>排序完成时触发（需 Sort 插件）。order 为 'asc' / 'desc'。</td></tr>
+            <tr><td class="code-cell">pageChange</td><td>onPageChange</td><td>{curpage, pagesize}</td><td>翻页或切换每页条数时触发（需 Pagination 插件）。</td></tr>
+        </table>
+
+        <div class="tip">
+            <b>两种方式的对应关系：</b>
+            <span class="inline-code">events</span> 里写 <span class="inline-code">onXxx</span>，对应 事件监听<span class="inline-code">table.on('xxx')</span>。
+            例如 events: onCellChange ↔ table.on('cellChange')；events: onRowAdd ↔ table.on('rowAdd')。
+            <br><b>排序例外：</b>events 中的 onSort 是预留映射，排序插件实际抛出的事件名是 <span class="inline-code">sortChange</span>，请用 <span class="inline-code">table.on('sortChange', fn)</span> 进行事件监听。
+        </div>
+
+        <div class="tip">
+            <b>⚠️重要时序提醒：</b>
+            如果不在events里写事件，而是使用 table.on('事件名', fn) 进行事件监听，则事件监听需要<strong>先注册好，再执行操作</strong>。
+            
+            <br>❌错误写法：把 <code>table.on('rowAdd', 回调)</code> 写在按钮点击函数内部、<code>table.addRow()</code> 的后面。
+            <br>执行顺序：先执行新增行 <code>table.addRow()</code>，立刻抛出 rowAdd 事件；这时还没有注册监听，本次新增的事件直接错过，收不到回调。多次点击还会重复注册多份监听，出现重复打印。
+            <pre>// 错误示例：on写在点击函数里面
+    function btnAddClick(){
+        table.addRow({name:'测试'},'first');
+        // 事件已经触发完毕，才注册监听，本次事件接收不到
+        table.on('rowAdd',function(e){
+            console.log('新增行',e); // 这里是接收不到的
+        })
+    }
+            </pre>
+                <br>✅正确写法：<code>table.on()</code> 写在按钮点击函数<strong>外面</strong>，表格创建完成之后只注册一次；点击函数里面只调用 <code>addRow()</code> 执行业务动作。
+            <pre>// 正确示例：on写在函数外部
+    var table = new MelUi.Table.Core({...});
+    // 表格初始化完成，提前注册监听（只写一次）
+    table.on('rowAdd',function(e){
+        console.log('新增行',e); // 这里可以接收到
+    });
+    // 按钮点击函数内部只做新增，不要再写 table.on
+    function btnAddClick(){
+        table.addRow({name:'测试'},'first');
+    }
+            </pre>
+        </div>
+        
+
+        
+        <h3>两种监听方式（以 pageChange 为例）</h3>
+        <p>方式一：初始化时通过 <span class="inline-code">events</span> 配置（事件名前面加 on）。</p>
+    <pre><code>var table = MelUi.Table({
+        el: '#table-box',
+        columns: columns,
+        data: data,
+        plugins: ['Pagination'],
+        events: {
+            onPageChange: function(data) {
+                console.log('页码：', data.curpage, '每页条数：', data.pagesize);
+            }
         }
-    }
-    // 或者如下（二者等价）
-    table._pluginInstances.forEach(function(plugin) {
-        if (plugin instanceof MelUi.Table.plugins.Export) {
-            plugin.export();
+    });</code></pre>
+
+        <p>方式二：实例 <span class="inline-code">on()</span> 动态监听（事件名不加 on）。</p>
+    <pre><code>table.on('pageChange', function(data) {
+        console.log('页码：', data.curpage, '每页条数：', data.pagesize);
+    });</code></pre>
+
+
+
+        <h3>常用组合示例</h3>
+    <pre><code>// 单元格改动后做联动（例如改了面积自动算总价）
+    table.on('cellChange', function(data) {
+        if (data.field === 'mj') {
+            var price = table.getRowData(data.rowIndex).scjj;
+            table.setCellValue(data.rowIndex, 'zje', (parseFloat(data.newValue) * parseFloat(price)).toFixed(2));
         }
     });
-}</code></pre>
-</section>
 
-<!-- ============================ 8 ============================ -->
-<section id="s8">
-    <h2><span class="num">8</span>实例 API</h2>
-    <p>下面所有方法都挂在表格实例上；行索引 <span class="inline-code">rowIndex</span> 从 0 开始，与当前数据源中的行顺序对应。</p>
+    // 选中的行数展示
+    table.on('selectChange', function(data) {
+        document.getElementById('selected-count').innerHTML = '已选 ' + data.selectedRows.length + ' 行';
+    });</code></pre>
+    </section>
 
-    <h3>数据读取</h3>
-    <table class="cfg">
-        <tr><th style="width:250px">方法</th><th style="width:150px">返回</th><th>说明</th></tr>
-        <tr><td class="code-cell">getData()</td><td>Array</td><td>获取整表数据（数据源行数组）。</td></tr>
-        <tr><td class="code-cell">getRowData(rowIndex)</td><td>Object / null</td><td>获取指定行的数据对象。</td></tr>
-        <tr><td class="code-cell">getSelectedData()</td><td>Array</td><td>获取选中行的数据数组（需 Checkbox 插件）。</td></tr>
-        <tr><td class="code-cell">getDirtyData()</td><td>Array</td><td>获取有变动的行：新增（i）+ 修改（u）。常用于保存前只提交变更数据。</td></tr>
-    </table>
+    <!-- ============================ 10 ============================ -->
+    <section id="s10">
+        <h2><span class="num">10</span>注意事项</h2>
+        <ol>
+            <li><b>数据以数据层为准。</b>读取业务数据请用 <span class="inline-code">getData()</span> / <span class="inline-code">getRowData()</span> / <span class="inline-code">getDirtyData()</span>，不要遍历 DOM 读取 input 的 value。</li>
+            <li><b>不要直接改内部对象。</b>直接改 <span class="inline-code">table.dataStore.rows</span> 不会触发重绘；请用 setCellValue / setRowData / setData 等 API。</li>
+            <li><b>列宽是固定 px。</b>基于 table-layout:fixed，不支持按内容自适应列宽；需要铺满容器用 <span class="inline-code">fitWidth:true</span> 按 width 权重弹性拉伸。</li>
+            <li><b>fitViewport 会改 body 样式。</b>开启后会设置 body 的 overflow-y:hidden，<span class="inline-code">destroy()</span> 时自动恢复；同一页面不要多个表格同时开启 fitViewport。</li>
+            <li><b>remotePaging=true 时 addRowMode 无效。</b>远程分页下统一按全局数据处理。</li>
+            <li><b>兜底降级判断。</b>remotePaging=true 且 enableRemotePagingFallback=true 时，后端 total 不可信会自动降级为前端本地分页。此时 onPageChange 里务必用 <span class="inline-code">table.isFallbackPaging</span> 判断：为 true 时不要再请求后端，否则会把组件已经切好的数据覆盖掉。</li>
+            <li><b>新增行聚焦。</b>新增行会自动聚焦行内第一个 text / password / textarea 输入框，checkbox / radio / button / hidden 会被跳过；行内没有可输入文本控件时静默不聚焦。内部有 30ms 延时兜底，极端卡顿环境可能偶发失效。</li>
+            <li><b>插件列会影响列顺序。</b>SerialNo / Checkbox 插在最前，StateColumn 默认插在最后；使用 fixedLeftColumns 冻结时要把这些插件列一起算进冻结数量。</li>
+            <li><b>IE9 环境。</b>组件内部已规避 let / const / 箭头函数 / 模板字符串 / classList / dataset 等；业务代码同样不要使用 ES6+ 语法。</li>
+            <li><b>页面卸载必须 destroy。</b>SPA 路由切换、弹窗关闭、容器复用前调用 <span class="inline-code">table.destroy()</span>，避免 resize / scroll 监听泄漏。</li>
+            <li><b>自定义渲染器注意 XSS。</b>返回的 HTML 直接写进单元格，用户输入内容请先转义。</li>
+        </ol>
+    </section>
 
-    <h3>数据写入</h3>
-    <table class="cfg">
-        <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
-        <tr><td class="code-cell">setCellValue(rowIndex, field, value)</td><td>行索引, 字段, 新值</td><td>设置某行某列的值，并局部重绘该单元格。</td></tr>
-        <tr><td class="code-cell">setRowData(rowIndex, data)</td><td>行索引, {字段:值}</td><td>批量设置某行多个字段的值，并重绘该行。</td></tr>
-        <tr><td class="code-cell">addRow(data, position)</td><td>行数据(可选), 'first'/'last'</td><td>新增一行。插入位置由 addRowMode 决定：currentPage 插入当前页，global 插入全局数组；position 控制首 / 尾，默认 'last'。<br>新增后自动滚动到新增行，并自动聚焦行内第一个 text / password / textarea 输入框。</td></tr>
-        <tr><td class="code-cell">deleteRow(rowIndex)</td><td>行索引</td><td>删除指定行，重绘表身，并抛出 rowDelete 事件。</td></tr>
-        <tr><td class="code-cell">clearData()</td><td>—</td><td>清空全部数据。</td></tr>
-        <tr><td class="code-cell">setData(data)</td><td>行数据数组</td><td>整表替换数据并全量重绘。远程分页时用于回填后端返回的当页数据。</td></tr>
-    </table>
-
-    <h3>状态操作</h3>
-    <table class="cfg">
-        <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
-        <tr><td class="code-cell">markSaved(rowIndex)</td><td>行索引 或 'all'</td><td>标记行状态为已保存（s），'all' 表示全部行。</td></tr>
-        <tr><td class="code-cell">setCellReadonly(rowIndex, field, readonly)</td><td>行索引, 字段, Boolean</td><td>动态设置某格只读 / 可写。注意：本方法作用于当前 DOM 中的输入控件，行重绘后需重新设置。</td></tr>
-    </table>
-
-    <h3>选中操作（需 Checkbox 插件）</h3>
-    <table class="cfg">
-        <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
-        <tr><td class="code-cell">selectAll()</td><td>—</td><td>全选。单选模式下静默忽略。</td></tr>
-        <tr><td class="code-cell">selectNone()</td><td>—</td><td>全不选。单选模式下静默忽略。</td></tr>
-        <tr><td class="code-cell">invertSelect()</td><td>—</td><td>反选。单选模式下静默忽略。</td></tr>
-        <tr><td class="code-cell">setSelectedKeys(rowIndexes)</td><td>行索引数组</td><td>按行索引设置选中行。单选模式只取第一条；传空数组等于清空选中。</td></tr>
-        <tr><td class="code-cell">clearSelection()</td><td>—</td><td>清空全部选中。</td></tr>
-    </table>
-
-    <h3>校验</h3>
-    <table class="cfg">
-        <tr><th style="width:250px">方法</th><th style="width:150px">返回</th><th>说明</th></tr>
-        <tr><td class="code-cell">validate(rowIndex)</td><td>String</td><td>校验必填（必须先设置 columns 中 required:true）。rowIndex 传 'all' 校验全部行。返回错误提示文本，空字符串表示通过。每行每列一条提示，换行分隔。</td></tr>
-        <tr><td class="code-cell">validateUnique()</td><td>String</td><td>校验唯一值（必须先设置 columns 中 unique:true）。返回重复值提示文本，空字符串表示通过。</td></tr>
-    </table>
-<pre><code>// 保存前校验示例
-var err1 = table.validate('all');
-var err2 = table.validateUnique();
-if (err1 || err2) {
-    alert(err1 + err2);
-    return;
-}
-// 通过后提交 table.getDirtyData()
-commit(table.getDirtyData());</code></pre>
-
-    <h3>渲染控制</h3>
-    <table class="cfg">
-        <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
-        <tr><td class="code-cell">render()</td><td>—</td><td>全量重绘表格。</td></tr>
-        <tr><td class="code-cell">renderRow(rowIndex)</td><td>行索引</td><td>只重绘指定行。</td></tr>
-        <tr><td class="code-cell">renderCell(rowIndex, field)</td><td>行索引, 字段</td><td>只重绘指定单元格。</td></tr>
-    </table>
-
-    <h3>事件绑定</h3>
-    <table class="cfg">
-        <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
-        <tr><td class="code-cell">on(eventName, handler)</td><td>事件名, 回调</td><td>监听事件。</td></tr>
-        <tr><td class="code-cell">off(eventName, handler)</td><td>事件名, 回调</td><td>解绑事件，需传入同一个函数引用。</td></tr>
-    </table>
-
-    <h3>销毁</h3>
-    <table class="cfg">
-        <tr><th style="width:250px">方法</th><th style="width:150px">参数</th><th>说明</th></tr>
-        <tr><td class="code-cell">destroy()</td><td>—</td><td>销毁实例。清理 window.resize 监听、表身 scroll 监听、恢复 body 样式、销毁插件、清空容器 DOM。重复调用不会报错。</td></tr>
-    </table>
-
-    <div class="warn">
-        <b>destroy() 调用时机：</b>
-        ① SPA 路由切换、页面跳转之前；② 弹窗 / 抽屉关闭时；③ 同一个容器要重新 new 一个表格实例之前；④ 组件卸载生命周期内。
-        <br>整页刷新（浏览器关闭 / 重新加载）无需手动调用。
-        <br>调用 destroy 之后不要再继续使用该实例的 addRow / setData / render 等 API。
-    </div>
-</section>
-
-<!-- ============================ 9 ============================ -->
-<section id="s9">
-    <h2><span class="num">9</span>事件</h2>
-    <p>事件总线 <span class="inline-code">eventBus</span> 统一派发。表格类事件既可以在初始化时用 <span class="inline-code">events</span> 配置，也可以用实例 <span class="inline-code">on()</span> 动态监听。</p>
-
-    <h3>事件列表</h3>
-    <table class="cfg">
-        <tr><th style="width:210px">事件名</th><th style="width:210px">events 配置里的函数名</th><th style="width:300px">回调参数</th><th>触发时机</th></tr>
-        <tr><td class="code-cell">rendered</td><td>onRendered</td><td>{rows,total,pageNo,pageSize}</td><td>表格完成一次整体渲染后触发。适合在渲染完成后做二次处理（如调整列宽、定位）。
-            参数说明：rows 当前页渲染行数据；
-            total 分页的列表数据总记录数（按remotePaging+enableRemotePagingFallback规则计算）；
-            pageNo 分页的页码；
-            pageSize 分页的每页条数。</td></tr>
-        <tr><td class="code-cell">rowAdd</td><td>onRowAdd</td><td>{rowData, rowIndex}</td><td>新增行完成后触发。</td></tr>
-        <tr><td class="code-cell">rowDelete</td><td>onRowDelete或onDeleteRow</td><td>{rowIndex, rowData}</td><td>删除行完成后触发。</td></tr>
-        <tr><td class="code-cell">cellClick</td><td>onCellClick</td><td>{rowData, cell:{rowIndex, field, element}}</td><td>点击单元格时触发（任何列都会触发）。</td></tr>
-        <tr><td class="code-cell">cellChange</td><td>onCellChange</td><td>{rowIndex, field, newValue, oldValue}</td><td>单元格值发生变化时触发：用户输入、代码 setCellValue / setRowData 均会触发。</td></tr>
-        <tr><td class="code-cell">rowClick</td><td>onRowClick</td><td>{rowData, rowIndex}</td><td>点击行内任意单元格时触发。</td></tr>
-        <tr><td class="code-cell">selectChange</td><td>onSelectChange</td><td>{selectedRows}</td><td>选中行变化时触发（需 Checkbox 插件）。</td></tr>
-        <tr><td class="code-cell">sortChange</td><td>onSort</td><td>{field, order}</td><td>排序完成时触发（需 Sort 插件）。order 为 'asc' / 'desc'。</td></tr>
-        <tr><td class="code-cell">pageChange</td><td>onPageChange</td><td>{curpage, pagesize}</td><td>翻页或切换每页条数时触发（需 Pagination 插件）。</td></tr>
-    </table>
-
-    <div class="tip">
-        <b>两种方式的对应关系：</b>
-        <span class="inline-code">events</span> 里写 <span class="inline-code">onXxx</span>，对应 事件监听<span class="inline-code">table.on('xxx')</span>。
-        例如 events: onCellChange ↔ table.on('cellChange')；events: onRowAdd ↔ table.on('rowAdd')。
-        <br><b>排序例外：</b>events 中的 onSort 是预留映射，排序插件实际抛出的事件名是 <span class="inline-code">sortChange</span>，请用 <span class="inline-code">table.on('sortChange', fn)</span> 进行事件监听。
     </div>
 
-    <div class="tip">
-        <b>⚠️重要时序提醒：</b>
-        如果不在events里写事件，而是使用 table.on('事件名', fn) 进行事件监听，则事件监听需要<strong>先注册好，再执行操作</strong>。
-        
-        <br>❌错误写法：把 <code>table.on('rowAdd', 回调)</code> 写在按钮点击函数内部、<code>table.addRow()</code> 的后面。
-        <br>执行顺序：先执行新增行 <code>table.addRow()</code>，立刻抛出 rowAdd 事件；这时还没有注册监听，本次新增的事件直接错过，收不到回调。多次点击还会重复注册多份监听，出现重复打印。
-        <pre>// 错误示例：on写在点击函数里面
-function btnAddClick(){
-    table.addRow({name:'测试'},'first');
-    // 事件已经触发完毕，才注册监听，本次事件接收不到
-    table.on('rowAdd',function(e){
-        console.log('新增行',e); // 这里是接收不到的
-    })
-}
-        </pre>
-            <br>✅正确写法：<code>table.on()</code> 写在按钮点击函数<strong>外面</strong>，表格创建完成之后只注册一次；点击函数里面只调用 <code>addRow()</code> 执行业务动作。
-        <pre>// 正确示例：on写在函数外部
-var table = new MelUi.Table.Core({...});
-// 表格初始化完成，提前注册监听（只写一次）
-table.on('rowAdd',function(e){
-    console.log('新增行',e); // 这里可以接收到
-});
-// 按钮点击函数内部只做新增，不要再写 table.on
-function btnAddClick(){
-    table.addRow({name:'测试'},'first');
-}
-        </pre>
-    </div>
-    
-
-    
-    <h3>两种监听方式（以 pageChange 为例）</h3>
-    <p>方式一：初始化时通过 <span class="inline-code">events</span> 配置（事件名前面加 on）。</p>
-<pre><code>var table = MelUi.Table({
-    el: '#table-box',
-    columns: columns,
-    data: data,
-    plugins: ['Pagination'],
-    events: {
-        onPageChange: function(data) {
-            console.log('页码：', data.curpage, '每页条数：', data.pagesize);
-        }
-    }
-});</code></pre>
-
-    <p>方式二：实例 <span class="inline-code">on()</span> 动态监听（事件名不加 on）。</p>
-<pre><code>table.on('pageChange', function(data) {
-    console.log('页码：', data.curpage, '每页条数：', data.pagesize);
-});</code></pre>
-
-
-
-    <h3>常用组合示例</h3>
-<pre><code>// 单元格改动后做联动（例如改了面积自动算总价）
-table.on('cellChange', function(data) {
-    if (data.field === 'mj') {
-        var price = table.getRowData(data.rowIndex).scjj;
-        table.setCellValue(data.rowIndex, 'zje', (parseFloat(data.newValue) * parseFloat(price)).toFixed(2));
-    }
-});
-
-// 选中的行数展示
-table.on('selectChange', function(data) {
-    document.getElementById('selected-count').innerHTML = '已选 ' + data.selectedRows.length + ' 行';
-});</code></pre>
-</section>
-
-<!-- ============================ 10 ============================ -->
-<section id="s10">
-    <h2><span class="num">10</span>注意事项</h2>
-    <ol>
-        <li><b>数据以数据层为准。</b>读取业务数据请用 <span class="inline-code">getData()</span> / <span class="inline-code">getRowData()</span> / <span class="inline-code">getDirtyData()</span>，不要遍历 DOM 读取 input 的 value。</li>
-        <li><b>不要直接改内部对象。</b>直接改 <span class="inline-code">table.dataStore.rows</span> 不会触发重绘；请用 setCellValue / setRowData / setData 等 API。</li>
-        <li><b>列宽是固定 px。</b>基于 table-layout:fixed，不支持按内容自适应列宽；需要铺满容器用 <span class="inline-code">fitWidth:true</span> 按 width 权重弹性拉伸。</li>
-        <li><b>fitViewport 会改 body 样式。</b>开启后会设置 body 的 overflow-y:hidden，<span class="inline-code">destroy()</span> 时自动恢复；同一页面不要多个表格同时开启 fitViewport。</li>
-        <li><b>remotePaging=true 时 addRowMode 无效。</b>远程分页下统一按全局数据处理。</li>
-        <li><b>兜底降级判断。</b>remotePaging=true 且 enableRemotePagingFallback=true 时，后端 total 不可信会自动降级为前端本地分页。此时 onPageChange 里务必用 <span class="inline-code">table.isFallbackPaging</span> 判断：为 true 时不要再请求后端，否则会把组件已经切好的数据覆盖掉。</li>
-        <li><b>新增行聚焦。</b>新增行会自动聚焦行内第一个 text / password / textarea 输入框，checkbox / radio / button / hidden 会被跳过；行内没有可输入文本控件时静默不聚焦。内部有 30ms 延时兜底，极端卡顿环境可能偶发失效。</li>
-        <li><b>插件列会影响列顺序。</b>SerialNo / Checkbox 插在最前，StateColumn 默认插在最后；使用 fixedLeftColumns 冻结时要把这些插件列一起算进冻结数量。</li>
-        <li><b>IE9 环境。</b>组件内部已规避 let / const / 箭头函数 / 模板字符串 / classList / dataset 等；业务代码同样不要使用 ES6+ 语法。</li>
-        <li><b>页面卸载必须 destroy。</b>SPA 路由切换、弹窗关闭、容器复用前调用 <span class="inline-code">table.destroy()</span>，避免 resize / scroll 监听泄漏。</li>
-        <li><b>自定义渲染器注意 XSS。</b>返回的 HTML 直接写进单元格，用户输入内容请先转义。</li>
-    </ol>
-</section>
-
-</div>
-
-<div class="backtop"><a href="#top">↑ 顶部</a></div>
+    <div class="backtop"><a href="#top">↑ 顶部</a></div>
+</body>
+</html>

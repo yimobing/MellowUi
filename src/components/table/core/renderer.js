@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 核心渲染器
  * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.8.3
+ * @Version：v1.8.9
  * @Date：2026-10-10
- * @PubDate：2026-11-06 10:46:28
+ * @PubDate：2026-11-09 18:40:59
  */
 
  (function(MelUi) {
@@ -14,13 +14,22 @@
      * @param {Object} options 配置项
      * @param {Object} dataStore DataStore 实例
      * @param {Object} eventBus EventBus 实例
+     * @param {Object} table TableCore 实例（可选）。供 extraBefore/extraAfter 的函数形态取用表格状态
      */
-    function Renderer(options, dataStore, eventBus) {
+    function Renderer(options, dataStore, eventBus, table) {
         this.options = options;
         this.dataStore = dataStore;
         this.eventBus = eventBus;
+        this.table = table || null;
         this.el = typeof options.el === 'string' ? document.querySelector(options.el) : options.el;
         this.isRenderComplete = false;
+
+        // extraBefore / extraAfter 渲染出的区块节点引用（未配置时为空）
+        this.extraBeforeWrap = null;
+        this.extraAfterWrap = null;
+
+        // 表头固定列缓存（合并表头时是「覆盖前N列的th列表」，滚动同步复用）
+        this._headerFixedCells = [];
 
         this._renderers = MelUi.Table.cellRenderers || {};
 
@@ -128,27 +137,73 @@
     };
 
     /**
+     * 解析 extraBefore / extraAfter 配置，得到待渲染的 html 字符串
+     * 支持两种形态：
+     *   String  ：直接作为 html 使用；
+     *   Function：以表格实例为参数调用，取其返回值作为 html。
+     * 返回 '' / null / undefined 均视为“不渲染该区块”，不会输出空容器。
+     * 注意：函数形态每次 render 都会重新执行，函数内如有重计算或高频渲染，性能由业务自行控制。
+     * @param {String|Function} extra 配置值
+     * @return {String} 待渲染 html，空字符串表示不渲染
+     */
+    Renderer.prototype._resolveExtraHtml = function(extra) {
+        if (!extra) return '';
+
+        if (typeof extra === 'function') {
+            var ret = extra(this.table);
+            if (ret === null || ret === undefined) return '';
+            return String(ret);
+        }
+
+        return String(extra);
+    };
+
+    /**
+     * 构建额外区块 html（带包裹容器）
+     * @param {String|Function} extra 配置值
+     * @param {String} className 包裹容器的样式类
+     * @return {String} 完整区块 html，无内容时返回空字符串
+     */
+    Renderer.prototype._buildExtraBlock = function(extra, className) {
+        var content = this._resolveExtraHtml(extra);
+        if (!content) return '';
+        return '<div class="' + className + '">' + content + '</div>';
+    };
+
+    /**
      * 渲染外层容器结构
+     * extraBefore / extraAfter 与表头、表身同处 mel-table-container 内部（before → 表头 → 表身 → after）：
+     *   - 同属一个父容器的普通文档流，宽度天然跟随表格，无需额外同步；
+     *   - 不属于表头、表体，不参与列对齐、固定列、排序、选中、合并表头等任何表格逻辑；
+     *   - 区块内如果放了按钮等交互 DOM，事件由业务自行绑定，组件不做代理。
      */
     Renderer.prototype._renderContainer = function() {
-        var html = [
-            '<div class="mel-table-container">',
-            '  <div class="mel-table-header-wrapper">',
-            '    <table class="mel-table-header">',
-            '      <colgroup></colgroup>',
-            '      <thead><tr></tr></thead>',
-            '    </table>',
-            '  </div>',
-            '  <div class="mel-table-body-wrapper">',
-            '    <table class="mel-table-body">',
-            '      <colgroup></colgroup>',
-            '      <tbody></tbody>',
-            '    </table>',
-            '  </div>',
-            '</div>'
-        ].join('\r\n');
+        var beforeHtml = this._buildExtraBlock(this.options.extraBefore, 'mel-table-extra-before');
+        var afterHtml = this._buildExtraBlock(this.options.extraAfter, 'mel-table-extra-after');
 
-        this.el.innerHTML = html;
+        var lines = ['<div class="mel-table-container">'];
+
+        // 无内容时不输出该行，不产生多余的空白区块
+        if (beforeHtml) lines.push('  ' + beforeHtml);
+
+        lines.push('  <div class="mel-table-header-wrapper">');
+        lines.push('    <table class="mel-table-header">');
+        lines.push('      <colgroup></colgroup>');
+        lines.push('      <thead><tr></tr></thead>');
+        lines.push('    </table>');
+        lines.push('  </div>');
+        lines.push('  <div class="mel-table-body-wrapper">');
+        lines.push('    <table class="mel-table-body">');
+        lines.push('      <colgroup></colgroup>');
+        lines.push('      <tbody></tbody>');
+        lines.push('    </table>');
+        lines.push('  </div>');
+
+        if (afterHtml) lines.push('  ' + afterHtml);
+
+        lines.push('</div>');
+
+        this.el.innerHTML = lines.join('\r\n');
 
         this.container = this.el.querySelector('.mel-table-container');
         this.headerWrapper = this.el.querySelector('.mel-table-header-wrapper');
@@ -156,7 +211,11 @@
         this.bodyWrapper = this.el.querySelector('.mel-table-body-wrapper');
         this.bodyTable = this.el.querySelector('.mel-table-body');
         this.theadTr = this.headerTable ? this.headerTable.querySelector('thead tr') : null;
+        // thead 是整个表头行容器：多级表头时有多行，表头点击统一绑在它上面（它本身不随表头重绘被替换）
+        this.thead = this.headerTable ? this.headerTable.querySelector('thead') : null;
         this.tbody = this.bodyTable ? this.bodyTable.querySelector('tbody') : null;
+        this.extraBeforeWrap = this.container ? this.container.querySelector('.mel-table-extra-before') : null;
+        this.extraAfterWrap = this.container ? this.container.querySelector('.mel-table-extra-after') : null;
 
         this._renderColgroup();
         this._applyAppearance();
@@ -259,6 +318,9 @@
         if (this.headerWrapper) {
             this.headerWrapper.style.width = (bodyClientWidth > 0 ? bodyClientWidth + 'px' : '100%');
         }
+
+        // 表头宽度定下来后立刻同步 extra 区块宽度（fitWidth 分支会在下面提前 return，这里不能漏）
+        this._syncExtraWidth();
 
         if (opts.fitWidth) {
             // 判断列宽总和是否 <= 容器宽度，决定是否弹性拉伸
@@ -577,11 +639,36 @@
         var paginationHeight = 0;
         if (needSubPagination) {
             var paginationDom = this.el.querySelector('.mel-pagination');
-            paginationHeight = paginationDom ? paginationDom.offsetHeight : 0;
+            paginationHeight = this._getOuterHeight(paginationDom);
         }
 
-        // container目标border-box高度 = el content高度 - 分页栏高度
+        // extraBefore / extraAfter 现在位于 mel-table-container 内部（el content = container + 分页），
+        // 因此这里只扣分页栏高度；上下额外区块的高度由 _applyContainerHeight 在 container 内部扣给表身。
         var containerTargetBox = elContent - paginationHeight;
+        if (containerTargetBox <= 0) return;
+
+        this._applyContainerHeight(containerTargetBox);
+
+        // 实测校正：上面的高度是推算值，margin折叠、字体度量、滚动条出现与否都可能让
+        // el实际总高度与目标差几个像素。应用后实测一次，超出就把差值回收到 container 上。
+        // 只校正一轮：校正后再测通常已落回目标，重复校正反而会抖动。
+        if (!this._layoutCorrecting) {
+            var actualHeight = this.el.offsetHeight;
+            var overflow = actualHeight - elTargetBox;
+            if (overflow > 0) {
+                this._layoutCorrecting = true;
+                this._applyContainerHeight(containerTargetBox - overflow);
+                this._layoutCorrecting = false;
+            }
+        }
+    };
+
+    /**
+     * 按目标高度设置 container / bodyWrapper 高度（_applyLayout 唯一落地点）
+     * @param {Number} containerTargetBox container目标border-box高度
+     */
+    Renderer.prototype._applyContainerHeight = function(containerTargetBox) {
+        if (!this.container || !this.bodyWrapper) return;
         if (containerTargetBox <= 0) return;
 
         this.container.style.boxSizing = 'border-box';
@@ -593,15 +680,17 @@
         // 表头实际高度：headerHeight 为'auto'时读表头实际渲染高度；为数值时用指定值
         // 配置来自defaults合并结果，不写死数字
         var headerHeight = this.options.headerHeight;
-        if (typeof headerHeight === 'number' && !isNaN(headerHeight)) {
-            headerHeight = headerHeight;
-        } else {
-            // 'auto'：读取表头 wrapper 实际高度（内容撑开）
+        if (!(typeof headerHeight === 'number' && !isNaN(headerHeight))) {
             headerHeight = this.headerWrapper ? this.headerWrapper.offsetHeight : 0;
         }
 
-        // bodyWrapper目标border-box高度 = container高度 - container border上下 - 表头高度
-        var bodyHeight = containerTargetBox - cs.borderTop - cs.borderBottom - headerHeight;
+        // extraBefore / extraAfter 在 container 内部，占地必须先从 container 高度里扣掉。
+        // 【关键】用 _getOuterHeight（offsetHeight + 上下 margin）：offsetHeight 不含外边距，
+        // 而 .mel-table-extra-before/after 各带 8px margin，只减 offsetHeight 会稳定溢出 16px。
+        var extraHeight = this._getOuterHeight(this.extraBeforeWrap) + this._getOuterHeight(this.extraAfterWrap);
+
+        // bodyWrapper目标border-box高度 = container高度 - container border上下 - 表头高度 - 上下额外区块高度
+        var bodyHeight = containerTargetBox - cs.borderTop - cs.borderBottom - headerHeight - extraHeight;
         if (bodyHeight > 0) {
             this.bodyWrapper.style.height = bodyHeight + 'px';
             this.bodyWrapper.style.overflow = 'auto';
@@ -610,6 +699,49 @@
         // 表身高变化后，垂直滚动条可能出现/消失，导致 bodyClientWidth 变化；
         // 重新对齐表头 wrapper 宽度到 bodyWrapper.clientWidth，保证表头表身不错行
         this._syncHeaderWidth();
+    };
+
+    /**
+     * 取元素「外框高度」：offsetHeight + 上下外边距
+     * 用途：高度扣减必须包含 margin，否则带 margin 的区块会稳定溢出。
+     * 兼容IE9：无 getComputedStyle 时退化用 currentStyle
+     * @param {Element} el 目标元素
+     * @return {Number} 元素占据的垂直高度（含 margin），元素不存在返回 0
+     */
+    Renderer.prototype._getOuterHeight = function(el) {
+        if (!el) return 0;
+
+        var h = el.offsetHeight || 0;
+        var marginTop = 0;
+        var marginBottom = 0;
+
+        if (window.getComputedStyle) {
+            var style = window.getComputedStyle(el);
+            marginTop = parseInt(style.marginTop, 10) || 0;
+            marginBottom = parseInt(style.marginBottom, 10) || 0;
+        } else if (el.currentStyle) {
+            marginTop = parseInt(el.currentStyle.marginTop, 10) || 0;
+            marginBottom = parseInt(el.currentStyle.marginBottom, 10) || 0;
+        }
+
+        return h + marginTop + marginBottom;
+    };
+
+    /**
+     * 给表头 table 打/去「多行表头」标记（mel-header-multi）
+     * @param {Boolean} isMulti 是否多行表头
+     */
+    Renderer.prototype._setMultiHeaderFlag = function(isMulti) {
+        if (!this.headerTable) return;
+
+        var cls = ' ' + this.headerTable.className + ' ';
+        var has = cls.indexOf(' mel-header-multi ') > -1;
+
+        if (isMulti && !has) {
+            this.headerTable.className += ' mel-header-multi';
+        } else if (!isMulti && has) {
+            this.headerTable.className = cls.replace(' mel-header-multi ', ' ').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+        }
     };
 
     /**
@@ -630,6 +762,29 @@
                 if (this.bodyTable) this.bodyTable.style.width = cw + 'px';
             }
         }
+        // extra 区块跟着表头宽度走，保证右边界与表头齐平
+        this._syncExtraWidth();
+    };
+
+    /**
+     * 同步 extraBefore / extraAfter 的宽度 = 表头 wrapper 可视宽度
+     * 原因：extra 区块是 el 的直接子元素，默认撑满 el；而表头 wrapper 宽度是
+     * bodyWrapper.clientWidth（已扣除垂直滚动条、且固定列宽模式下还可能比 el 窄），
+     * 两者不等宽时 extra 内容会越过表头右边界，视觉割裂。
+     * 这里统一以表头 wrapper 可视宽度为准（表头 wrapper 有背景与下边框，是最直观的右边界）。
+     */
+    Renderer.prototype._syncExtraWidth = function() {
+        if (!this.headerWrapper) return;
+
+        var w = this.headerWrapper.clientWidth;
+        if (w <= 0) return;
+
+        if (this.extraBeforeWrap) {
+            this.extraBeforeWrap.style.width = w + 'px';
+        }
+        if (this.extraAfterWrap) {
+            this.extraAfterWrap.style.width = w + 'px';
+        }
     };
 
     /**
@@ -639,6 +794,73 @@
      * 【背景色关键】冻结 td 不能写死固定色，必须实时取所属行 tr 的实际渲染背景色
      * (含斑马纹、hover)，否则下层滚动内容会穿透，且行间颜色不一致。
      */
+    /**
+     * 取出表头中「覆盖前 count 列」的全部 th
+     * 合并表头有多行，且有 colspan（分组）、rowspan（浅层列/非分组列），
+     * 所以要按网格推演每个 th 的实际起始列，再挑出起始列 < count 的那些。
+     * 单级表头时等价于「该行前 count 个 th」，行为与改造前完全一致。
+     * @param {Number} count 固定列数量（从第1列开始连续 count 列）
+     * @return {Array} th 列表
+     */
+    Renderer.prototype._getFixedHeaderCells = function(count) {
+        var result = [];
+        var rows = this.theadTrs;
+
+        if (!rows || !rows.length) {
+            // 兜底：没有多行引用时退化为单行前 count 个（如插件在表头未渲染时调用）
+            if (this.theadTr) {
+                var single = this.theadTr.children;
+                for (var k = 0; k < count && k < single.length; k++) {
+                    result.push(single[k]);
+                }
+            }
+            return result;
+        }
+
+        // 网格推演：逐行逐格计算起始列，被上方 rowspan 占用的列跳过
+        var placed = [];
+        for (var r = 0; r < rows.length; r++) {
+            var cells = rows[r].children;
+            var col = 0;
+            for (var c = 0; c < cells.length; c++) {
+                var th = cells[c];
+                var colspan = parseInt(th.getAttribute('colspan'), 10) || 1;
+                var rowspan = parseInt(th.getAttribute('rowspan'), 10) || 1;
+
+                while (this._isColumnOccupied(placed, r, col)) {
+                    col++;
+                }
+
+                placed.push({row: r, col: col, colspan: colspan, rowspan: rowspan, th: th});
+                col += colspan;
+            }
+        }
+
+        for (var i = 0; i < placed.length; i++) {
+            if (placed[i].col < count) {
+                result.push(placed[i].th);
+            }
+        }
+        return result;
+    };
+
+    /**
+     * 判断某行某列是否已被上方（rowspan）单元格占用
+     * @param {Array} placed 已排布单元格记录
+     * @param {Number} row 行号
+     * @param {Number} col 列号
+     * @return {Boolean}
+     */
+    Renderer.prototype._isColumnOccupied = function(placed, row, col) {
+        for (var i = 0; i < placed.length; i++) {
+            var p = placed[i];
+            if (p.row < row && row < p.row + p.rowspan && p.col <= col && col < p.col + p.colspan) {
+                return true;
+            }
+        }
+        return false;
+    };
+
     Renderer.prototype._applyFixedColumns = function() {
         var fixedLeft = this.options.fixedLeftColumns || 0;
         if (fixedLeft <= 0) return;
@@ -647,13 +869,17 @@
         var scrollLeft = this.bodyWrapper ? this.bodyWrapper.scrollLeft : 0;
 
         // 表头固定列（表头背景固定 #f5f7fa）
-        var ths = this.theadTr.children;
-        for (var i = 0; i < fixedLeft && i < ths.length; i++) {
-            ths[i].style.position = 'relative';
-            ths[i].style.left = scrollLeft + 'px';
-            ths[i].style.zIndex = '2';
-            ths[i].style.backgroundColor = '#f5f7fa';
-            this._setFixedShadow(ths[i]);
+        // 注意：合并表头时不能简单取叶子行前 N 个 th——分组 th 有 colspan、浅层列有 rowspan，
+        // 叶子行的第 1 个 th 未必是第 1 列。这里按网格推演出的「列偏移」挑选覆盖前 N 列的 th。
+        var headerCells = this._getFixedHeaderCells(fixedLeft);
+        this._headerFixedCells = headerCells;
+        for (var h = 0; h < headerCells.length; h++) {
+            var th = headerCells[h];
+            th.style.position = 'relative';
+            th.style.left = scrollLeft + 'px';
+            th.style.zIndex = '2';
+            th.style.backgroundColor = '#f5f7fa';
+            this._setFixedShadow(th);
         }
 
         // 表身固定列：背景取所属行 tr 的实际渲染色
@@ -771,6 +997,9 @@
                 this.bodyWrapper.style.height = opts.bodyHeight + 'px';
                 this.bodyWrapper.style.overflow = 'auto';
             }
+            // 高度定下来后垂直滚动条可能才出现/消失，bodyWrapper可视宽度随之变化，
+            // 必须重算表头与 extra 宽度，否则表头比表身宽一个滚动条、extra 跟着错位
+            this._syncHeaderWidth();
             return;
         }
 
@@ -815,8 +1044,9 @@
                     }
                 }
 
-                var ths = self.theadTr ? self.theadTr.children : [];
-                for (var i = 0; i < fixedLeft && i < ths.length; i++) {
+                // 表头固定列：多行表头时是「覆盖前 N 列的 th 列表」，不是某一行的前 N 个（由 _applyFixedColumns 缓存）
+                var ths = self._headerFixedCells || [];
+                for (var i = 0; i < ths.length; i++) {
                     ths[i].style.position = 'relative';
                     ths[i].style.left = offset + 'px';
                     ths[i].style.zIndex = '2';
@@ -846,74 +1076,118 @@
      * 再从中取出解析好的 <tr> 节点迁移到真实 theadTr，彻底规避 IE9 对 table 系元素赋 innerHTML 的限制。
      * @param {String} html 表头行的 th HTML 字符串
      */
-    Renderer.prototype._setTheadHtml = function(html) {
-        if (!this.theadTr) return;
+    Renderer.prototype._setTheadHtml = function(rowsHtml) {
+        if (!this.thead) return;
 
         // IE9 兼容【彻底方案】：table / tbody / tr 系列元素直接赋 innerHTML（内容含表格内部标签）
         // 会抛"该操作的目标元件无效"(Invalid target element for this operation)，这是 IE9 的硬性限制，
         // 无论该 table 是否已挂到文档。因此不再用 table 元素做解析容器，
         // 改用普通 div 容器：div 是通用容器，IE9 允许对 div 赋含 <table> 结构的 innerHTML，
-        // 再从中取出解析好的 <tr> 节点迁移到真实 theadTr，彻底规避该限制。
+        // 再从中取出解析好的 <tr> 节点迁移到真实 thead，彻底规避该限制。
+        // 参数为完整的行 html（可多行 <tr>...</tr>，合并表头时即多行）。
         var tempDiv = document.createElement('div');
-        tempDiv.innerHTML = '<table><tbody><tr>' + html + '</tr></tbody></table>';
+        tempDiv.innerHTML = '<table><tbody>' + rowsHtml + '</tbody></table>';
         var tempTbody = tempDiv.getElementsByTagName('tbody')[0];
-        var newTr = tempTbody ? tempTbody.getElementsByTagName('tr')[0] : null;
+        if (!tempTbody) return;
 
-        if (!newTr) return;
+        // 原地替换：先清空旧 thead，再把解析出的每一行 tr 依次迁移进去。
+        // 保留 this.thead 引用不变：表头点击事件绑在 thead 上，换行不会丢事件。
+        while (this.thead.firstChild) {
+            this.thead.removeChild(this.thead.firstChild);
+        }
 
-        // 原地替换：先清空旧 theadTr，再逐个迁移 newTr 的子节点（th）到旧 theadTr。
-        // 保留 this.theadTr 引用不变，避免 replaceChild 换节点导致已绑定的排序点击事件丢失。
-        while (this.theadTr.firstChild) {
-            this.theadTr.removeChild(this.theadTr.firstChild);
+        var tr;
+        while ((tr = tempTbody.firstChild)) {
+            this.thead.appendChild(tr);
         }
-        while (newTr.firstChild) {
-            this.theadTr.appendChild(newTr.firstChild);
-        }
+
+        // 维护行引用：
+        //   theadTrs：全部表头行（合并表头时多行）
+        //   theadTr ：叶子行（最后一行），其 th 数量与表身列数一致，
+        //             固定列定位、滚动同步都以它为准；单级表头时它就是唯一一行，行为与改造前一致。
+        this.theadTrs = this.thead.getElementsByTagName('tr');
+        this.theadTr = this.theadTrs.length ? this.theadTrs[this.theadTrs.length - 1] : null;
+
+        // 多行（合并）表头标记：css 靠它区分「单级表头收边」与「多行表头保留最后一列右边框」。
+        // 表头会随排序等重绘，所以两种状态都要显式切换，不能只加不减。
+        this._setMultiHeaderFlag(this.theadTrs.length > 1);
     };
 
     /**
      * 渲染表头
      */
-    Renderer.prototype._renderHeader = function() {
-        if (!this.theadTr) return;
+    /**
+     * 生成单个叶子列的 th html（排序箭头、全选 checkbox、副标题等列级细节都在这里，唯一出口）
+     * 合并表头插件渲染叶子单元格时也走此方法，避免两处各写一套导致行为不一致
+     * @param {Object} col 列配置
+     * @param {String} extraClass 额外追加的样式类（可选）
+     * @param {Number} rowspan 纵向跨行数（可选，默认1）。多级表头里浅层列/非分组列需要纵向跨行才能与表身对齐
+     * @return {String} th html
+     */
+    Renderer.prototype._buildThHtml = function(col, extraClass, rowspan) {
+        var title = col.title || '';
+        var subtitle = col.subtitle || '';
+        var align = col.align || 'center';
+        var alignClass = 'mel-align-' + align;
+        if (extraClass) alignClass += ' ' + extraClass;
 
-        var html = '';
-        var columns = this.dataStore.columns;
         var sortField = this.dataStore.sortField;
         var sortOrder = this.dataStore.sortOrder;
 
-        for (var i = 0; i < columns.length; i++) {
-            var col = columns[i];
-            var title = col.title || '';
-            var subtitle = col.subtitle || '';
-            var align = col.align || 'center';
-            var alignClass = 'mel-align-' + align;
-
-            var arrow = '';
-            if (col.field === sortField && sortOrder) {
-                arrow = '<span class="mel-sort-arrow" style="margin-left:4px;font-size:10px;color:#409eff;">' + (sortOrder === 'asc' ? '▲' : '▼') + '</span>';
-            }
-
-            // 多选列表头全选 checkbox（单选模式单选列不渲染全选，且强制忽略showSelectAll）
-            var thContent = '';
-            if (col.field === '_checkbox' && this.options.showSelectAll !== false && col.mode !== 'single') {
-                thContent = '<input type="checkbox" class="mel-header-checkbox">';
-            } else {
-                thContent = '<div class="mel-th-inner">';
-                thContent += '<span class="mel-th-title">' + title + '</span>';
-                if (subtitle) {
-                    thContent += '<em class="mel-th-subtitle">' + subtitle + '</em>';
-                }
-                thContent += arrow;
-                thContent += '</div>';
-            }
-
-            html += '<th class="' + alignClass + '" data-field="' + (col.field || '') + '">';
-            html += thContent;
-            html += '</th>';
+        var arrow = '';
+        if (col.field === sortField && sortOrder) {
+            arrow = '<span class="mel-sort-arrow" style="margin-left:4px;font-size:10px;color:#409eff;">' + (sortOrder === 'asc' ? '▲' : '▼') + '</span>';
         }
 
-        this._setTheadHtml(html);
+        // 多选列表头全选 checkbox（单选模式单选列不渲染全选，且强制忽略showSelectAll）
+        var thContent = '';
+        if (col.field === '_checkbox' && this.options.showSelectAll !== false && col.mode !== 'single') {
+            thContent = '<input type="checkbox" class="mel-header-checkbox">';
+        } else {
+            thContent = '<div class="mel-th-inner">';
+            thContent += '<span class="mel-th-title">' + title + '</span>';
+            if (subtitle) {
+                thContent += '<em class="mel-th-subtitle">' + subtitle + '</em>';
+            }
+            thContent += arrow;
+            thContent += '</div>';
+        }
+
+        var spanAttr = (rowspan && rowspan > 1) ? (' rowspan="' + rowspan + '"') : '';
+        return '<th class="' + alignClass + '" data-field="' + (col.field || '') + '"' + spanAttr + '>' + thContent + '</th>';
+    };
+
+    /**
+     * 生成默认单行表头 html（无合并表头时使用）
+     * @return {String} 单行 <tr>...</tr>
+     */
+    Renderer.prototype._buildHeaderRowsHtml = function() {
+        var columns = this.dataStore.columns;
+        var html = '';
+        for (var i = 0; i < columns.length; i++) {
+            html += this._buildThHtml(columns[i]);
+        }
+        return '<tr>' + html + '</tr>';
+    };
+
+    /**
+     * 渲染表头
+     * 表头行 html 的生成分两条路：
+     *   1. 默认：单行平铺（_buildHeaderRowsHtml）；
+     *   2. 启用 HeaderMerge 插件：由插件提供的 headerMergeBuilder 返回多行 <tr> 结构。
+     * 核心只负责把 html 落到 thead、处理表头高度、绑定全选 checkbox，合并逻辑由插件独占。
+     */
+    Renderer.prototype._renderHeader = function() {
+        if (!this.thead) return;
+
+        var rowsHtml;
+        if (typeof this.headerMergeBuilder === 'function') {
+            rowsHtml = this.headerMergeBuilder();
+        } else {
+            rowsHtml = this._buildHeaderRowsHtml();
+        }
+
+        this._setTheadHtml(rowsHtml);
 
         // 表头高度由配置 headerHeight 控制：
         // 默认'auto'不设固定高度，由内容自动撑开；仅当传入数值时才设置固定高度
@@ -928,7 +1202,7 @@
         }
 
         // 绑定表头全选 checkbox 事件
-        var headerCheckbox = this.theadTr.querySelector('.mel-header-checkbox');
+        var headerCheckbox = this.thead.querySelector('.mel-header-checkbox');
         if (headerCheckbox) {
             var self = this;
             headerCheckbox.onclick = function(e) {
@@ -966,6 +1240,10 @@
         // 再把解析出的 tr 节点批量迁移到真实 tbody。
         this._setTbodyHtmlSafe(html);
         this._cacheRowNodes();
+
+        // 行数变化会改变垂直滚动条的有无，bodyWrapper 可视宽度随之变化：
+        // 重算表头与 extra 宽度，保证表头表身不错行、extra 不越过表头右边界
+        this._syncHeaderWidth();
 
         this.eventBus.emit('summaryRequest');
     };
@@ -1163,7 +1441,7 @@
      * 绑定事件（事件委托）
      */
     Renderer.prototype._bindEvents = function() {
-        if (!this.tbody || !this.theadTr) return;
+        if (!this.tbody || !this.thead) return;
 
         var self = this;
 
@@ -1268,7 +1546,7 @@
             });
         }
 
-        this.theadTr.onclick = function(e) {
+        this.thead.onclick = function(e) {
             var event = e || window.event;
             var target = event.target || event.srcElement;
 
@@ -1276,7 +1554,20 @@
             if (!th) return;
 
             var field = th.getAttribute('data-field');
-            if (!field) return;
+
+            // 分组表头（合并表头的父级 th）：没有 field，不参与排序，也不抛 headerClick，
+            // 单独抛 groupHeaderClick，由分组列解析器还原出对应的列配置对象。
+            if (!field) {
+                var groupPath = th.getAttribute('data-group-path');
+                if (groupPath && typeof self.groupColumnResolver === 'function') {
+                    self.eventBus.emit('groupHeaderClick', {
+                        column: self.groupColumnResolver(groupPath),
+                        element: th,
+                        event: event
+                    });
+                }
+                return;
+            }
 
             self.eventBus.emit('headerClick', {field: field});
         };

@@ -1,0 +1,135 @@
+
+========================================================
+        基于前端技术的跨端应用方案及打包工具选型说明
+========================================================
+
+
+一句话区分：**框架 = 写代码的运行壳；打包工具 = 把框架 + 你的代码拼成 exe/apk**
+重点提醒：**electron-builder 只是 Electron 的配套打包工具，本身不是跨端开发框架**
+
+
+## 1. Electron
+
+官网：[https://www.electronjs.org/zh](https://www.electronjs.org/zh)
+是否免费：✅ MIT 协议，免费，个人、商用都可以，不用交钱
+功能描述：把 Chromium（Chrome 内核）+ Node.js 打包在一起。你用 HTML/CSS/JS 写页面，它给网页开放桌面能力，比如读写本地文件、系统弹窗、托盘、快捷键。普通浏览器网页是受沙箱限制的，它放开了权限。
+打包产物：Windows exe/msi、Mac dmg、Linux deb/AppImage。**原生不支持 apk、ipa**
+重点：
+
+- 配套打包工具一般用 electron-builder（单独的工具，不属于 Electron 本体）
+- v22 是最后一个支持 Win7 的版本，之后版本不再支持 Win7
+- 包体积偏大，一般五六十 MB 起步
+例子：VSCode、QQ NT 桌面端、Discord
+
+## 2. electron-builder（它只是打包工具，不是开发框架！）
+
+官网：[https://www.electron.build/](https://www.electron.build/)
+是否免费：✅ 免费开源
+功能描述：Electron 专用打包流水线。Electron 本身只能跑代码，没有导出安装包的能力，这个工具负责把你的代码 + Electron 运行时打包合并。
+打包产物：exe、msi、dmg、pkg、deb、portable 便携单文件 exe
+重点：
+
+- 第三方工具，不是 Electron 官方出品
+- 只服务 Electron 项目，别的框架用不了
+- 版本要和 Electron、Node 版本配对，尤其是你要用 Electron22 的时候，builder 不能装太高版本
+
+## 3. NW.js
+
+官网：[https://nwjs.io/](https://nwjs.io/)
+是否免费：✅ MIT 协议，免费商用
+功能描述：和 Electron 思路几乎一模一样，Chromium + Node，网页写桌面软件。只是内部架构、API 设计和 Electron 不一样，是更早出来的同类方案。
+打包产物：exe、dmg、deb；**不能直接出 apk**
+重点：
+
+- 同样有老版本支持 Win7
+- 生态、教程、插件数量比 Electron 少很多
+- 很多老单机小工具在用，现在新项目优先 Electron 或者 Tauri
+
+## 4. Tauri
+
+官网：[https://v2.tauri.app/zh-cn/](https://v2.tauri.app/zh-cn/)
+是否免费：✅ MIT 协议，免费商用
+功能描述：前端页面（HTML/CSS/JS）做界面，底层核心是 Rust。它**不捆绑完整 Chromium**，优先调用系统自带 WebView 内核，所以包体积非常小，安全性更好。
+打包产物：Windows exe/msi、Mac dmg、Linux 包；v2 版本才支持安卓 apk、苹果 ipa（安卓这块目前还不算特别成熟稳定）
+重点：
+
+- 新版 Tauri**不支持 Win7**，这个对你很关键
+- 优势：体积小、安全；缺点：需要一点点 Rust 基础排查问题
+- 适合做现代 Windows10+/Mac 的桌面工具
+
+## 5. Cordova
+
+官网：[https://cordova.apache.org/](https://cordova.apache.org/)
+是否免费：✅ Apache2.0，免费商用
+功能描述：老牌移动端壳子。网页写代码，套上原生壳，给网页提供手机能力（拍照、相册、定位等）。**没有 Node.js，主打手机端**。
+打包产物：Android apk、iOS ipa；也可以搭配插件做桌面，但桌面不是它的主战场，很少人这么用
+重点：
+
+- 非常老的方案，现在慢慢被 Capacitor 替代
+- 适合简单 H5 打包成安卓 APP，复杂项目体验一般
+- 和 Electron 完全两套体系，代码不能直接迁移
+
+## 6. Capacitor
+
+官网：[https://capacitorjs.com/](https://capacitorjs.com/)
+是否免费：✅ MIT 协议，免费商用
+功能描述：Cordova 的继任者，现代版 H5 跨端壳。前端页面跑在原生 WebView，提供原生设备能力，架构更清爽，插件生态更新。
+打包产物：apk、ipa；也支持桌面（Electron 作为桌面后端）
+重点：
+
+- 主力是移动端；桌面是依附 Electron，等于又套一层壳
+- 前端 Vue/React 项目很容易接入，是现在 H5 打包 APP 首选
+- 同样**没有内置 Node**，网页能力受限
+
+## 7. Hippy（腾讯开源跨端引擎）
+
+官网：[https://github.com/Tencent/Hippy](https://github.com/Tencent/Hippy)
+是否免费：✅ Apache2.0，免费商用
+功能描述：腾讯出的 JS 跨端框架，语法贴近 React/Vue，写一套代码，编译跑在安卓、iOS、Web、鸿蒙。它不是浏览器内核，是自研渲染引擎。
+打包产物：apk、ipa、鸿蒙包；桌面端不是它的目标
+重点：
+
+- 适合前端开发人员，上手思维接近写前端
+- 开源的只是框架内核，QQ 内部私有业务组件、NT 通信内核不开源
+- 国内大厂部分业务在用，外部生态不如 Flutter 成熟
+
+## 8. Kuikly（腾讯开源跨端引擎）
+
+官网：[https://github.com/Tencent-TDS/KuiklyUI](https://github.com/Tencent-TDS/KuiklyUI)
+是否免费：✅ Apache2.0，免费商用
+功能描述：腾讯 KMP 架构的跨端 UI 框架，用 Kotlin 开发，一套代码编译安卓、iOS、鸿蒙、Web。
+打包产物：apk、ipa、鸿蒙包
+重点：
+
+- QQNT 移动端现在在用这个 UI 层
+- 语言是 Kotlin，不是 JS，前端开发者上手门槛更高
+- 偏向客户端原生开发，不适合只想写 HTML 的人
+
+## 9. Flutter（补充，市场超级流行，虽然不是 JS 栈）
+
+官网：[https://flutter.dev/](https://flutter.dev/)
+是否免费：✅ BSD 协议，免费商用
+功能描述：谷歌的跨端框架，Dart 语言，自带渲染引擎，不依赖 WebView。一套代码多端。
+打包产物：apk、ipa、exe、dmg、Linux、鸿蒙
+重点：
+
+- 多端一致性最好，性能高
+- 缺点：要学 Dart，不是 HTML/CSS/JS 那套，和你现在的前端技术栈割裂
+
+## 额外补充：大厂内部打包工具（不对外）
+
+像腾讯、阿里自己内部都有打包编译流水线，用来打包 QQ、钉钉这类客户端。
+这些**不对外开源、不开放下载**，是内部 CI / 编译系统，咱们外部开发者用不到，不用考虑。
+它们不是独立框架，是用来配合自家引擎（Hippy/Kuikly/Electron）做编译、签名、分发的流水线。
+
+---
+
+### 给你一个极简选择口诀（适合你现在的需求）
+
+只想做 Win7 电脑上的 HTML 小工具（PDF 转换）：Electron + electron-builder
+想做现代电脑小工具、包要很小：Tauri（但是不支持 Win7）
+想用网页直接打包安卓 APP：Capacitor
+想一套代码正经做商业 APP（安卓 + 苹果 + 桌面）：Flutter
+Hippy、Kuikly：大厂内部向，小白不建议优先碰
+
+如果你想，我可以单独给你对比 Electron 和 Capacitor 的代码差异，看看同一个页面两边分别怎么写。

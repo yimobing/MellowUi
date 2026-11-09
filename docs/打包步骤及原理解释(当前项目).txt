@@ -26,6 +26,10 @@ dist
 │  └─ ……同上
 ├─ drawer/
 │  └─ ……同上
+├─ table/
+│  └─ ……同上
+├─ 其它组件.../
+│  └─ ……同上
 ├─ melui.js               ← rollup处理src/index.js，全量库开发版
 ├─ melui.css              ← extract提取，合并【公共样式+全部组件css】
 ├─ melui.min.js

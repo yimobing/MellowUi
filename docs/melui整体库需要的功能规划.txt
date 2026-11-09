@@ -1,0 +1,17 @@
+
+melui.min.js 需要的功能
+
+· 转圈
+· 遮罩
+· 打开iframe
+
+· 异步请求数据后执行异步操作 doneAsyncEvent
+
+· 返回顶部 goToTop
+
+---------------
+    几个区分
+---------------
+
+是做成 melui.min.js 的独立函数,还是做成tools.js 的独立函数库?
+
