@@ -158,7 +158,8 @@
     <script src="../src/components/table/plugins/pagination.js"></script>
     <script src="../src/components/table/plugins/summary.js"></script>
     <script src="../src/components/table/plugins/export.js"></script>
-    <script src="../src/components/table/plugins/header-merge.js"></script> <!-- add 20261109-1 -->
+    <script src="../src/components/table/plugins/header-merge.js"></script>
+    <script src="../src/components/table/plugins/rowExpand.js"></script>
 
     <script>
         var table = null;
@@ -236,7 +237,7 @@
             total: 0, // 总记录数(可选)。仅remotePaging=true时生效，由外部传入总条数，组件据此渲染分页UI
             enableRemotePagingFallback: false, // 是否兜底后端远程分页，默认true表示启用(可选)。
             // 说明：仅 remotePaging=true 生效。
-            // 当后端返回 total=0 或者 total < 当前返回列表条数，本参数值为true时则组件自动降级，使用当前这批数据前端本地分页；
+            // 当后端返回 total=0 或者 total <div 当前返回列表条数，本参数值为true时则组件自动降级，使用当前这批数据前端本地分页；
             // 值为false时关闭则严格信任后端返回的total，不会自动切换成前端本地分页。
             // 注意：标准分页接口时设置本参数值为false；接口本身不支持一次性返回总记录数时，设置为true。
 
@@ -247,16 +248,27 @@
             bordered: true, // 是否显示边框
             stripe: true, // 是否隔色变色斑马纹
             hoverHighlight: true, // 是否行悬浮高亮
+            expandRender: function(rowData, columnList) { // 展开行 add 20261110-1
+                // 自定义展开行内容
+                console.log('当前展开行数据：', rowData, columnList);
+                // return '<div class="block__expand_row">省市区县：' + rowData["area"] + '</div>';
+            },
           
             // ·插件
             plugins: [
-                // 'SerialNo', // 序号列
-                { // 序号列
+                // 布局增强插件
+                // { name:"Layout" }, // 暂未开发完成，当前启用不会生效
+
+                // 序号列
+                // 'SerialNo',
+                {
                     name: "SerialNo",
                     width: 50, // 列宽
                     showNewRowSerialNumber: false // 新增行是否显示序号，默认false(可选)。false 新增行序号为空（便于一眼识别是新增行）；true 正常展示序号 testing3
                 },
-                // { name:"Layout" },
+                // 多选列
+                // 'Checkbox',
+                {name: 'Checkbox', width: 60, mode:'multi' }, // 多选列、复选框列。mode 值：single 多选模式, multi 单选模式：渲染radio、互斥、表头无全选框
 
                 // 合并表头
                 {   
@@ -266,8 +278,12 @@
                     borderPatch: true     // IE9 合并边框修复，默认true
                 },
 
-                {name: 'Checkbox', width: 60 }, // 多选列、复选框列。多选模式 mode:"multi"
-                // {name: 'Checkbox', width: 60, mode:'single' }, // 多选列、复选框列。单选模式：渲染radio、互斥、表头无全选框
+                // 展开行 add 20261110-1
+                {   
+                    name: 'RowExpand',
+                    expandSingle: false, // 是否手风琴模式，默认false。false=允许多行同时展开；true=同一时间只能展开一行
+                    expandColWidth: 40 // 展开箭头列宽度(px)，默认40
+                },
                 
                 // 'StateColumn', // 状态列
                 {
@@ -279,14 +295,16 @@
                     width: 60
                 },
 
-                { // 排序
+                 // 排序
+                {
                     name: 'Sort', 
                     defaultField: 'xh_self', 
                     defaultOrder: 'asc',
                     sortCurrentPageOnly: true // 是否仅对当前页排序(可选)，默认false。仅 remotePaging=false 前端本地分页时有效；remotePaging=true 时本参数无效，强制全量排序。
                 },
 
-                { // 分页
+                // 分页
+                {
                     name: 'Pagination',
                     pageSize: 20,
                     pageMode: 'list', // 'list'：数字页码按钮；'select'：页码下拉选择。
@@ -296,11 +314,15 @@
                     showQuickJumper: true, // 是否显示页码快速跳转下拉
                     showSizeChanger: true // 是否显示每页条数切换下拉
                 },
+
+                // 合计行
                 {
                     name: 'Summary', 
                     columns: ['mj', 'scjj', 'zje'], 
                     title: '合计', 
-                    titleColumn: 2
+                    titleColumn: 2,
+                    scope: 'currentPage', // 合计统计范围。值： currentPage 只统计当前页可见行, all 统计全部数据
+                    externalData: {} // 远程分页且scope = 'all'时传递的汇总数据。eg.  { scjj: 3200, zje: 5800 }
                 },
 
                 // 导出excel
@@ -351,7 +373,7 @@
                                 xh_self: 'C20' + (100 + i),
                                 mj: (80 + Math.random() * 100).toFixed(2),
                                 area: '福建省-福州市-鼓楼区',
-                                scjj: (9000 + Math.random() * 5000).toFixed(0),
+                                scjj: 150, // (9000 + Math.random() * 5000).toFixed(0),
                                 zje: '200',
                                 check_wc: i % 2 === 0 ? '1' : '0',
                                 remark: ''

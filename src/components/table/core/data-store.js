@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 数据存储
  * 负责管理表格所有数据：行数据、列配置、选中状态、排序状态
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.10.4
+ * @Version：v1.10.5
  * @Date：2026-10-10
- * @PubDate：2026-11-06 10:46:28
+ * @Pubdate：2026-11-10 10:35:00
  */
 
  (function(MelUi) {
@@ -16,7 +16,7 @@
      * 仅影响提示日志，不影响守卫本身：已销毁实例的调用一律被忽略。
      */
     var DESTROYED_WARN = true;
- 
+
     /**
      * DataStore 构造函数
      * @param {Object} options 配置项
@@ -45,6 +45,11 @@
         this.addRowMode = (options && options.addRowMode) || 'currentPage'; // 新增行插入位置：currentPage当前页 / global全局
         this._tempAppendRows = []; // addRowMode='currentPage'时，当前页临时追加的行引用集合（翻页/排序/setData时清空）
         this._tempRowSeq = 0;      // 草稿行独立索引计数器：remote/currentPage 新增的草稿行用负数自增索引，与后端 rows 的 0..n 隔离，避免 data-row-index 冲突
+
+        // 行标识计数器：行对象里的 _rowId 由此自增生成
+        // 作用：给每一行一个【运行期唯一标识】，供单行事件（rowClick/cellClick/expandChange 等）
+        //   和 getRowById 使用。它不随分页、排序变化，行删除后失效，不可存后端。
+        this._rowIdSeq = 0;
 
         // 初始化数据
         if (options.data && options.data.length) {
@@ -153,12 +158,66 @@
         }
 
         // 内部字段
+        row._rowId = 'r' + (++this._rowIdSeq); // 运行期唯一行标识：单行事件与 getRowById 使用，不存后端
         row._rowIndex = 0;
         row._status = 's';  // i=新增, u=修改, s=已保存
         row._selected = false;
         row._node = null;
 
         return row;
+    };
+
+    /**
+     * 按 rowId 查找内部原始行（rows 与草稿行 _tempAppendRows 都会查）
+     * @param {String} rowId 行标识（来自单行事件参数 rowId）
+     * @return {Object|null} 内部原始行对象；找不到返回 null
+     */
+    DataStore.prototype.getRowById = function(rowId) {
+        if (this._guardDestroyed('getRowById')) return null;
+        if (rowId === undefined || rowId === null || rowId === '') return null;
+
+        for (var i = 0; i < this.rows.length; i++) {
+            if (this.rows[i] && this.rows[i]._rowId === rowId) return this.rows[i];
+        }
+        if (this._tempAppendRows) {
+            for (var t = 0; t < this._tempAppendRows.length; t++) {
+                if (this._tempAppendRows[t] && this._tempAppendRows[t]._rowId === rowId) {
+                    return this._tempAppendRows[t];
+                }
+            }
+        }
+        return null;
+    };
+
+    /**
+     * 取一行的对业务可见副本（浅拷贝，剥离所有下划线开头的内部字段）
+     * 事件回调里的 rowData / rendered.rows 一律走这里，避免把 _rowIndex/_rowId/_node 等内部字段暴露给业务。
+     * @param {Object} row 内部行对象
+     * @return {Object} 纯业务字段对象
+     */
+    DataStore.prototype.getPlainRow = function(row) {
+        var plain = {};
+        if (!row) return plain;
+        for (var key in row) {
+            if (!row.hasOwnProperty(key)) continue;
+            if (key.charAt(0) === '_') continue; // 内部字段一律不对外
+            plain[key] = row[key];
+        }
+        return plain;
+    };
+
+    /**
+     * 批量取对业务可见副本
+     * @param {Array} rows 内部行数组
+     * @return {Array} 纯业务字段对象数组
+     */
+    DataStore.prototype.getPlainRows = function(rows) {
+        var list = [];
+        if (!rows) return list;
+        for (var i = 0; i < rows.length; i++) {
+            list.push(this.getPlainRow(rows[i]));
+        }
+        return list;
     };
 
     /**

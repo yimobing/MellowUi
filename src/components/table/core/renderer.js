@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 核心渲染器
  * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.8.9
+ * @Version：v1.8.12
  * @Date：2026-10-10
- * @PubDate：2026-11-09 18:40:59
+ * @PubDate：2026-11-10 18:07:33
  */
 
  (function(MelUi) {
@@ -113,11 +113,12 @@
         //              （remotePaging + enableRemotePagingFallback 的矫正规则都在该方法内，此处不重复推导）
         //   pageNo   = 当前页码，内部字段是 currentPage，对外统一叫 pageNo，与 pageChange 事件命名对应
         //   pageSize = 每页条数
-        // 注意：rows 为浅拷贝数组，行对象本身仍是内部引用，业务只读，请勿修改行数据。
+        // 注意：rows 里每一项都是【纯业务字段副本】（已剥离 _rowIndex/_rowId/_status/_node 等内部字段），
+        // 修改副本不会影响表格数据源；需要按 rowId 定位原始行请用 table.getRowById()。
         var ds = this.dataStore;
         var visibleRows = ds.getVisibleRows();
         var renderInfo = {
-            rows: visibleRows.slice(0),
+            rows: ds.getPlainRows(visibleRows),
             total: ds.getEffectiveTotal(),
             pageNo: ds.currentPage,
             pageSize: ds.pageSize
@@ -178,8 +179,8 @@
      *   - 区块内如果放了按钮等交互 DOM，事件由业务自行绑定，组件不做代理。
      */
     Renderer.prototype._renderContainer = function() {
-        var beforeHtml = this._buildExtraBlock(this.options.extraBefore, 'mel-table-extra-before');
-        var afterHtml = this._buildExtraBlock(this.options.extraAfter, 'mel-table-extra-after');
+        var beforeHtml = this._buildExtraBlock(this.options.extraBefore, 'mel-table-extra-wrapper mel-table-extra-before-wrapper');
+        var afterHtml = this._buildExtraBlock(this.options.extraAfter, 'mel-table-extra-wrapper mel-table-extra-after-wrapper');
 
         var lines = ['<div class="mel-table-container">'];
 
@@ -214,8 +215,8 @@
         // thead 是整个表头行容器：多级表头时有多行，表头点击统一绑在它上面（它本身不随表头重绘被替换）
         this.thead = this.headerTable ? this.headerTable.querySelector('thead') : null;
         this.tbody = this.bodyTable ? this.bodyTable.querySelector('tbody') : null;
-        this.extraBeforeWrap = this.container ? this.container.querySelector('.mel-table-extra-before') : null;
-        this.extraAfterWrap = this.container ? this.container.querySelector('.mel-table-extra-after') : null;
+        this.extraBeforeWrap = this.container ? this.container.querySelector('.mel-table-extra-before-wrapper') : null;
+        this.extraAfterWrap = this.container ? this.container.querySelector('.mel-table-extra-after-wrapper') : null;
 
         this._renderColgroup();
         this._applyAppearance();
@@ -686,7 +687,7 @@
 
         // extraBefore / extraAfter 在 container 内部，占地必须先从 container 高度里扣掉。
         // 【关键】用 _getOuterHeight（offsetHeight + 上下 margin）：offsetHeight 不含外边距，
-        // 而 .mel-table-extra-before/after 各带 8px margin，只减 offsetHeight 会稳定溢出 16px。
+        // 而 .mel-table-extra-before-wrapper / .mel-table-extra-after-wrapper 各带 8px margin，只减 offsetHeight 会稳定溢出 16px。
         var extraHeight = this._getOuterHeight(this.extraBeforeWrap) + this._getOuterHeight(this.extraAfterWrap);
 
         // bodyWrapper目标border-box高度 = container高度 - container border上下 - 表头高度 - 上下额外区块高度
@@ -885,6 +886,8 @@
         // 表身固定列：背景取所属行 tr 的实际渲染色
         var trs = this.tbody.children;
         for (var r = 0; r < trs.length; r++) {
+            // 展开详情行整行跨列，不属于数据行，不参与冻结列平移
+            if (this._isExpandRowTr(trs[r])) continue;
             var rowBg = this._getRowBackground(trs[r]);
             var tds = trs[r].children;
             for (var c = 0; c < fixedLeft && c < tds.length; c++) {
@@ -1036,6 +1039,8 @@
                 var offset = this.scrollLeft;
                 var trs = self.tbody ? self.tbody.children : [];
                 for (var r = 0; r < trs.length; r++) {
+                    // 展开详情行整行跨列，不参与冻结列平移
+                    if (self._isExpandRowTr(trs[r])) continue;
                     var tds = trs[r].children;
                     for (var c = 0; c < fixedLeft && c < tds.length; c++) {
                         tds[c].style.position = 'relative';
@@ -1211,7 +1216,7 @@
                 var checked = this.checked;
                 self.dataStore.selectAll(checked);
                 self.eventBus.emit('selectChange', {
-                    selectedRows: self.dataStore.getSelectedRows()
+                    selectedRows: self.dataStore.getPlainRows(self.dataStore.getSelectedRows())
                 });
             };
         }
@@ -1312,7 +1317,26 @@
         }
 
         html += '</tr>';
+
+        // 展开行插件钩子：在数据行后面追加一条跨列详情行（RowExpand 插件接管）
+        // 插件未启用时 rowExpandBuilder 为 undefined，不产生任何额外 HTML
+        if (typeof this.rowExpandBuilder === 'function') {
+            var expandHtml = this.rowExpandBuilder(rowData);
+            if (expandHtml) html += expandHtml;
+        }
+
         return html;
+    };
+
+    /**
+     * 判断是否为展开行插件插入的详情行（不是数据行）
+     * 详情行带 data-row-expand="1"，不参与行节点缓存、冻结列平移等按「行」处理的逻辑
+     * @param {Element} tr 行节点
+     * @return {Boolean}
+     */
+    Renderer.prototype._isExpandRowTr = function(tr) {
+        if (!tr || !tr.getAttribute) return false;
+        return tr.getAttribute('data-row-expand') === '1';
     };
 
     /**
@@ -1323,10 +1347,15 @@
 
         var trs = this.tbody.children;
         var visibleRows = this.dataStore.getVisibleRows();
+        // 展开行插件会在数据行后插入详情行，导致 trs 下标与 visibleRows 不再一一对应，
+        // 因此按 data-row-index 反查行对象，不能按数组下标硬配。
+        // 注意：展开行的单元格里没有 data-row-index，按 index 找不到行，直接跳过。
         for (var i = 0; i < trs.length; i++) {
-            if (visibleRows[i]) {
-                visibleRows[i]._node = trs[i];
-            }
+            if (this._isExpandRowTr(trs[i])) continue;
+            var rowIndex = parseInt(trs[i].getAttribute('data-row-index'));
+            if (isNaN(rowIndex)) continue;
+            var nodeRow = this.dataStore.getRow(rowIndex);
+            if (nodeRow) nodeRow._node = trs[i];
         }
     };
 
@@ -1354,6 +1383,9 @@
 
             if (sums.titleColumn === c) {
                 cellHtml = '<strong>' + (sums.title || '合计') + '</strong>';
+            } else if (sums.blank && sums.data[col.field] !== undefined) {
+                // blank=true：合计无数据可算（远程分页 scope='all' 但没给 externalData），直接显示占位符，别渲染成 0 误导使用者
+                cellHtml = '<strong>' + sums.data[col.field] + '</strong>';
             } else if (sums.data[col.field] !== undefined && !isNaN(sums.data[col.field])) {
                 cellHtml = '<strong>' + sums.data[col.field].toFixed(2) + '</strong>';
             }
@@ -1458,11 +1490,24 @@
 
             if (!rowData) return;
 
+            // 单行事件：rowId 独立作为顶层参数，rowData 为纯业务字段副本（不含内部字段）
+            var rowId = rowData._rowId;
+            var plainRow = self.dataStore.getPlainRow(rowData);
+
             self.eventBus.emit('cellClick', {
-                rowData: rowData,
+                rowId: rowId,
+                rowData: plainRow,
                 cell: {rowIndex: rowIndex, field: field, element: td}
             });
-            self.eventBus.emit('rowClick', {rowData: rowData, rowIndex: rowIndex});
+            // 插件可提供 rowClickFilter(field)：命中返回 true 的列，点击后不抛 rowClick
+            // （展开行插件用它挡住箭头列，避免点箭头时同时触发业务「点整行」逻辑）
+            if (typeof self.rowClickFilter === 'function' && self.rowClickFilter(field)) return;
+
+            self.eventBus.emit('rowClick', {
+                rowId: rowId,
+                rowData: plainRow,
+                rowIndex: rowIndex
+            });
         };
 
         // 输入变化（带类型过滤）
@@ -1498,7 +1543,10 @@
             var oldValue = self.dataStore.getCell(rowIndex, field);
 
             self.dataStore.setCell(rowIndex, field, newValue);
+            var changedRow = self.dataStore.getRow(rowIndex);
             self.eventBus.emit('cellChange', {
+                rowId: changedRow ? changedRow._rowId : '',
+                rowData: self.dataStore.getPlainRow(changedRow),
                 rowIndex: rowIndex, field: field,
                 newValue: newValue, oldValue: oldValue
             });
@@ -1539,7 +1587,10 @@
                 var oldValue = self.dataStore.getCell(rowIndex, field);
 
                 self.dataStore.setCell(rowIndex, field, newValue);
+                var changedRow = self.dataStore.getRow(rowIndex);
                 self.eventBus.emit('cellChange', {
+                    rowId: changedRow ? changedRow._rowId : '',
+                    rowData: self.dataStore.getPlainRow(changedRow),
                     rowIndex: rowIndex, field: field,
                     newValue: newValue, oldValue: oldValue
                 });

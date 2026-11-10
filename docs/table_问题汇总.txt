@@ -1,4 +1,23 @@
 
+
+
+几个问题先分析下：
+
+1. 之前说的今天日期是2026-11-20写错了，今天是2026-11-10，所有js css的日期我都手动改过来了，以后如有更新，你记住改一下。（没更新的不用改）
+
+2. 表格节点名称更改
+.mel-row-expand-panel 改成 .mel-row-expand-wrapper
+.mel-table-extra-before 改成 .mel-table-extra-wrapper.mel-table-extra-before-wrapper
+.mel-table-extra-after 改成 .mel-table-extra-wrapper.mel-table-extra-after-wrapper
+
+3. 样式更改
+展开行默认样式： .mel-row-expand-item 不要使用 float，width: 50%，而是直接一行行就行，即一行占满100%。只要保留这2个样式即可：padding: 4px 5px; font-size: 13px;
+
+4. expandRender 回调参数除了 rowData 可能要再增加一个参数，把对应列的显示名称和值一起显示出来，这样用户自定义展开行数据内容时不用再对着字段找表头显示名称，也可快速使用数组循环方式返回自定义内容。比如新增的参数可以这样：columnData： [{title: "省市区", field: "area", value: "福建省-泉州市-丰泽区"}] 这个columnData 你看下用名称合适。
+
+5. expandRender 默认展行数据中并没有使用formatter进行格式化，比如columns配置了有一个为radio，展开行数据的值居然为1或0，而不是【是】或【否】
+
+
 --------------------------------------------------------------------------------
 几个问题：分析下 202611041901
 1. 新增行时能否把光标聚焦到当前新增行某一列可输入的输入框上，这样更醒目。可以是该行的找到的第1个可输入的输入框。这个依然没实现，检查下是否滚动滚动到最顶部底部的缘故导致焦点没掉了？

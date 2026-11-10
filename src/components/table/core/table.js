@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 主类
  * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.7.8
+ * @Version：v1.7.9
  * @Date：2026-10-10
- * @PubDate：2026-11-09 17:08:09
+ * @PubDate：2026-11-10 10:40:00
  */
 
  (function(MelUi) {
@@ -61,7 +61,7 @@
             addRowMode: 'currentPage', // 新增行插入位置(可选)。值：'currentPage'=插入当前页数据集合(默认)，配合addRow的position控制当前页首/尾；'global'=插入全局原始数据数组首/尾。注：remotePaging=true时本参数无效(自动降级为global)
 
             // ·插件及事件
-            plugins: [], // 插件数组(可选)。字符串简写启用+默认配置，或对象{name, ...}启用+自定义配置
+            plugins: [], // 插件数组(可选)。'SerialNo'=字符串简写启用+默认配置；{name:'Pagination',pageSize:30}=对象形式；['RowExpand',{expandSingle:false}]=数组形式，第一项插件名、第二项配置
             events: {}, // 事件配置(可选)。如 onCellClick/onCellChange/onRowClick 等回调
 
             // ·表格上下额外区块
@@ -203,7 +203,8 @@
             onDeleteRow: 'rowDelete', // deleteRow方法删除成功后抛出的回调事件
             onSort: 'sortChange',
             onPageChange: 'pageChange',
-            onGroupHeaderClick: 'groupHeaderClick' // 合并表头时点击分组表头（父级 th）触发
+            onGroupHeaderClick: 'groupHeaderClick', // 合并表头时点击分组表头（父级 th）触发
+            onExpandChange: 'expandChange' // 展开行插件：展开/收起切换完成后触发
         };
 
         for (var userEvent in eventMap) {
@@ -239,6 +240,11 @@
                 pluginOptions = this._extend({}, pluginConfig);
                 delete pluginOptions.name;
             }
+            // 数组形式：['RowExpand', {expandSingle: false}] = 第一项插件名 + 第二项配置
+            else if (Object.prototype.toString.call(pluginConfig) === '[object Array]') {
+                pluginName = pluginConfig[0] || '';
+                pluginOptions = this._extend({}, pluginConfig[1] || {});
+            }
 
             if (!pluginName) continue;
 
@@ -253,6 +259,30 @@
             plugin.init(this);
             this._pluginInstances.push(plugin);
         }
+
+        // 插件列顺序归一：各插件都在 init 里 unshift 自己的虚拟列，
+        // 谁最后 init 谁最靠前，实际顺序会随 plugins 配置顺序漂移。
+        // 展开行箭头列在交互上必须固定最左（展开箭头 → 复选框 → 序号 → 业务列），
+        // 这里统一把它挪到列数组首位，与插件配置顺序无关。
+        this._normalizeExpandColumn();
+    };
+
+    /**
+     * 把展开行插件的虚拟箭头列(_expand)移到列数组最前面
+     * 没有启用 RowExpand 插件时不做任何事
+     */
+    TableCore.prototype._normalizeExpandColumn = function() {
+        var columns = this.dataStore.columns;
+        var idx = -1;
+        for (var i = 0; i < columns.length; i++) {
+            if (columns[i] && columns[i].field === '_expand') {
+                idx = i;
+                break;
+            }
+        }
+        if (idx <= 0) return;
+        var col = columns.splice(idx, 1)[0];
+        columns.unshift(col);
     };
 
     // ==================== 数据读取 ====================
@@ -274,6 +304,18 @@
     TableCore.prototype.getRowData = function(rowIndex) {
         if (this._guardDestroyed('getRowData')) return null;
         return this.dataStore.getRow(rowIndex);
+    };
+
+    /**
+     * 按 rowId 获取行数据
+     * rowId 来自单行类事件参数（rowClick / cellClick / cellChange / selectChange / rowAdd / rowDelete / expandChange）
+     * @param {String} rowId 行标识
+     * @return {Object|null} 内部原始行对象（含内部字段，可直接改值但不会触发重绘）；找不到返回 null
+     * 注意：rowId 是前端运行期临时标识，分页/排序不变，行删除后失效，禁止存入后端。
+     */
+    TableCore.prototype.getRowById = function(rowId) {
+        if (this._guardDestroyed('getRowById')) return null;
+        return this.dataStore.getRowById(rowId);
     };
 
     /**
@@ -343,7 +385,11 @@
         }
 
         this.renderer.renderBodyAll();
-        this.eventBus.emit('rowAdd', {rowData: row, rowIndex: row._rowIndex});
+        this.eventBus.emit('rowAdd', {
+            rowId: row._rowId,
+            rowData: this.dataStore.getPlainRow(row),
+            rowIndex: row._rowIndex
+        });
 
         // 新增行交互优化：
         //   1. 聚焦新增行第一个可输入控件（input/textarea），让光标落到新增行上，更醒目；
@@ -445,7 +491,11 @@
         // 重新渲染表身（删除行后索引变了，简单起见全量重绘）
         this.renderer.renderBodyAll();
 
-        this.eventBus.emit('rowDelete', {rowIndex: rowIndex, rowData: row});
+        this.eventBus.emit('rowDelete', {
+            rowId: row._rowId,
+            rowData: this.dataStore.getPlainRow(row),
+            rowIndex: rowIndex
+        });
     };
 
     /**
@@ -515,7 +565,9 @@
 
         this.dataStore.selectAll(true);
         this._refreshSelectedRows();
-        this.eventBus.emit('selectChange', {selectedRows: this.dataStore.getSelectedRows()});
+        this.eventBus.emit('selectChange', {
+            selectedRows: this.dataStore.getPlainRows(this.dataStore.getSelectedRows())
+        });
     };
 
     /**
@@ -541,7 +593,9 @@
 
         this.dataStore.invertSelect();
         this._refreshSelectedRows();
-        this.eventBus.emit('selectChange', {selectedRows: this.dataStore.getSelectedRows()});
+        this.eventBus.emit('selectChange', {
+            selectedRows: this.dataStore.getPlainRows(this.dataStore.getSelectedRows())
+        });
     };
 
     /**
@@ -570,7 +624,9 @@
         if (!keys.length) {
             this.dataStore.clearSelection();
             this._refreshSelectedRows();
-            this.eventBus.emit('selectChange', {selectedRows: this.dataStore.getSelectedRows()});
+            this.eventBus.emit('selectChange', {
+            selectedRows: this.dataStore.getPlainRows(this.dataStore.getSelectedRows())
+        });
             return;
         }
 
@@ -584,7 +640,9 @@
             this.dataStore.setRowSelected(keys[i], true);
         }
         this._refreshSelectedRows();
-        this.eventBus.emit('selectChange', {selectedRows: this.dataStore.getSelectedRows()});
+        this.eventBus.emit('selectChange', {
+            selectedRows: this.dataStore.getPlainRows(this.dataStore.getSelectedRows())
+        });
     };
 
     /**

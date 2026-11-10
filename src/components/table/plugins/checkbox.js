@@ -3,9 +3,9 @@
  * 只负责修改选中状态数据，DOM 渲染由 Renderer 统一处理
  * 支持多选(multi)与单选(single)两种模式
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.2.1
+ * @Version：v1.2.2
  * @Date：2026-10-10
- * @Pubdate：2026-11-03
+ * @PubDate：2026-11-10 10:45:00
  */
 
  (function(MelUi) {
@@ -81,8 +81,15 @@
             self.table.dataStore.setRowSelected(rowIndex, target.checked);
 
             // 发事件，Renderer 收到后刷新勾选状态
+            // 本事件是单行触发的（点击某一行的勾选框），因此带上 rowId / rowData / checked；
+            // 全选、全不选、反选等批量操作由表格 API 发出，只有 selectedRows，不带单行参数。
+            var ds = self.table.dataStore;
+            var row = ds.getRow(rowIndex);
             self.table.eventBus.emit('selectChange', {
-                selectedRows: self.table.dataStore.getSelectedRows()
+                rowId: row ? row._rowId : '',
+                rowData: ds.getPlainRow(row),
+                checked: target.checked,
+                selectedRows: ds.getPlainRows(ds.getSelectedRows())
             });
         };
 

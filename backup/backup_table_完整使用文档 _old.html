@@ -469,10 +469,19 @@
         <h3>分页</h3>
         <table class="cfg">
             <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
-            <tr><td class="code-cell">remotePaging</td><td>Boolean</td><td>false</td><td>false：前端本地分页，一次性传全部 data，组件内部切片；true：后端远程分页，翻页 / 改每页条数时触发 onPageChange，由业务请求后端后 setData 回填。</td></tr>
+            <tr><td class="code-cell">remotePaging</td><td>Boolean</td><td>false</td><td>是否后端远程分页。false：前端本地分页，一次性传全部 data，组件内部切片；true：后端远程分页，翻页 / 改每页条数时触发 onPageChange，由业务请求后端后 setData 回填。</td></tr>
             <tr><td class="code-cell">total</td><td>Number</td><td>0</td><td>总记录数，仅 remotePaging=true 生效，由外部传入后端总条数，组件据此渲染分页栏。</td></tr>
             <tr><td class="code-cell">enableRemotePagingFallback</td><td>Boolean</td><td>true</td><td>是否兜底后端远程分页，仅 remotePaging=true 生效。后端 total=0 或 total 小于当前返回列表条数时：true 则组件自动降级，用当前这批数据前端本地分页；false 则严格信任后端 total，不自动切换。<br>标准分页接口建议设 false；接口本身不支持一次性返回总记录数时设 true。</td></tr>
             <tr><td class="code-cell">addRowMode</td><td>String</td><td>'currentPage'</td><td>新增行插入位置，仅 remotePaging=false 时有效。<br>'currentPage'：插入当前页数据集合，配合 addRow 的 position 控制当前页首 / 尾；<br>'global'：插入全局原始数据数组首 / 尾。<br>remotePaging=true 时本参数无效（自动按全局处理）。</td></tr>
+        </table>
+
+        <h3>其它</h3>
+        <table class="cfg">
+            <tr><th style="width:210px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">expandRender</td><td>Function</td><td>空字符串</td><td> 自定义展开行内容。如果没有配置此参数或返配置了但返回值为空字符串，则默认使用插件内置的格式来显示展开的行数据。在此参数中返回html字符串便可自定义展开的内容。 
+            <br>回调参数：{rowData, columnList} rowData 行数据对象，columnList 可见业务列信息数组 [{title, field, value, rawValue}]，
+            <br> 其中：title = 列显示名称（表头显示名称），field 列字段名，value = 经过列 formatter 格式化后的单元格展示值（与单元格显示同口径），rawValue = 单元格原始业务值（未格式化） 
+            <br>示例eg. expandRender: function(rowData, columnList) { return `金额：${rowData["jine"]}'`}</td></tr>
         </table>
 
         <h3>插件与事件</h3>
@@ -564,22 +573,14 @@
         <h3>两种注册写法</h3>
         <p>写法一：字符串简写 —— 只写插件名，使用插件默认配置。</p>
     <pre><code>plugins: [
-        'SerialNo',          // 启用序号列，全部用默认参数
-        'StateColumn',       // 启用状态列
-        'Export'             // 启用导出
+        'SerialNo', // 启用序号列，全部用默认参数
+        'StateColumn' // 启用状态列，全部用默认参数
     ]</code></pre>
 
         <p>写法二：对象简写 —— 用 <span class="inline-code">name</span> 指定插件名，其余属性作为该插件的配置项。</p>
     <pre><code>plugins: [
         {name: 'SerialNo', width: 60},
-        {
-            name: 'Pagination',
-            pageSize: 20,
-            pageMode: 'list',
-            position: 'fixed',
-            align: 'center'
-        },
-        {name: 'Checkbox', width: 60, mode: 'multi'}
+        {name: 'StateColumn', columnPosition: "behind", newText: "新", savedText: "", unsaveText: "改", width: 60 }
     ]</code></pre>
 
         <div class="tip">
@@ -590,6 +591,7 @@
         <h3>内置插件一览</h3>
         <table class="cfg">
             <tr><th style="width:170px">插件名</th><th style="width:220px">作用</th><th>依赖 / 说明</th></tr>
+            <tr><td class="code-cell">Layout</td><td>布局增强插件</td><td>暂未开发完成，当前启用不会生效</td></tr>
             <tr><td class="code-cell">SerialNo</td><td>最前面插入序号列</td><td>按当前页可见行计算序号；远程分页时跨页连续</td></tr>
             <tr><td class="code-cell">Checkbox</td><td>最前面插入多选 / 单选列</td><td>配合 getSelectedData / selectAll 等 API</td></tr>
             <tr><td class="code-cell">StateColumn</td><td>插入行状态列（新增 / 修改 / 已保存）</td><td>读取行 _status；配合 getDirtyData / markSaved</td></tr>
@@ -597,8 +599,25 @@
             <tr><td class="code-cell">Pagination</td><td>底部分页栏</td><td>本地 / 远程分页；支持兜底降级</td></tr>
             <tr><td class="code-cell">Summary</td><td>底部合计行</td><td>对指定字段求和</td></tr>
             <tr><td class="code-cell">HeaderMerge</td><td>合并表头</td><td>对表头进行二级、三级、四级..合并，建议最多到三级</td></tr>
+            <tr><td class="code-cell">RowExpand</td><td>展开行数据</td><td>点击某一行，把该行的所有列数据以一行一行的形式展开</td></tr>
             <tr><td class="code-cell">Export</td><td>导出 Excel（.xls）</td><td>读取数据源导出，不遍历 DOM</td></tr>
         </table>
+        <div class="tip">
+            <b> 关于 Layout 布局增强插件</b>
+            <br>
+            插件状态：<span style="color:#F56C6C">暂未开发完成，当前启用不会生效</span>
+            <br>
+            表格内置渲染器已自带基础布局能力：左侧固定列、表头固定、fitWidth、fitViewport，使用这些基础功能<b>不需要加载本插件</b>。
+            <br>
+            Layout 为高阶布局增强插件，开发完成后启用将会接管表格全部布局计算，覆盖渲染器内置简易布局逻辑，提供增强能力：
+            <ul>
+              <li>支持左侧+右侧双侧固定列</li>
+              <li>支持列宽拖拽调整</li>
+              <li>支持弹性自适应列宽（固定px + 自动占宽混合模式）</li>
+              <li>完善窗口resize响应重排、复杂场景布局计算</li>
+            </ul>
+            ⚠️ 注意：待开发完成后，一旦开启本插件，原渲染器内置简易固定列/表头固定逻辑会被替换，行为会发生变化，上线使用前需要完整回归测试。
+        </div>
     </section>
 
     <!-- ============================ 7 ============================ -->
@@ -807,7 +826,20 @@ columns: [
         </code></pre>
 
         <!-- Export -->
-        <h3>7.8 Export · 导出 Excel</h3>
+        <h3>7.8 RowExpand · 展开行</h3>
+        <p>点击某一行，把该行的所有列数据以一行一行的形式展开</p>
+        <table class="cfg">
+            <tr><th style="width:230px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
+            <tr><td class="code-cell">expandSingle</td><td>Boolean</td><td>false</td><td>是否手风琴模式，默认false。false=允许多行同时展开；true=同一时间只能展开一行</td></tr>
+            <tr><td class="code-cell">expandColWidth</td><td>String</td><td>40px</td><td>展开箭头列宽度(px)，默认40</td></tr>
+        </table>
+    <pre><code>// 启用插件
+plugins: [{name: 'RowExpand', expandSingle: false, expandColWidth: 40}]
+    </code></pre>
+
+
+        <!-- Export -->
+        <h3>7.9 Export · 导出 Excel</h3>
         <p>读取数据源直接导出 .xls 文件，不遍历 DOM；导出时会应用列的 formatter。</p>
         <table class="cfg">
             <tr><th style="width:230px">参数</th><th style="width:110px">类型</th><th style="width:120px">默认值</th><th>说明</th></tr>
@@ -848,6 +880,7 @@ columns: [
             <tr><td class="code-cell">getRowData(rowIndex)</td><td>Object / null</td><td>获取指定行的数据对象。</td></tr>
             <tr><td class="code-cell">getSelectedData()</td><td>Array</td><td>获取选中行的数据数组（需 Checkbox 插件）。</td></tr>
             <tr><td class="code-cell">getDirtyData()</td><td>Array</td><td>获取有变动的行：新增（i）+ 修改（u）。常用于保存前只提交变更数据。</td></tr>
+            <tr><td class="code-cell">getRowById()</td><td>Object / null</td><td>按 rowId 获取行数据。返回值：内部原始行对象（含内部字段，可直接改值但不会触发重绘），找不到返回 null。注：rowId 是前端运行期临时标识，是 DataStore 内部给每一行分配的唯一标识字符串，在当前表格实例内永久不变（只要该行没被删除）</td></tr>
         </table>
 
         <h3>数据写入</h3>
@@ -936,14 +969,16 @@ columns: [
                 total 分页的列表数据总记录数（按remotePaging+enableRemotePagingFallback规则计算）；
                 pageNo 分页的页码；
                 pageSize 分页的每页条数。</td></tr>
-            <tr><td class="code-cell">rowAdd</td><td>onRowAdd</td><td>{rowData, rowIndex}</td><td>新增行完成后触发。</td></tr>
-            <tr><td class="code-cell">rowDelete</td><td>onRowDelete或onDeleteRow</td><td>{rowIndex, rowData}</td><td>删除行完成后触发。</td></tr>
-            <tr><td class="code-cell">cellClick</td><td>onCellClick</td><td>{rowData, cell:{rowIndex, field, element}}</td><td>点击单元格时触发（任何列都会触发）。</td></tr>
-            <tr><td class="code-cell">cellChange</td><td>onCellChange</td><td>{rowIndex, field, newValue, oldValue}</td><td>单元格值发生变化时触发：用户输入、代码 setCellValue / setRowData 均会触发。</td></tr>
-            <tr><td class="code-cell">rowClick</td><td>onRowClick</td><td>{rowData, rowIndex}</td><td>点击行内任意单元格时触发。</td></tr>
-            <tr><td class="code-cell">selectChange</td><td>onSelectChange</td><td>{selectedRows}</td><td>选中行变化时触发（需 Checkbox 插件）。</td></tr>
+            <tr><td class="code-cell">rowAdd</td><td>onRowAdd</td><td>{rowId, rowIndex, rowData}</td><td>新增行完成后触发。</td></tr>
+            <tr><td class="code-cell">rowDelete</td><td>onRowDelete或onDeleteRow</td><td>{rowId, rowIndex, rowData}</td><td>删除行完成后触发。</td></tr>
+            <tr><td class="code-cell">groupHeaderClick</td><td>onGroupHeaderClick</td><td>{column, element, events}</td><td>合并表头时点击分组表头（父级 th）触发。</td></tr>
+            <tr><td class="code-cell">cellClick</td><td>onCellClick</td><td>{rowData, cell:{rowId, rowIndex, field, element}}</td><td>点击单元格时触发（任何列都会触发）。</td></tr>
+            <tr><td class="code-cell">cellChange</td><td>onCellChange</td><td>{rowId, rowIndex, field, newValue, oldValue}</td><td>单元格值发生变化时触发：用户输入、代码 setCellValue / setRowData 均会触发。</td></tr>
+            <tr><td class="code-cell">rowClick</td><td>onRowClick</td><td>{rowId, rowIndex, rowData }</td><td>点击行内任意单元格时触发。</td></tr>
+            <tr><td class="code-cell">selectChange</td><td>onSelectChange</td><td>{rowId, selectedRows}</td><td>选中行变化时触发（需 Checkbox 插件）。</td></tr>
             <tr><td class="code-cell">sortChange</td><td>onSort</td><td>{field, order}</td><td>排序完成时触发（需 Sort 插件）。order 为 'asc' / 'desc'。</td></tr>
             <tr><td class="code-cell">pageChange</td><td>onPageChange</td><td>{curpage, pagesize}</td><td>翻页或切换每页条数时触发（需 Pagination 插件）。</td></tr>
+            <tr><td class="code-cell">expandChange</td><td>onExpandChange</td><td>{rowId, rowData, expanded}</td><td>行展开或行收起时触发（需 RowExpand 插件）。</td></tr>
         </table>
 
         <div class="tip">
@@ -951,6 +986,15 @@ columns: [
             <span class="inline-code">events</span> 里写 <span class="inline-code">onXxx</span>，对应 事件监听<span class="inline-code">table.on('xxx')</span>。
             例如 events: onCellChange ↔ table.on('cellChange')；events: onRowAdd ↔ table.on('rowAdd')。
             <br><b>排序例外：</b>events 中的 onSort 是预留映射，排序插件实际抛出的事件名是 <span class="inline-code">sortChange</span>，请用 <span class="inline-code">table.on('sortChange', fn)</span> 进行事件监听。
+        </div>
+
+        <div class="tip">
+            <b>比较重要的回调参数说明：</b>
+            <br><span class="inline-code">rowId</span> 是一个字符串或数字，它不是索引，也不是完整行对象，是 DataStore 内部给每一行分配的唯一标识字符串，在当前表格实例内永久不变（只要该行没被删除）。业务拿到`rowId`，可以直接调用表格实例方法：`table.getRowById(rowId)`拿到 DataStore 原始行，不需要业务自己遍历查找。
+            <br><span class="inline-code">rowIndex</span> 当前行号索引值
+            <br><span class="inline-code">rowData</span> 当前行数据
+            <br><span class="inline-code">selectedRows</span> 选中行数据
+            <br><span class="inline-code">expanded</span> 展开行状态（是否处于展开状态）：true 展开 false 收起
         </div>
 
         <div class="tip">

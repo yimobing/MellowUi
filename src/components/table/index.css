@@ -1,9 +1,9 @@
 /**
  * MelUi Table 表格组件 - 基础样式
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.5.6
+ * @Version：v1.5.8
  * @Date：2026-10-10
- * @Pubdate：2026-11-09 18:40:59
+ * @Pubdate：2026-11-10 11:54:00
  */
 
 /* ===== 容器 ===== */
@@ -317,17 +317,19 @@
 }
 
 /* ===== 表格上下额外区块（extraBefore / extraAfter） ===== */
-/* 仅提供基础间距，视觉完全交给业务自定义覆盖；区块内不参与表格列对齐、固定列等布局 */
-.mel-table-extra-before {
-    margin-bottom: 8px;
+/* 仅提供基础间距，视觉完全交给业务自定义覆盖；区块内不参与表格列对齐、固定列等布局
+   节点统一为 .mel-table-extra-wrapper + 方位类：.mel-table-extra-before-wrapper / .mel-table-extra-after-wrapper */
+.mel-table-extra-wrapper {
     box-sizing: border-box;
     max-width: 100%;
 }
 
-.mel-table-extra-after {
+.mel-table-extra-before-wrapper {
+    margin-bottom: 8px;
+}
+
+.mel-table-extra-after-wrapper {
     margin-top: 8px;
-    box-sizing: border-box;
-    max-width: 100%;
 }
 
 /* ===== 合并表头（HeaderMerge 插件） ===== */
@@ -359,4 +361,59 @@
    否则一条竖线会在表头和表身的交界处断色（表头深、表身浅）。 */
 .mel-table-container.mel-table-merge-head .mel-table-body td:last-child {
     border-right: 1px solid #e4e7ed;
+}
+
+/* ===== 展开行插件（RowExpand） =====
+   箭头列：整格可点，箭头用 css 三角形画（IE9 用 -ms-transform 旋转，不用字体图标） */
+.mel-table-body td.mel-expand-cell,
+.mel-table-body td[data-field="_expand"] {
+    cursor: pointer;
+}
+
+.mel-expand-arrow {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 6px solid #909399;
+    vertical-align: middle;
+    -ms-transform: rotate(0deg);
+    transform: rotate(0deg);
+}
+
+.mel-expand-arrow.is-open {
+    -ms-transform: rotate(90deg);
+    transform: rotate(90deg);
+}
+
+/* 展开详情行：整行跨全部列，高度自适应，不写死行高 */
+.mel-table-body tr.mel-row-expand > td.mel-row-expand-cell {
+    height: auto;
+    padding: 8px 12px;
+    background-color: #fafafa;
+    text-align: left;
+    white-space: normal;
+}
+
+/* 内置默认面板：单栏垂直排列，每项整行占满，左侧列名浅色、右侧值深色 */
+.mel-row-expand-wrapper {
+    overflow: hidden;
+}
+
+.mel-row-expand-item {
+    padding: 4px 5px;
+    font-size: 13px;
+}
+
+.mel-row-expand-label {
+    display: inline-block;
+    min-width: 70px;
+    margin-right: 8px;
+    color: #909399;
+}
+
+.mel-row-expand-value {
+    color: #303133;
 }
