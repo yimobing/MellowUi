@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 主类
  * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.7.9
+ * @Version：v1.9.2
  * @Date：2026-10-10
- * @PubDate：2026-11-10 10:40:00
+ * @PubDate：2026-11-11 18:59:21
  */
 
  (function(MelUi) {
@@ -556,6 +556,36 @@
     };
 
     /**
+     * 设置列显隐（只影响界面显示，不删除列）
+     * 与“columns 里不配置该列”的区别：列配置、列数据、格式化规则全部保留，
+     * 表头/单元格 DOM 也照常渲染（F12 可见），只是 display:none 不占可见宽度，
+     * 导出时可用 includeHiddenColumns 把这些隐藏列一起带出去，需要时还能再显示回来。
+     * @param {String} field 列字段名
+     * @param {Boolean} visible true=显示 / false=隐藏（不传或传非 false 视为显示）
+     * @param {Boolean} skipRender 是否跳过重绘（可选）。批量切换多列时传 true，最后统一调 render()
+     */
+    TableCore.prototype.setColumnVisible = function(field, visible, skipRender) {
+        if (this._guardDestroyed('setColumnVisible')) return;
+        if (!field) return;
+
+        var columns = this.dataStore.columns || [];
+        var target = null;
+        for (var i = 0; i < columns.length; i++) {
+            if (columns[i] && columns[i].field === field) {
+                target = columns[i];
+                break;
+            }
+        }
+        if (!target) return;
+
+        target.visible = (visible !== false);
+
+        // 列显隐影响：列宽总和、colgroup 列宽、表头与表身单元格、固定列平移，必须整体重绘
+        if (skipRender) return;
+        this.renderer.render();
+    };
+
+    /**
      * 全选
      * 单选模式：静默忽略（不console.warn，兼容IE）
      */
@@ -658,68 +688,385 @@
     // ==================== 校验 ====================
 
     /**
-     * 校验指定行必填项
-     * @param {Number|String} rowIndex 行索引，传 'all' 校验全部
-     * @return {String} 错误提示，空字符串表示通过
+     * 判断值是否“空”（必填判空统一口径）
+     * 纯空格 / 全角空格都算空；数字 0 不算空
+     * @param {Any} value 单元格值
+     * @return {Boolean}
      */
-    TableCore.prototype.validate = function(rowIndex) {
-        if (this._guardDestroyed('validate')) return '';
-        var columns = this.dataStore.columns;
-        var rows = this.dataStore.rows;
-        var tips = '';
-
-        var checkRow = function(rowIdx) {
-            var row = rows[rowIdx];
-            for (var i = 0; i < columns.length; i++) {
-                var col = columns[i];
-                if (!col.required) continue;
-
-                var value = row[col.field];
-                if (value === undefined || value === null || value === '') {
-                    tips += '第' + (rowIdx + 1) + '行【' + col.title + '】不能为空\n';
-                }
-            }
-        };
-
-        if (rowIndex === 'all') {
-            for (var i = 0; i < rows.length; i++) {
-                checkRow(i);
-            }
-        } else {
-            checkRow(rowIndex);
-        }
-
-        return tips;
+    TableCore.prototype._isBlankValue = function(value) {
+        if (value === undefined || value === null) return true;
+        return String(value).replace(/\s+/g, '') === '';
     };
 
     /**
-     * 校验唯一值列
-     * @return {String} 错误提示，空字符串表示通过
+     * 取该行在界面上显示的行号（即「序号」列的值）
+     * 优先用 SerialNo 插件写入 row._serialNo（用户眼睛看到的就是这个数），
+     * 没有则退回行对象全局下标 +1，保证提示文案里永远有个号
+     * @param {Object} row 行数据
+     * @param {Number} fallbackIndex 兜底下标（rows 下标）
+     * @return {String}
      */
-    TableCore.prototype.validateUnique = function() {
-        if (this._guardDestroyed('validateUnique')) return '';
-        var columns = this.dataStore.columns;
-        var rows = this.dataStore.rows;
-        var tips = '';
+    TableCore.prototype._getRowNo = function(row, fallbackIndex) {
+        if (row && row._serialNo !== undefined && row._serialNo !== null && String(row._serialNo) !== '') {
+            return String(row._serialNo);
+        }
+        var idx = (row && row._rowIndex !== undefined && row._rowIndex !== null) ? row._rowIndex : fallbackIndex;
+        if (idx === undefined || idx === null) idx = 0;
+        return String(idx + 1);
+    };
 
-        for (var i = 0; i < columns.length; i++) {
-            var col = columns[i];
-            if (!col.unique) continue;
+    /**
+     * 由错误明细组装校验返回结构
+     * - errors：给机器看，一条 = 一个单元格（定位 / 聚焦 / 标红）
+     * - briefs：给人看，一条 = 同一列同类错误的聚合文案（一次弹窗展示）
+     * - message：第一条错误的成品文案（逐条引导直接用）
+     * @param {Array} errors 错误明细
+     * @return {Object}
+     */
+    TableCore.prototype._buildValidateResult = function(errors) {
+        var briefs = [];
+        var map = {};
 
-            var seen = {};
-            for (var j = 0; j < rows.length; j++) {
-                var val = rows[j][col.field];
-                if (val === undefined || val === '') continue;
+        // 聚合：同一列 + 同一错误类型（validator 再加原始文案）合并成一句
+        for (var i = 0; i < errors.length; i++) {
+            var e = errors[i];
+            var key = e.field + '|' + e.reason + '|' + (e.reason === 'validator' ? e.raw : '');
+            var g = map[key];
+            if (!g) {
+                g = {
+                    field: e.field,
+                    title: e.title,
+                    reason: e.reason,
+                    raw: e.reason === 'validator' ? e.raw : '',
+                    rows: [],
+                    rowNos: [],
+                    count: 0,
+                    message: ''
+                };
+                map[key] = g;
+                briefs.push(g);
+            }
+            g.rows.push(e.rowIndex);
+            g.rowNos.push(e.rowNo);
+            g.count = g.rows.length;
+        }
 
-                if (seen[val]) {
-                    tips += '【' + col.title + '】值 "' + val + '" 重复了\n';
+        // 生成聚合文案
+        for (var j = 0; j < briefs.length; j++) {
+            var b = briefs[j];
+            var prefix = b.title ? '【' + b.title + '】' : '';
+            if (b.reason === 'required') {
+                b.message = prefix + '第 ' + b.rowNos.join('、') + ' 行不能为空';
+            } else {
+                b.message = prefix + '第 ' + b.rowNos.join('、') + ' 行' + b.raw;
+            }
+        }
+
+        // 顶层平铺字段：只代表【第一条】错误，便于业务一句话定位
+        //   table.focusCell(result.rowIndex, result.field)
+        // 全量明细仍然看 errors；全部通过时 rowIndex = -1，其余为空串
+        var first = errors.length ? errors[0] : null;
+        return {
+            passed: errors.length === 0,
+            message: first ? first.message : '',
+            rowIndex: first ? first.rowIndex : -1,
+            rowNo: first ? first.rowNo : '',
+            field: first ? first.field : '',
+            title: first ? first.title : '',
+            errors: errors,
+            briefs: briefs
+        };
+    };
+
+    /**
+     * 校验（必填 required + 列级 validator）
+     * 注意：隐藏列（列配置 visible:false）不参与校验——用户看不见也就改不了，
+     *       报出错误只会产生一条指向无法操作单元格的提示。需要校验隐藏数据请在提交前自行核对。
+     * @param {Number|String} rowIndex 行索引（0-based）；传 'all' 校验全部行；不传等价 'all'
+     * @param {Boolean} isAllRows 是否校验所有行，默认 true。
+     *        true  = 扫完所有行，返回全部错误（errors / briefs 全量）；
+     *        false = 顺序扫描，命中第一条错误立即停止（errors 最多 1 条），
+     *                用于「逐条引导用户改」，同时省掉大数据量整表扫描的开销。
+     *        仅当 rowIndex 为 'all' 时有效，单行校验时忽略。
+     * @return {Object} {passed, message, rowIndex, rowNo, field, title, errors, briefs}
+     *        顶层 rowIndex / rowNo / field / title 是 errors[0] 的镜像，只代表第一条错误；
+     *        全部通过时 rowIndex = -1，其余为空串。全量明细请读 errors。
+     */
+    TableCore.prototype.validate = function(rowIndex, isAllRows) {
+        var emptyResult = {
+            passed: true, message: '', rowIndex: -1, rowNo: '', field: '', title: '',
+            errors: [], briefs: []
+        };
+        if (this._guardDestroyed('validate')) return emptyResult;
+
+        // 重入守卫：validator 内再调 validate() 会无限递归爆栈，直接忽略本次调用
+        if (this._validating) {
+            if (window.console && console.warn) {
+                console.warn('[MelUi.Table] 禁止在 validator 内递归调用 validate() / validateUnique()，本次调用已忽略');
+            }
+            return emptyResult;
+        }
+
+        // 参数归一：不传（undefined / null）等价 'all'；数字则只校验该行
+        var scope = (rowIndex === undefined || rowIndex === null) ? 'all' : rowIndex;
+        var allRows = (isAllRows !== false);
+
+        // 快照：validator 里若擅自改数据/列配置，也不会让本次遍历错乱
+        var columns = this.dataStore.columns.slice(0);
+        var rows = this.dataStore.rows.slice(0);
+        var errors = [];
+        var self = this;
+
+        var pushError = function(rowIdx, col, reason, raw) {
+            var row = rows[rowIdx];
+            var rowNo = self._getRowNo(row, rowIdx);
+            var title = col.title || '';
+            var msg = (reason === 'required')
+                ? '第' + rowNo + '行【' + title + '】不能为空'
+                : '第' + rowNo + '行' + (title ? '【' + title + '】' : '') + raw;
+            errors.push({
+                message: msg,
+                rowIndex: rowIdx,
+                rowNo: rowNo,
+                field: col.field,
+                title: title,
+                reason: reason,
+                row: row,
+                raw: raw || ''
+            });
+        };
+
+        // 单行校验；返回 true 表示 allRows=false 时已命中错误、需停止扫描
+        var checkRow = function(rowIdx) {
+            var row = rows[rowIdx];
+            if (!row) return false;
+
+            for (var i = 0; i < columns.length; i++) {
+                var col = columns[i];
+                if (!col || !col.field) continue;
+                // 隐藏列不参与校验：用户看不见、改不了，报了也是死循环
+                if (col.visible === false) continue;
+
+                var hasValidator = typeof col.validator === 'function';
+                // 既没配必填、也没配自定义校验的列直接跳过
+                if (!col.required && !hasValidator) continue;
+
+                var value = row[col.field];
+
+                // 1. 必填判空（纯空格也算空）
+                if (col.required && self._isBlankValue(value)) {
+                    pushError(rowIdx, col, 'required', '不能为空');
+                    if (!allRows) return true;
+                    // 空值不再跑自定义校验，避免同一格出现两条重复提示
+                    continue;
+                }
+
+                // 2. 列级自定义校验 validator({value, rowData, rowIndex, field, title, table})
+                //    返回非空字符串 = 不通过；返回 '' / undefined = 通过
+                //    注意：validator 内只读，不要 setData / addRow / deleteRow / render / destroy
+                if (hasValidator) {
+                    var ret;
+                    try {
+                        ret = col.validator({
+                            value: value,
+                            rowData: row,
+                            rowIndex: rowIdx,
+                            field: col.field,
+                            title: col.title || '',
+                            table: self
+                        });
+                    } catch (err) {
+                        // validator 自己抛异常不能把整轮校验打崩，转成一条错误提示
+                        ret = '校验出错：' + ((err && err.message) ? err.message : err);
+                    }
+
+                    if (typeof ret === 'string' && ret !== '') {
+                        pushError(rowIdx, col, 'validator', ret);
+                        if (!allRows) return true;
+                    } else if (ret !== undefined && ret !== null && ret !== false && ret !== '') {
+                        // 返回了非字符串的真值，忽略，仅开发期提示
+                        if (window.console && console.warn) {
+                            console.warn('[MelUi.Table] 列 "' + col.field + '" 的 validator 应返回字符串，已忽略本次返回值');
+                        }
+                    }
+                }
+            }
+            return false;
+        };
+
+        var result;
+        this._validating = true;
+        try {
+            if (scope === 'all') {
+                for (var r = 0; r < rows.length; r++) {
+                    if (checkRow(r)) break; // allRows=false：命中第一条错误即停止
+                }
+            } else {
+                var idx = parseInt(scope, 10);
+                if (isNaN(idx) || idx < 0 || idx >= rows.length) {
+                    if (window.console && console.warn) {
+                        console.warn('[MelUi.Table] validate() 行索引超出范围：' + scope);
+                    }
                 } else {
-                    seen[val] = true;
+                    checkRow(idx);
+                }
+            }
+            result = this._buildValidateResult(errors);
+        } finally {
+            this._validating = false;
+        }
+        return result;
+    };
+
+    /**
+     * 校验唯一值列（恒为全部 rows：本地分页=全表，远程分页=当前已加载数据）
+     * @param {Boolean} isAllRows 是否校验所有行，默认 true。
+     *        true  = 返回全部重复列；false = 命中第一组重复即停止。
+     * @return {Object} {passed, message, rowIndex, rowNo, field, title, errors, checkedFields}
+     *        顶层 rowIndex / rowNo / field / title 指向【第一组重复里的第一行】，只代表该组；
+     *        整组的行号在 errors[i].rowIndexes 里。全部通过时 rowIndex = -1，其余为空串。
+     */
+    TableCore.prototype.validateUnique = function(isAllRows) {
+        var emptyResult = {
+            passed: true, message: '', rowIndex: -1, rowNo: '', field: '', title: '',
+            errors: [], checkedFields: []
+        };
+        if (this._guardDestroyed('validateUnique')) return emptyResult;
+
+        if (this._validating) {
+            if (window.console && console.warn) {
+                console.warn('[MelUi.Table] 禁止在 validator 内递归调用 validate() / validateUnique()，本次调用已忽略');
+            }
+            return emptyResult;
+        }
+
+        var allRows = (isAllRows !== false);
+        // 快照：避免校验期间列配置 / 数据被改动导致遍历错乱
+        var columns = this.dataStore.columns.slice(0);
+        var rows = this.dataStore.rows.slice(0);
+        var errors = [];
+        var checkedFields = [];
+        var self = this;
+
+        this._validating = true;
+        try {
+            for (var i = 0; i < columns.length; i++) {
+                var col = columns[i];
+                if (!col || !col.unique || !col.field) continue;
+                // 隐藏列不参与判重，口径与 validate() 一致
+                if (col.visible === false) continue;
+                checkedFields.push(col.field);
+
+                // 同一列内按“去空白后的值”分组，记录每组的行下标
+                var groups = {};
+                var order = [];
+
+                for (var j = 0; j < rows.length; j++) {
+                    var val = rows[j][col.field];
+                    if (self._isBlankValue(val)) continue; // 空值不参与判重（“没填”交给 required）
+
+                    var key = String(val).replace(/\s+/g, '');
+                    if (!groups[key]) {
+                        groups[key] = {value: String(val), indexes: []};
+                        order.push(key);
+                    }
+                    groups[key].indexes.push(j);
+                }
+
+                // 收集重复组（行数 > 1）
+                for (var k = 0; k < order.length; k++) {
+                    var g = groups[order[k]];
+                    if (!g || g.indexes.length < 2) continue;
+
+                    var rowNos = [];
+                    for (var m = 0; m < g.indexes.length; m++) {
+                        rowNos.push(self._getRowNo(rows[g.indexes[m]], g.indexes[m]));
+                    }
+
+                    var msg = (col.title ? '【' + col.title + '】' : '') +
+                        '第 ' + rowNos.join('、') + ' 行重复';
+
+                    errors.push({
+                        message: msg,
+                        rowIndex: g.indexes[0],
+                        rowNo: rowNos[0],
+                        field: col.field,
+                        title: col.title || '',
+                        reason: 'unique',
+                        // 整组重复行的行号（0-based），名字与 errors[i].rowIndex 同词根
+                        rowIndexes: g.indexes,
+                        rowNos: rowNos,
+                        values: [g.value],
+                        raw: g.value
+                    });
+
+                    if (!allRows) break; // 命中第一组重复即停止
+                }
+
+                if (!allRows && errors.length) break;
+            }
+        } finally {
+            this._validating = false;
+        }
+
+        var first = errors.length ? errors[0] : null;
+        return {
+            passed: errors.length === 0,
+            message: first ? first.message : '',
+            rowIndex: first ? first.rowIndex : -1,
+            rowNo: first ? first.rowNo : '',
+            field: first ? first.field : '',
+            title: first ? first.title : '',
+            errors: errors,
+            checkedFields: checkedFields
+        };
+    };
+
+    /**
+     * 聚焦到指定单元格：校验不通过时引导用户直接跳到那一格去改
+     * @param {Number} rowIndex 行索引（0-based，与 validate 返回的 rowIndex 一致）
+     * @param {String} field 列字段名
+     * @param {Object} options 可选项：highlight 是否临时高亮，默认 true
+     * @return {Boolean} 是否定位成功
+     */
+    TableCore.prototype.focusCell = function(rowIndex, field, options) {
+        if (this._guardDestroyed('focusCell')) return false;
+
+        // 参数严格化：只认「数值行索引 + 字段名字符串」这一种形态，不做任何猜测。
+        // 传对象 / 'all' / 数组一律拒绝并 warn，避免通用定位 API 被返回值结构绑架。
+        if (typeof rowIndex !== 'number' || isNaN(rowIndex)) {
+            if (window.console && console.warn) {
+                console.warn('[MelUi.Table] focusCell(rowIndex, field) 的第一个参数必须是数值行索引（0-based），收到：' + rowIndex);
+            }
+            return false;
+        }
+        if (typeof field !== 'string' || field === '') {
+            if (window.console && console.warn) {
+                console.warn('[MelUi.Table] focusCell(rowIndex, field) 的第二个参数必须是非空字段名字符串，收到：' + field);
+            }
+            return false;
+        }
+        if (!options || typeof options !== 'object') options = {};
+
+        var ds = this.dataStore;
+        var row = ds.getRow(rowIndex);
+        if (!row) return false;
+
+        // 目标行不在当前页：先翻页再定位（本地分页才有意义，远程分页 rows 本身就是当前页）
+        if ((!row._node || !row._node.parentNode) && ds.pageSize > 0 && !ds.remotePaging) {
+            var page = Math.floor(rowIndex / ds.pageSize) + 1;
+            var instances = this._pluginInstances || [];
+            for (var i = 0; i < instances.length; i++) {
+                var plugin = instances[i];
+                if (plugin && typeof plugin.goToPage === 'function') {
+                    plugin.goToPage(page);
+                    break;
                 }
             }
         }
 
-        return tips;
+        if (!this.renderer || typeof this.renderer.focusCell !== 'function') return false;
+        return this.renderer.focusCell(rowIndex, field, options);
     };
 
     // ==================== 渲染控制 ====================

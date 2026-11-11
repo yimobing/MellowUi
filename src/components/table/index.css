@@ -1,9 +1,9 @@
 /**
  * MelUi Table 表格组件 - 基础样式
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.5.8
+ * @Version：v1.5.9
  * @Date：2026-10-10
- * @Pubdate：2026-11-10 11:54:00
+ * @Pubdate：2026-11-11 09:50:21
  */
 
 /* ===== 容器 ===== */
@@ -47,6 +47,24 @@
     display: inline-block;
     vertical-align: middle;
     line-height: 1.4;
+}
+
+/* 可排序列表头：只有启用 Sort 插件且该列未配 sortable:false 时才有这个类 */
+.mel-th-sortable {
+    cursor: pointer;
+}
+
+/* 隐藏列（列配置 visible:false）：单元格照常存在于 DOM（F12 可见），
+   但宽度 0、无内边距无边框，视觉上完全不占位。
+   注意：这里不能用 display:none —— table-layout:fixed 下单元格按出现顺序分配列宽，
+   被 display:none 的单元格会从行里消失，导致其后的列整体左移、最后一列宽度变 0。 */
+.mel-col-hidden {
+    width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden;
 }
 
 .mel-th-title {

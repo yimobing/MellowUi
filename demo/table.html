@@ -166,35 +166,51 @@
 
         // 列配置 testing3
         var columns = [
-            // {field: 'xh_self', title: '编号', width: 100, renderer: 'text', required: false, align: 'center'},
-            // {field: 'mj', title: '面积', subtitle: '(㎡)', width: 100, renderer: 'input', type: 'float', digit: 2, required: true, align: 'center'},
-            // {field: 'area', title: '省市区', width: 200, renderer: 'input', readonly: true, required: false, align: 'left'},
+            // {field: "xh_self", title: "编号", width: 100, renderer: "text", align: "center", required: false},
+            // {field: "mj", title: "面积", subtitle: "(㎡)", width: 100, renderer: "input", type: "float", digit: 2, required: true, align: "center"},
+            // {field: "area", title: "省市区", width: 200, renderer: "input", readonly: true, align: "left", required: false, sortable: false, visible: false},
 
             // 合并表头
             {
-                title: '基础信息',
+                title: "基础信息",
                 children: [
-                    {field: 'xh_self', title: '编号', width: 100, renderer: 'text', required: false, align: 'center'},
-                    {field: 'mj', title: '面积', subtitle: '(㎡)', width: 100, renderer: 'input', type: 'float', digit: 2, required: true, align: 'center'},
-                    {field: 'area', title: '省市区', width: 200, renderer: 'input', readonly: true, required: false, align: 'left'},
+                    {field: "xh_self", title: "编号", width: 100, renderer: "text", align: "center", required: false},
+                    {field: "mj", title: "面积", subtitle: "(㎡)", width: 100, renderer: "input", type: "float", digit: 2, required: true, align: "center"},
+                    {field: "area", title: "省市区", width: 200, renderer: "input", readonly: true, align: "left", required: false, sortable: false, visible: true},
                 ]
             },
 
-            // {field: 'scjj', title: '楼盘均价', width: 200, renderer: 'input', type: 'float', required: true, align: 'right'},
-            // {field: 'zje', title: '总金额', width: 120, renderer: 'input', type: 'float', digit: 2, required: false, align: 'right'},
+            // {field: "scjj", title: "楼盘均价", width: 200, renderer: "input", type: "float", required: true, align: "right"},
+            // {field: "zje", title: "总金额", width: 120, renderer: "input", type: "float", digit: 2, required: false, align: "right"},
 
             {
-                title: '价格信息',
+                title: "价格信息",
                 children: [
-                    {field: 'scjj', title: '楼盘均价', width: 200, renderer: 'input', type: 'float', required: true, align: 'right'},
-                    {field: 'zje', title: '总金额', width: 120, renderer: 'input', type: 'float', digit: 2, required: false, align: 'right'}
+                    {field: "scjj", title: "楼盘均价", width: 200, renderer: "input", type: "float", required: true, align: "right"
+                    ,required: true
+                    },
+                    {
+                        field: "zje", title: "总金额", width: 120, renderer: "input", type: "float", digit: 2, align: "right",
+
+                        // testing7
+                        required: true, unique: true, visible: true,
+                        
+                        validator: function(e) {
+                            console.log('校验数据validator-e', e);
+                            var value = e.value;
+                            if(value == '') return '怎么能是空';
+                            if(parseFloat(value) < 0) return '必须大于0啦啦啦';
+                            return '';
+                        }
+                    }
                 ]
             },
 
-            {field: 'check_wc', title: '是否完成', width: 150, renderer: 'radio', radioOptions: {yes: '1', no: '0'}, formatter: function(v) { return v == '1' ? '是' : '否'; }, align: 'center'},
-            {field: 'remark', title: '备注', width: 150, renderer: 'textarea', required: false, align: 'left'},
-            {field: 'operation', title: '操作', width: 80, renderer: 'button', buttonText: '保存', required: false, align: 'center'}
+            {field: "check_wc", title: "是否完成", width: 150, renderer: "radio", radioOptions: {yes: "1", no: "0"}, formatter: function(v) { return v == "1" ? "是" : "否"; }, align: "center"},
+            {field: "remark", title: "备注", width: 150, renderer: "textarea", align: "left", required: false},
+            {field: "operation", title: "操作", width: 80, renderer: "button", buttonText: "保存", align: "center", required: false}
         ];
+
         // 初始数据
         var data = [];
         for (var i = 1; i <= 45; i++) {
@@ -202,9 +218,9 @@
                 xh_self: 'B10' + (100 + i),
                 mj: (80 + Math.random() * 100).toFixed(2),
                 area: '福建省-泉州市-丰泽区',
-                // scjj: (9000 + Math.random() * 5000).toFixed(0),
-                scjj: 100,
-                zje: '',
+                scjj: (9000 + Math.random() * 5000).toFixed(0),
+                // scjj: 100,
+                zje: Math.ceil(100 * Math.random()),
                 check_wc: i % 2 === 0 ? '1' : '0',
                 remark: ''
             });
@@ -268,19 +284,19 @@
                 },
                 // 多选列
                 // 'Checkbox',
-                {name: 'Checkbox', width: 60, mode:'multi' }, // 多选列、复选框列。mode 值：single 多选模式, multi 单选模式：渲染radio、互斥、表头无全选框
+                {name: "Checkbox", width: 60, mode: "multi" }, // 多选列、复选框列。mode 值：single 多选模式, multi 单选模式：渲染radio、互斥、表头无全选框
 
                 // 合并表头
                 {   
-                    name: 'HeaderMerge',
-                    groupHeaderClass: '', // 分组表头(父th)追加样式类
-                    leafHeaderClass: '',  // 叶子表头追加样式类
+                    name: "HeaderMerge",
+                    groupHeaderClass: "", // 分组表头(父th)追加样式类
+                    leafHeaderClass: "",  // 叶子表头追加样式类
                     borderPatch: true     // IE9 合并边框修复，默认true
                 },
 
                 // 展开行 add 20261110-1
                 {   
-                    name: 'RowExpand',
+                    name: "RowExpand",
                     expandSingle: false, // 是否手风琴模式，默认false。false=允许多行同时展开；true=同一时间只能展开一行
                     expandColWidth: 40 // 展开箭头列宽度(px)，默认40
                 },
@@ -297,41 +313,44 @@
 
                  // 排序
                 {
-                    name: 'Sort', 
-                    defaultField: 'xh_self', 
-                    defaultOrder: 'asc',
+                    name: "Sort", 
+                    defaultField: "xh_self", 
+                    defaultOrder: "asc",
                     sortCurrentPageOnly: true // 是否仅对当前页排序(可选)，默认false。仅 remotePaging=false 前端本地分页时有效；remotePaging=true 时本参数无效，强制全量排序。
                 },
 
                 // 分页
                 {
-                    name: 'Pagination',
+                    name: "Pagination",
                     pageSize: 20,
-                    pageMode: 'list', // 'list'：数字页码按钮；'select'：页码下拉选择。
+                    pageMode: "list", // 'list'：数字页码按钮；'select"：页码下拉选择。
                     pageListSize: 5, // 数字列表模式显示几个页码按钮
-                    position: 'fixed', // top/bottom/fixed
-                    align: 'center',
+                    position: "fixed", // top/bottom/fixed
+                    align: "center",
                     showQuickJumper: true, // 是否显示页码快速跳转下拉
                     showSizeChanger: true // 是否显示每页条数切换下拉
                 },
 
                 // 合计行
                 {
-                    name: 'Summary', 
-                    columns: ['mj', 'scjj', 'zje'], 
-                    title: '合计', 
+                    name: "Summary", 
+                    columns: ["mj", "scjj", "zje"], 
+                    title: "合计", 
                     titleColumn: 2,
-                    scope: 'currentPage', // 合计统计范围。值： currentPage 只统计当前页可见行, all 统计全部数据
+                    scope: "currentPage", // 合计统计范围。值： currentPage 只统计当前页可见行, all 统计全部数据
                     externalData: {} // 远程分页且scope = 'all'时传递的汇总数据。eg.  { scjj: 3200, zje: 5800 }
                 },
 
                 // 导出excel
                 // 'Export',
                 {
-                    name: 'Export',
-                    filename: '导出数据', // 文件名，默认 '导出数据'
-                    extension: '.xls', // 扩展名 '.xls'（默认）/ '.xlsx'
-                    includeHiddenColumns: false // 是否包含隐藏列，默认false
+                    name: "Export",
+                    filename: "导出数据", // 文件名，默认 '导出数据"
+                    format: "xlsx", // 导出格式。'xls'（HTML 伪装 Excel，兼容 IE9）/ 'xlsx'（真 Excel 2007+）/ 'csv"（纯文本）
+                    includeInnerColumns: false, // 是否导出内部列（field 以 `_` 开头：序号 / 状态 / 勾选），默认false
+                    includeHiddenColumns: false, // 是否导出隐藏列，默认false
+
+                    csvDelimiter: "\t" // csv时的单元格分隔符，默认 '\t'。注：仅 format='csv' 时生效。参数值说明：\t 表示制表符，打开csv文件时会像正常的Excel一样一个个单元格。如果要给后端程序使用(比如导入数据库)可改成逗号 ',"，此时Excel 里整行显示为一条，便于当纯文本行解析。
                 }
             ],
             events: {
@@ -370,13 +389,13 @@
                         var data = []
                         for (var i = 1; i <= 20; i++) {
                             data.push({
-                                xh_self: 'C20' + (100 + i),
-                                mj: (80 + Math.random() * 100).toFixed(2),
-                                area: '福建省-福州市-鼓楼区',
-                                scjj: 150, // (9000 + Math.random() * 5000).toFixed(0),
-                                zje: '200',
-                                check_wc: i % 2 === 0 ? '1' : '0',
-                                remark: ''
+                                "xh_self": "C20" + (100 + i),
+                                "mj": (80 + Math.random() * 100).toFixed(2),
+                                "area": "福建省-福州市-鼓楼区",
+                                "scjj": 150, // (9000 + Math.random() * 5000).toFixed(0),
+                                "zje": "200",
+                                "check_wc": i % 2 === 0 ? '1': '0',
+                                "remark": ''
                             });
                         }
                         table.setData(data); // 使用setData回填
@@ -402,13 +421,13 @@
         // 新增一行 testing5
         function addRow() {
             table.addRow({
-                xh_self: 'B20' + Math.floor(Math.random() * 900 + 100),
-                mj: '',
-                area: '',
-                scjj: '',
-                zje: '',
-                check_wc: '0',
-                remark: ''
+                "xh_self": "B20" + Math.floor(Math.random() * 900 + 100),
+                "mj": "",
+                "area": "",
+                "scjj": "",
+                "zje": "",
+                "check_wc": "0",
+                "remark": ""
             }, 'first'); // first 最前面, last 最后面
             // console.log('新增行时，全局数据源：', table.getData());
         }
@@ -418,6 +437,7 @@
         table.on('rowAdd', function(e){
             console.log('新增完了，新增新行后返回的数据为：', e);
         });
+       
 
 
         // 保存数据(只保存有修改过的数据)
@@ -555,24 +575,65 @@
         }
 
 
-        // validate：校验必填项
+        // validate：校验必填项 testing7
         function testValidate() {
             if (!table) return;
-            var elResult = document.getElementById('result1');
-            elResult.style.display = 'block';
+            var result = table.validate('all', true);
+            console.log('校验必填result：', result);
+            if(result.passed === false) { // 校验不通过时
+                alert(result.message); // 只弹出提示第1条不通过的信息
 
-            var tips = table.validate('all');
-            elResult.innerHTML = 'validate(\'all\')：\n' + (tips ? tips : '全部通过');
+                // 定位到指定单元格
+                var rowIndex = result.rowIndex, field = result.field;
+                table.focusCell(rowIndex, field, {
+                    highlight: true
+                });
+
+                // 所有不通过的行信息打印出来
+                setTimeout(function() {
+                    var elResult = document.getElementById('result1');
+                    elResult.style.display = 'block';
+                    var tmpHtml = '';
+                    for(var i = 0; i < result.errors.length; i++) {
+                        tmpHtml += result.errors[i].message + '\n';
+                    }
+                    elResult.innerHTML = 'validate(\'all\')：\n' + tmpHtml;
+                }, 1000);
+                return;
+            }
+            alert('全部通过');
         }
-        // validateUnique：校验唯一值列
+        // validateUnique：校验唯一值列 testing7
         function testValidateUnique() {
             if (!table) return;
-            var elResult = document.getElementById('result1');
-            elResult.style.display = 'block';
+            var result = table.validateUnique();
+            console.log('校验唯一性-result：', result);
+            if(result.passed == false) { // 校验不通过时
+                alert(result.message); // 只弹出提示第1条不通过的信息
 
-            var tips = table.validateUnique();
-            elResult.innerHTML = 'validateUnique()：\n' + (tips ? tips : '全部通过');
+                // 定位到指定单元格
+                var rowIndex = result.rowIndex, field = result.field;
+                table.focusCell(rowIndex, field, {
+                    highlight: true
+                });
+
+
+                setTimeout(function() {
+                    var elResult = document.getElementById('result1');
+                    elResult.style.display = 'block';
+                    var tmpHtml = '';
+                    for(var i = 0; i < result.errors.length; i++) {
+                        tmpHtml += result.errors[i].message + '\n';
+                    }
+                    elResult.innerHTML = 'validateUnique()：\n' + tmpHtml;
+                }, 1000);
+
+                return;
+            }
+            alert('全部通过');
         }
+
+
         // renderCell / renderRow / render：手动重绘
         function testRenderCell() {
             if (!table) return;

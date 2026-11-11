@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 核心渲染器
  * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.8.12
+ * @Version：v1.8.15
  * @Date：2026-10-10
- * @PubDate：2026-11-10 18:07:33
+ * @PubDate：2026-11-11 17:18:38
  */
 
  (function(MelUi) {
@@ -30,6 +30,10 @@
 
         // 表头固定列缓存（合并表头时是「覆盖前N列的th列表」，滚动同步复用）
         this._headerFixedCells = [];
+
+        // 是否启用排序能力：由 Sort 插件 init 时置 true。
+        // 未启用时表头不显示可排序光标（pointer），避免“点了没反应”的误导。
+        this.sortEnabled = false;
 
         this._renderers = MelUi.Table.cellRenderers || {};
 
@@ -127,12 +131,26 @@
     };
 
     /**
-     * 获取列宽总和
+     * 判断某列是否被隐藏（列配置 visible:false）
+     * 隐藏列只是界面上不显示：th / td 照常渲染进 DOM（F12 可见），
+     * 靠 mel-col-hidden 类 display:none + colgroup 列宽置 0 让它不占可见宽度，
+     * 这样列数据、列配置、导出能力全部保留，可随时用 setColumnVisible 切回来。
+     * @param {Object} col 列配置
+     * @return {Boolean}
+     */
+    Renderer.prototype._isColHidden = function(col) {
+        return !!(col && col.visible === false);
+    };
+
+    /**
+     * 获取列宽总和（隐藏列按 0 参与，避免表格右侧多出空白）
      */
     Renderer.prototype._getTotalWidth = function() {
         var totalWidth = 0;
         for (var i = 0; i < this.dataStore.columns.length; i++) {
-            totalWidth += this.dataStore.columns[i].width || 100;
+            var col = this.dataStore.columns[i];
+            if (this._isColHidden(col)) continue;
+            totalWidth += col.width || 100;
         }
         return totalWidth;
     };
@@ -231,6 +249,7 @@
         var totalWidth = 0;
 
         for (var i = 0; i < columns.length; i++) {
+            if (this._isColHidden(columns[i])) continue;
             totalWidth += columns[i].width || 100;
         }
 
@@ -271,7 +290,9 @@
         // 手动创建 col 元素
         for (var i = 0; i < columns.length; i++) {
             var col = document.createElement('col');
-            col.style.width = (columns[i].width || 100) + 'px';
+            // 隐藏列宽置 0：col 个数与单元格个数保持一一对应（表头 colspan / 表身对齐不乱），
+            // 但该列不占可见宽度，视觉上等于消失
+            col.style.width = this._isColHidden(columns[i]) ? '0px' : (columns[i].width || 100) + 'px';
             colgroup.appendChild(col);
         }
     };
@@ -356,6 +377,11 @@
         var columns = this.dataStore.columns;
         var percents = [];
         for (var i = 0; i < columns.length; i++) {
+            // 隐藏列不参与弹性分配，宽度固定为 0
+            if (this._isColHidden(columns[i])) {
+                percents.push('0px');
+                continue;
+            }
             var w = columns[i].width || 100;
             percents.push((w / totalWidth * 100) + '%');
         }
@@ -396,7 +422,7 @@
             if (hcg) {
                 var hcols = hcg.children;
                 for (i = 0; i < hcols.length && i < columns.length; i++) {
-                    hcols[i].style.width = (columns[i].width || 100) + 'px';
+                    hcols[i].style.width = this._isColHidden(columns[i]) ? '0px' : (columns[i].width || 100) + 'px';
                 }
             }
         }
@@ -406,7 +432,7 @@
             if (bcg) {
                 var bcols = bcg.children;
                 for (j = 0; j < bcols.length && j < columns.length; j++) {
-                    bcols[j].style.width = (columns[j].width || 100) + 'px';
+                    bcols[j].style.width = this._isColHidden(columns[j]) ? '0px' : (columns[j].width || 100) + 'px';
                 }
             }
         }
@@ -807,12 +833,25 @@
         var result = [];
         var rows = this.theadTrs;
 
+        // 固定列数量按「可见列」计：隐藏列已不占可见宽度，不能吃掉固定列的坑位。
+        // 用列配置的前缀可见列计数，把网格原始列号换算成可见列号。
+        var colsCfg = (this.dataStore && this.dataStore.columns) || [];
+        var pre = [];
+        var vis = 0;
+        for (var n = 0; n <= colsCfg.length; n++) {
+            pre[n] = vis;
+            if (n < colsCfg.length && !this._isColHidden(colsCfg[n])) vis++;
+        }
+
         if (!rows || !rows.length) {
-            // 兜底：没有多行引用时退化为单行前 count 个（如插件在表头未渲染时调用）
+            // 兜底：没有多行引用时退化为单行前 count 个可见列（如插件在表头未渲染时调用）
             if (this.theadTr) {
                 var single = this.theadTr.children;
-                for (var k = 0; k < count && k < single.length; k++) {
+                var picked = 0;
+                for (var k = 0; k < single.length && picked < count; k++) {
+                    if (this._isHiddenCell(single[k])) continue;
                     result.push(single[k]);
+                    picked++;
                 }
             }
             return result;
@@ -838,11 +877,43 @@
         }
 
         for (var i = 0; i < placed.length; i++) {
-            if (placed[i].col < count) {
+            // 单元格起始列的「可见列序号」小于 count 才算固定列；隐藏单元格本身不参与固定
+            var visibleStart = pre[placed[i].col] === undefined ? placed[i].col : pre[placed[i].col];
+            if (visibleStart < count && !this._isHiddenCell(placed[i].th)) {
                 result.push(placed[i].th);
             }
         }
         return result;
+    };
+
+    /**
+     * 取某一行需要冻结的单元格
+     * 固定列数量一律按「可见列」计：隐藏列已不占可见宽度，跳过它继续数，
+     * 否则隐藏列会白吃一个固定坑位，导致后面的列没被固定、滚动时压住固定内容。
+     * 首次渲染、滚动同步、hover 换背景三处必须共用这一个口径，不能各写一套。
+     * @param {Element} tr 行节点
+     * @param {Number} count 需要冻结的可见列数
+     * @return {Array} td 列表
+     */
+    Renderer.prototype._getFixedBodyCells = function(tr, count) {
+        var result = [];
+        if (!tr || !tr.children) return result;
+        var tds = tr.children;
+        for (var i = 0; i < tds.length && result.length < count; i++) {
+            if (this._isHiddenCell(tds[i])) continue;
+            result.push(tds[i]);
+        }
+        return result;
+    };
+
+    /**
+     * 判断某个 th / td 是否为隐藏列单元格（靠渲染时打的 mel-col-hidden 类）
+     * @param {Element} cell 单元格节点
+     * @return {Boolean}
+     */
+    Renderer.prototype._isHiddenCell = function(cell) {
+        if (!cell || !cell.className) return false;
+        return (' ' + cell.className + ' ').indexOf(' mel-col-hidden ') >= 0;
     };
 
     /**
@@ -884,18 +955,19 @@
         }
 
         // 表身固定列：背景取所属行 tr 的实际渲染色
+        // 固定列数量按「可见列」计：隐藏列不占可见宽度，跳过它继续数，避免它白占一个固定坑位
         var trs = this.tbody.children;
         for (var r = 0; r < trs.length; r++) {
             // 展开详情行整行跨列，不属于数据行，不参与冻结列平移
             if (this._isExpandRowTr(trs[r])) continue;
             var rowBg = this._getRowBackground(trs[r]);
-            var tds = trs[r].children;
-            for (var c = 0; c < fixedLeft && c < tds.length; c++) {
-                tds[c].style.position = 'relative';
-                tds[c].style.left = scrollLeft + 'px';
-                tds[c].style.zIndex = '1';
-                tds[c].style.backgroundColor = rowBg;
-                this._setFixedShadow(tds[c]);
+            var cells = this._getFixedBodyCells(trs[r], fixedLeft);
+            for (var c = 0; c < cells.length; c++) {
+                cells[c].style.position = 'relative';
+                cells[c].style.left = scrollLeft + 'px';
+                cells[c].style.zIndex = '1';
+                cells[c].style.backgroundColor = rowBg;
+                this._setFixedShadow(cells[c]);
             }
         }
     };
@@ -1041,11 +1113,11 @@
                 for (var r = 0; r < trs.length; r++) {
                     // 展开详情行整行跨列，不参与冻结列平移
                     if (self._isExpandRowTr(trs[r])) continue;
-                    var tds = trs[r].children;
-                    for (var c = 0; c < fixedLeft && c < tds.length; c++) {
-                        tds[c].style.position = 'relative';
-                        tds[c].style.left = offset + 'px';
-                        tds[c].style.zIndex = '1';
+                    var cells = self._getFixedBodyCells(trs[r], fixedLeft);
+                    for (var c = 0; c < cells.length; c++) {
+                        cells[c].style.position = 'relative';
+                        cells[c].style.left = offset + 'px';
+                        cells[c].style.zIndex = '1';
                     }
                 }
 
@@ -1129,12 +1201,34 @@
      * @param {Number} rowspan 纵向跨行数（可选，默认1）。多级表头里浅层列/非分组列需要纵向跨行才能与表身对齐
      * @return {String} th html
      */
+    /**
+     * 判断某列是否可点击表头排序（决定是否显示 pointer 光标）
+     * 规则：
+     *   1. 未启用 Sort 插件 → 一律不可排序（避免光标 pointer 却点了没反应）；
+     *   2. 分组表头（无 field）与内部列（field 以 _ 开头）不参与排序；
+     *   3. 列配置 sortable:false → 该列不可排序；不写该项默认可排序。
+     * @param {Object} col 列配置
+     * @return {Boolean}
+     */
+    Renderer.prototype._isColSortable = function(col) {
+        if (!this.sortEnabled) return false;
+        if (!col || !col.field) return false;
+        if (col.field.charAt(0) === '_') return false;
+        return col.sortable !== false;
+    };
+
     Renderer.prototype._buildThHtml = function(col, extraClass, rowspan) {
         var title = col.title || '';
         var subtitle = col.subtitle || '';
         var align = col.align || 'center';
         var alignClass = 'mel-align-' + align;
         if (extraClass) alignClass += ' ' + extraClass;
+
+        // 隐藏列：th 照常渲染（DOM 保留），只挂隐藏类，CSS display:none
+        if (this._isColHidden(col)) alignClass += ' mel-col-hidden';
+
+        // 可排序列：追加标记类，CSS 只负责 cursor:pointer
+        if (this._isColSortable(col)) alignClass += ' mel-th-sortable';
 
         var sortField = this.dataStore.sortField;
         var sortOrder = this.dataStore.sortOrder;
@@ -1307,6 +1401,8 @@
             var value = rowData[col.field] !== undefined ? rowData[col.field] : '';
             var align = col.align || 'center';
             var alignClass = 'mel-align-' + align;
+            // 隐藏列：td 照常渲染（DOM 保留），只挂隐藏类，不占可见宽度
+            if (this._isColHidden(col)) alignClass += ' mel-col-hidden';
 
             var renderer = this._renderers[col.renderer] || this._renderers.text;
             var cellContent = renderer(value, col, rowData);
@@ -1390,7 +1486,9 @@
                 cellHtml = '<strong>' + sums.data[col.field].toFixed(2) + '</strong>';
             }
 
-            html += '<td>' + cellHtml + '</td>';
+            // 隐藏列的合计单元格同样挂隐藏类，列宽与表身保持一致，不额外占位
+            var tdClass = this._isColHidden(col) ? ' class="mel-col-hidden"' : '';
+            html += '<td' + tdClass + '>' + cellHtml + '</td>';
         }
 
         html += '</tr>';
@@ -1635,9 +1733,9 @@
                 if (tr.parentNode !== self.tbody) return;
                 // 重取该行背景（hover 后浏览器已应用 tr:hover 样式）
                 var rowBg = self._getRowBackground(tr);
-                var tds = tr.children;
-                for (var c = 0; c < fixedLeft && c < tds.length; c++) {
-                    tds[c].style.backgroundColor = rowBg;
+                var cells = self._getFixedBodyCells(tr, fixedLeft);
+                for (var c = 0; c < cells.length; c++) {
+                    cells[c].style.backgroundColor = rowBg;
                 }
             };
 
@@ -1678,7 +1776,130 @@
     /**
      * 销毁清理：移除window.resize、表身scroll监听，恢复body overflow-y，清空容器DOM
      */
+    /**
+     * 聚焦单元格：滚动到可见 + 聚焦输入元素 + 可选临时高亮
+     * 供 TableCore.focusCell 调用（校验不通过时把用户直接带到出错的格子）
+     * @param {Number} rowIndex 行索引（0-based）
+     * @param {String} field 列字段名
+     * @param {Object} options highlight：是否临时高亮，默认 true
+     * @return {Boolean} 是否定位成功
+     */
+    Renderer.prototype.focusCell = function(rowIndex, field, options) {
+        var ds = this.dataStore;
+        var row = ds ? ds.getRow(rowIndex) : null;
+        if (!row || !row._node || !row._node.parentNode) return false;
+
+        var td = row._node.querySelector('td[data-field="' + field + '"]');
+        if (!td) return false;
+
+        // 1. 滚动到可见区域（滚动容器是表身，不是 window）
+        if (this.bodyWrapper) {
+            this._scrollCellIntoView(td, this.bodyWrapper);
+            // 程序化改 scrollLeft / scrollTop 部分环境不派发 scroll 事件，
+            // 这里主动同步表头横向位置与固定列 left 平移，避免固定列压盖
+            if (this.headerWrapper) this.headerWrapper.scrollLeft = this.bodyWrapper.scrollLeft;
+            if (typeof this._bodyScrollHandler === 'function') {
+                this._bodyScrollHandler.call(this.bodyWrapper);
+            }
+        }
+
+        // 2. 聚焦可输入元素（纯展示列没有输入元素，只做高亮）
+        var input = null;
+        var tags = ['input', 'textarea', 'select'];
+        for (var i = 0; i < tags.length; i++) {
+            input = td.querySelector(tags[i]);
+            if (input) break;
+        }
+        if (input && input.focus) {
+            try {
+                input.focus();
+            } catch (e) {
+                // 只读 / 禁用元素聚焦失败无需处理
+            }
+        }
+
+        // 3. 临时高亮
+        if (!options || options.highlight !== false) {
+            this._flashCell(td);
+        }
+        return true;
+    };
+
+    /**
+     * 把单元格滚动到表身容器的可见范围内
+     * 用 rect 差量计算，天然兼容固定列的 position:relative + left 平移
+     * @param {Element} cell 单元格
+     * @param {Element} wrapper 表身滚动容器
+     */
+    Renderer.prototype._scrollCellIntoView = function(cell, wrapper) {
+        if (!cell || !wrapper || !cell.getBoundingClientRect) return;
+
+        var cr = cell.getBoundingClientRect();
+        var wr = wrapper.getBoundingClientRect();
+        var pad = 8;
+        var lead = 40; // 横向多留一点，避免单元格贴着边缘难以看清
+
+        var dl = cr.left - wr.left;
+        var dr = cr.right - (wr.left + wrapper.clientWidth);
+        if (dl < pad) {
+            wrapper.scrollLeft += (dl - lead);
+        } else if (dr > -pad) {
+            wrapper.scrollLeft += (dr + lead);
+        }
+
+        var dt = cr.top - wr.top;
+        var db = cr.bottom - (wr.top + wrapper.clientHeight);
+        if (dt < pad) {
+            wrapper.scrollTop += (dt - pad);
+        } else if (db > -pad) {
+            wrapper.scrollTop += (db + pad);
+        }
+    };
+
+    /**
+     * 单元格临时高亮（1.2 秒后自动恢复）
+     * 同时只亮一格，避免用户看花
+     * @param {Element} cell 单元格
+     */
+    Renderer.prototype._flashCell = function(cell) {
+        if (!cell || !cell.style) return;
+
+        // 先恢复上一格
+        if (this._flashCellEl && this._flashCellEl.style) {
+            this._flashCellEl.style.boxShadow = this._flashCellShadow || '';
+            this._flashCellEl.style.backgroundColor = this._flashCellBg || '';
+        }
+        if (this._flashTimer) {
+            clearTimeout(this._flashTimer);
+            this._flashTimer = null;
+        }
+
+        this._flashCellEl = cell;
+        this._flashCellShadow = cell.style.boxShadow || '';
+        this._flashCellBg = cell.style.backgroundColor || '';
+
+        cell.style.boxShadow = 'inset 0 0 0 2px #e53935';
+        cell.style.backgroundColor = '#fff1f0';
+
+        var self = this;
+        this._flashTimer = setTimeout(function() {
+            if (self._flashCellEl && self._flashCellEl.style) {
+                self._flashCellEl.style.boxShadow = self._flashCellShadow || '';
+                self._flashCellEl.style.backgroundColor = self._flashCellBg || '';
+            }
+            self._flashCellEl = null;
+            self._flashTimer = null;
+        }, 1200);
+    };
+
     Renderer.prototype._destroy = function() {
+        // 清理单元格高亮定时器
+        if (this._flashTimer) {
+            clearTimeout(this._flashTimer);
+            this._flashTimer = null;
+        }
+        this._flashCellEl = null;
+
         // 移除window.resize监听
         if (this._resizeBound && this._resizeHandler) {
             if (window.removeEventListener) {
