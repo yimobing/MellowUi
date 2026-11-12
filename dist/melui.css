@@ -2316,9 +2316,9 @@ select.mel-form-ctrl {
 /**
  * MelUi Table 表格组件 - 基础样式
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.5.1
+ * @Version：v1.5.9
  * @Date：2026-10-10
- * @Pubdate：2026-11-04
+ * @Pubdate：2026-11-11 09:50:21
  */
 
 /* ===== 容器 ===== */
@@ -2364,6 +2364,24 @@ select.mel-form-ctrl {
     display: inline-block;
     vertical-align: middle;
     line-height: 1.4;
+}
+
+/* 可排序列表头：只有启用 Sort 插件且该列未配 sortable:false 时才有这个类 */
+.mel-th-sortable {
+    cursor: pointer;
+}
+
+/* 隐藏列（列配置 visible:false）：单元格照常存在于 DOM（F12 可见），
+   但宽度 0、无内边距无边框，视觉上完全不占位。
+   注意：这里不能用 display:none —— table-layout:fixed 下单元格按出现顺序分配列宽，
+   被 display:none 的单元格会从行里消失，导致其后的列整体左移、最后一列宽度变 0。 */
+.mel-col-hidden {
+    width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden;
 }
 
 .mel-th-title {
@@ -2636,4 +2654,109 @@ select.mel-form-ctrl {
     border: 1px solid #dcdfe6;
     border-radius: 2px;
     margin: 0 4px;
+}
+
+/* ===== 表格上下额外区块（extraBefore / extraAfter） ===== */
+/* 仅提供基础间距，视觉完全交给业务自定义覆盖；区块内不参与表格列对齐、固定列等布局
+   节点统一为 .mel-table-extra-wrapper + 方位类：.mel-table-extra-before-wrapper / .mel-table-extra-after-wrapper */
+.mel-table-extra-wrapper {
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+    max-width: 100%;
+}
+
+.mel-table-extra-before-wrapper {
+    margin-bottom: 8px;
+}
+
+.mel-table-extra-after-wrapper {
+    margin-top: 8px;
+}
+
+/* ===== 合并表头（HeaderMerge 插件） ===== */
+/* 分组表头单元格（父级 th）：叶子单元格沿用原有 th 样式，分组仅补齐边框与背景 */
+.mel-table-header th.mel-th-group {
+    background-color: #f5f7fa;
+    border-right: 1px solid #e4e7ed;
+    border-bottom: 1px solid #e4e7ed;
+}
+
+/* 合并表头边框修复：HeaderMerge.borderPatch=true 时挂到表头 table 上，
+   给每一行显式补底边，规避 IE9 下 colspan 单元格边线缺失 */
+.mel-table-header.mel-header-merge-fix th {
+    border-bottom: 1px solid #e4e7ed;
+}
+
+/* ===== 合并表头：每行最后一列的右边框 =====
+   上面的 th:last-child{border-right:0} 是给单级表头收边用的（右边线由 table 外框承担）。
+   多级表头下，每个 tr 都会各自命中一次 :last-child，分组行最后一格与叶子行最后一格
+   并不是同一列，整列右边线被逐行抹掉 —— 这就是合并表头后“最后一列没有右边框”的原因。
+   修法：HeaderMerge 渲染时给每一行的逻辑最后一列 th 打上 mel-th-merge-lastcol，
+   由下面这条规则把被抹掉的右边框补回来；单级表头没有这个类，行为保持原样。 */
+.mel-table-header th.mel-th-merge-lastcol {
+    border-right: 1px solid #e4e7ed;
+}
+
+/* 表身最后一列同步收边：表头/表身是两张独立 table，css 没法从表头选中表身，
+   所以 HeaderMerge 给共同父容器挂 mel-table-merge-head 标记，表身最后一格跟着补右边框，
+   否则一条竖线会在表头和表身的交界处断色（表头深、表身浅）。 */
+.mel-table-container.mel-table-merge-head .mel-table-body td:last-child {
+    border-right: 1px solid #e4e7ed;
+}
+
+/* ===== 展开行插件（RowExpand） =====
+   箭头列：整格可点，箭头用 css 三角形画（IE9 用 -ms-transform 旋转，不用字体图标） */
+.mel-table-body td.mel-expand-cell,
+.mel-table-body td[data-field="_expand"] {
+    cursor: pointer;
+}
+
+.mel-expand-arrow {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 6px solid #909399;
+    vertical-align: middle;
+    -ms-transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+            transform: rotate(0deg);
+}
+
+.mel-expand-arrow.is-open {
+    -ms-transform: rotate(90deg);
+    -webkit-transform: rotate(90deg);
+            transform: rotate(90deg);
+}
+
+/* 展开详情行：整行跨全部列，高度自适应，不写死行高 */
+.mel-table-body tr.mel-row-expand > td.mel-row-expand-cell {
+    height: auto;
+    padding: 8px 12px;
+    background-color: #fafafa;
+    text-align: left;
+    white-space: normal;
+}
+
+/* 内置默认面板：单栏垂直排列，每项整行占满，左侧列名浅色、右侧值深色 */
+.mel-row-expand-wrapper {
+    overflow: hidden;
+}
+
+.mel-row-expand-item {
+    padding: 4px 5px;
+    font-size: 13px;
+}
+
+.mel-row-expand-label {
+    display: inline-block;
+    min-width: 70px;
+    margin-right: 8px;
+    color: #909399;
+}
+
+.mel-row-expand-value {
+    color: #303133;
 }

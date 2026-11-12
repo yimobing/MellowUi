@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 主类
  * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.9.2
+ * @Version：v1.9.4
  * @Date：2026-10-10
- * @PubDate：2026-11-11 18:59:21
+ * @PubDate：2026-11-12 10:13:15
  */
 
  (function(MelUi) {
@@ -256,6 +256,9 @@
 
             // 创建插件实例并初始化
             var plugin = new PluginClass(pluginOptions);
+            // 记下注册名：业务侧 table.getPlugin('Export') 靠它匹配，
+            // 不依赖 instanceof / 私有数组下标，插件改名也不会错配
+            plugin._pluginName = pluginName;
             plugin.init(this);
             this._pluginInstances.push(plugin);
         }
@@ -1096,6 +1099,52 @@
     TableCore.prototype.renderCell = function(rowIndex, field) {
         if (this._guardDestroyed('renderCell')) return;
         this.renderer.renderCell(rowIndex, field);
+    };
+
+    // ==================== 插件实例 ====================
+
+    /**
+     * 取指定插件实例（同名插件注册了多个时返回第一个）
+     * @param {String} name 注册时的插件名，与 plugins 配置里写的一致，如 'Export' / 'Pagination'
+     * @return {Object|null} 插件实例；未注册、传参非法或实例已销毁时返回 null
+     */
+    TableCore.prototype.getPlugin = function(name) {
+        var list = this.getPlugins(name);
+        return list.length ? list[0] : null;
+    };
+
+    /**
+     * 取指定插件的全部实例（同一插件注册多次的场景，如多个不同格式的 Export）
+     * @param {String} name 注册时的插件名
+     * @return {Array} 实例数组；未注册、传参非法或实例已销毁时返回空数组
+     */
+    TableCore.prototype.getPlugins = function(name) {
+        if (this._guardDestroyed('getPlugins')) return [];
+        if (typeof name !== 'string' || name === '') {
+            if (window.console && console.warn) {
+                console.warn('[MelUi.Table] getPlugin / getPlugins 需要传入非空字符串形式的插件名');
+            }
+            return [];
+        }
+        var out = [];
+        var instances = this._pluginInstances || [];
+        for (var i = 0; i < instances.length; i++) {
+            var plugin = instances[i];
+            if (!plugin) continue;
+            if (plugin._pluginName === name) out.push(plugin);
+        }
+        return out;
+    };
+
+    /**
+     * 取全部插件实例（不分名称、不分类型）
+     * 用途：调试排查（看当前表格装了哪些插件）、上层二次封装统一处理；
+     *       业务代码请优先用 getPlugin / getPlugins 按名取，不要直接改插件内部属性。
+     * @return {Array} 插件实例数组（副本，增删不影响组件内部），顺序与 plugins 配置一致；实例已销毁时返回空数组
+     */
+    TableCore.prototype.getAllPlugins = function() {
+        if (this._guardDestroyed('getAllPlugins')) return [];
+        return (this._pluginInstances || []).slice(0);
     };
 
     // ==================== 事件绑定 ====================

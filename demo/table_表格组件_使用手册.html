@@ -422,6 +422,7 @@
                             <li><a href="#s4-2-6" data-target="s4-2-6" data-top="six"> 多选行-选中操作 </a></li>
                             <li><a href="#s4-2-7" data-target="s4-2-7" data-top="six"> 数据校验 </a></li>
                             <li><a href="#s4-2-8" data-target="s4-2-8" data-top="six"> 渲染控制 </a></li>
+                            <li><a href="#s4-2-9" data-target="s4-2-9" data-top="six"> 插件实例获取 </a></li>
                         </ul>
                     </li>
                 </ul>
@@ -1032,14 +1033,12 @@ table.on('sortChange', function(data) {
 <pre><code>plugins: [['Summary', {columns: ['mj', 'scjj', 'zje'], title: '合计', titleColumn: 2, scope: 'currentPage', externalData: {}}]]</code></pre>
 <div class="warn">
     <b>说明：</b>启用分端远程分页时，如果要想统计当前表格所有分页的某些字段的汇总数据，则后端：必须返回汇总数据，否则前端无法知道所有页的全部汇总数据。前端：必须设置 scope = 'all'，且 externalData 必须传值，不能是空对象。
-    <pre><code>
-        eg. 以下数据表示当前表格（假设10页）10页汇总起来的面积、市场价值、总金额
-        externalData {
-            mj: 100, // 面积
-            scjj: 200, // 市场价值
-            zje: 300 // 总金额
-        }
-    </code></pre>
+    <pre><code>eg. 以下数据表示当前表格（假设10页）10页汇总起来的面积、市场价值、总金额
+externalData {
+    mj: 100, // 面积
+    scjj: 200, // 市场价值
+    zje: 300 // 总金额
+}</code></pre>
 </div>
 
     <!-- HeaderMerge -->
@@ -1127,25 +1126,39 @@ table.on('expandChange', function(data) {
         <tr><td class="code-cell">includeHiddenColumns</td><td>Boolean</td><td>false</td><td>是否导出隐藏列，即列配置 <span class="inline-code">visible:false</span> 的列。默认不导出。</td></tr>
         <tr><td class="code-cell">includeInnerColumns</td><td>Boolean</td><td>false</td><td>是否导出内部列，即 field 以 <span class="inline-code">_</span> 开头的序号 / 状态 / 选择 / 展开列。默认不导出。<br><b>与 includeHiddenColumns 互不相关</b>：一个管「内部列」，一个管「业务隐藏列」，需要时各开各的。</td></tr>
     </table>
-<pre><code>// 默认导出真 xlsx（推荐，中文与样式都稳）
+<pre><code> // · 启用插件
+// 最简配置：默认导出xlsx（推荐，中文与样式都稳）
 plugins: [['Export', {filename: '楼盘数据'}]]
 
-// 逗号 CSV，给后端导入用
+// 导出CSV（文本格式，逗号连接），给后端导入用
 plugins: [['Export', {filename: '楼盘数据', format: 'csv', csvDelimiter: ','}]]
+// 导出xls，并把隐藏列、内部列一起带出去
+plugins: [['Export', {filename: '楼盘数据', format: 'xls', includeHiddenColumns: true, includeInnerColumns: true}]] </code></pre>
 
-// 导出时把隐藏列、内部列一起带出去
-plugins: [['Export', {filename: '楼盘数据', format: 'xlsx', includeHiddenColumns: true, includeInnerColumns: true}]]
+<pre><code> // · 导出文件（获取插件实例并调用函数 export 导出）
+// 方法1(推荐)：使用函数 getPlugin() 或 getPlugins() 取实例并导出文件
+table.getPlugin('Export').export(); // 按导出插件配置导出指定格式
+table.getPlugin('Export').export('xlsx'); // 临时指定导出格式，可传值：xlsx, xls, csv
 
-// 触发导出：先拿到 Export 插件实例再调用 export()
+// 方法2：使用_pluginInstances 取实例并导出文件
 function exportData() {
-    for (var i = 0; i &lt; table._pluginInstances.length; i++) {
-        var plugin = table._pluginInstances[i];
-        if (plugin instanceof MelUi.Table.plugins.Export) {
-            plugin.export();
-            break;
-        }
+for (var i = 0; i &lt; table._pluginInstances.length; i++) {
+    var plugin = table._pluginInstances[i];
+    if (plugin instanceof MelUi.Table.plugins.Export) {
+        plugin.export();
+        break;
     }
-}</code></pre>
+}
+// 或者这样
+table._pluginInstances.forEach(function(plugin) {
+    if (plugin instanceof MelUi.Table.plugins.Export) {
+        plugin.export();
+    }
+});
+} </code></pre>
+    <div class="tip">
+        <b>说明：</b>因为 _pluginInstances 是内部私有数组，业务不要直接读；它一旦调整结构，遍历取插件的代码全部失效。 故实际业务建议用 getPlugin / getPlugins 取实例，内部换了存储方式也不影响业务。
+    </div>
 </section>
 
 <!-- ============ 3.5 事件总线 ============ -->
@@ -1427,6 +1440,42 @@ table.render();</code></pre>
         <b>注意：</b><span class="inline-code">skipRender:true</span> 时表格不会马上变化，必须补一次 <span class="inline-code">render()</span>；
         不传该参数等价于 <span class="inline-code">skipRender:false</span>，函数内部会直接调 <span class="inline-code">table.render()</span>。
     </div>
+
+    <h4 id="s4-2-9">插件实例获取</h4>
+    <p>插件实例不用再自己遍历内部数组，按注册名取即可。</p>
+    <table class="cfg">
+        <tr><th style="width:250px">方法</th><th style="width:150px">返回</th><th>说明</th></tr>
+        <tr><td class="code-cell">getPlugin(name)</td><td>Object | null</td><td>获取指定注册名称的<b>一个</b>插件实例。同名注册了多个插件时返回<b>第一个</b>。<br>name 与 <a href="#s3-3" class="anchor-link">plugins</a> 配置里写的名字一致，三种写法都认：<span class="inline-code">'Export'</span> / <span class="inline-code">{name:'Export'}</span> / <span class="inline-code">['Export', {...}]</span>。<br>未注册、name 不是非空字符串、实例已销毁时返回 <span class="inline-code">null</span>，可直接 <span class="inline-code">if (!plugin) return;</span> 判空。</td></tr>
+        <tr><td class="code-cell">getPlugins(name)</td><td>Array</td><td>获取指定注册名称的<b>一组</b>插件实例（取同名插件的<b>全部实例</b>）。用于同一个插件注册多份的场景（如多种格式的 Export）。<br>未注册、传参非法、实例已销毁时返回空数组，不会返回 null。返回值说明：返回值(数组元素)顺序与 plugins 配置一致。</td></tr>
+        <tr><td class="code-cell">getAllPlugins()</td><td>Array</td><td><b>无参数</b>，返回当前表格的<b>全部插件实例</b>，顺序与 plugins 配置一致，不分名称、不分类型。<br>返回的是<b>数组副本</b>，对返回值做 push / splice 不会影响组件内部的插件管理。<br>未注册任何插件、实例已销毁时返回空数组。<br>定位是<b>调试与二次封装</b>用：排查"到底装上了哪些插件"、上层统一遍历处理；业务里按名取插件请用 getPlugin / getPlugins。</td></tr>
+    </table>
+<pre><code>// 取插件实例：不再需要遍历 _pluginInstances 判断类型
+var sort = table.getPlugin('Sort');
+var pagination = table.getPlugin('Pagination');
+var exporter = table.getPlugin('Export');
+
+// 取全部插件：调试时看清当前表格装了哪些插件
+var all = table.getAllPlugins();
+console.log(all.map(function(p) { return p._pluginName; }));   // ['Sort','Pagination','Export']
+
+// 例：一个 Export 实例，三个按钮切格式（formatOverride 优先于 options.format）
+exporter.export('xlsx');
+exporter.export('xls');
+exporter.export('csv');
+
+// 例：不同格式要各自的文件名 / 导出列时，注册多个 Export 实例
+table.getPlugins('Export')[0].export();   // 配置里的第一个
+table.getPlugins('Export')[1].export();   // 配置里的第二个
+
+// 判空写法
+var ex = table.getPlugin('Export');
+if (ex) ex.export('xlsx');</code></pre>
+    <div class="tip">
+        <b>与 <span class="inline-code">_pluginInstances</span> 的区别：</b>
+        <span class="inline-code">_pluginInstances</span> 是内部私有数组，业务不要直接读；它一旦调整结构，遍历取插件的代码全部失效。
+        用 <span class="inline-code">getPlugin</span> / <span class="inline-code">getPlugins</span> 取实例，内部换了存储方式也不影响业务。
+    </div>
+
 </section>
 
 <!-- ============ 5 注意事项 ============ -->

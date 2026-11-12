@@ -21,7 +21,7 @@
     <!-- <link rel="stylesheet" href="../dist/table/table.min.css"> -->
     <!-- <link rel="stylesheet" href="../dist/melui.min.css"> -->
 
-    <!--[======== 本地演示版：没发打包发布时本地演示时使用 ========] -->
+    <!--[======== 本地开发版：没发打包发布时本地演示时使用 ========] -->
     <link rel="stylesheet" href="../src/components/table/index.css">
 </head>
 <body>
@@ -96,7 +96,9 @@
         <button onclick="selectAll()">全选</button>
         <button onclick="selectNone()">全不选</button>
         <button onclick="invertSelect()">反选</button>
-        <button onclick="exportData()">导出Excel</button>
+        <button onclick="exportData('xlsx')">导出Excel(xlsx)</button>
+        <button onclick="exportData('xls')">导出Excel(xls)</button>
+        <button onclick="exportData('csv')">导出Excel(csv)</button>
     </div>
     <!-- 选中API测试按钮 -->
     <div class="toolbar">
@@ -132,24 +134,22 @@
     <!-- <script src="../dist/table/table.min.js"></script> -->
     <!-- <script src="../dist/melui.min.js"></script> -->
 
-    <!--[======== 本地演示版：没发打包发布时本地演示时使用 ========] -->
-    <!-- 入口 -->
+    <!--[======== 本地开发版：没发打包发布时本地演示时使用 ========] -->
     <script src="../src/components/table/index.js"></script>
 
-    <!-- 单元格渲染器 -->
     <script src="../src/components/table/cell-renderers/text.js"></script>
     <script src="../src/components/table/cell-renderers/input.js"></script>
     <script src="../src/components/table/cell-renderers/textarea.js"></script>
     <script src="../src/components/table/cell-renderers/radio.js"></script>
     <script src="../src/components/table/cell-renderers/checkbox-cell.js"></script>
     <script src="../src/components/table/cell-renderers/button.js"></script>
-    <!-- 核心层 -->
+
     <script src="../src/components/table/core/data-store.js"></script>
     <script src="../src/components/table/core/event-bus.js"></script>
     <script src="../src/components/table/core/renderer.js"></script>
     <script src="../src/components/table/core/layout.js"></script>
     <script src="../src/components/table/core/table.js"></script>
-    <!-- 插件 -->
+   
     <script src="../src/components/table/plugins/plugin-base.js"></script>
     <script src="../src/components/table/plugins/serial-no.js"></script>
     <script src="../src/components/table/plugins/checkbox.js"></script>
@@ -336,7 +336,7 @@
                     name: "Summary", 
                     columns: ["mj", "scjj", "zje"], 
                     title: "合计", 
-                    titleColumn: 2,
+                    titleColumn: 2, // 标题放在第几列（列索引，从 0 开始）
                     scope: "currentPage", // 合计统计范围。值： currentPage 只统计当前页可见行, all 统计全部数据
                     externalData: {} // 远程分页且scope = 'all'时传递的汇总数据。eg.  { scjj: 3200, zje: 5800 }
                 },
@@ -474,13 +474,14 @@
         function invertSelect() {
             table.invertSelect();
         }
-        // 导出Excel
-        function exportData() {
-            table._pluginInstances.forEach(function(plugin) {
-                if (plugin instanceof MelUi.Table.plugins.Export) {
-                    plugin.export();
-                }
-            });
+        // 
+        /**
+         * 导出Excel
+         * @param {String} ps_format 导出格式。xlsx, xls, csv
+         */
+        function exportData(ps_format) {
+            // console.log('table：', table)
+            table.getPlugin('Export').export(ps_format);
         }
 
         //===== 选中API测试按钮 =====

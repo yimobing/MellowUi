@@ -3724,13 +3724,13 @@
      * MelUi Table 表格组件 - 数据存储
      * 负责管理表格所有数据：行数据、列配置、选中状态、排序状态
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.10.4
+     * @Version：v1.10.5
      * @Date：2026-10-10
-     * @PubDate：2026-11-06 10:46:28
+     * @Pubdate：2026-11-10 10:35:00
      */
 
      (function(MelUi) {
-     
+
         /**
          * DataStore 构造函数
          * @param {Object} options 配置项
@@ -3759,6 +3759,11 @@
             this.addRowMode = (options && options.addRowMode) || 'currentPage'; // 新增行插入位置：currentPage当前页 / global全局
             this._tempAppendRows = []; // addRowMode='currentPage'时，当前页临时追加的行引用集合（翻页/排序/setData时清空）
             this._tempRowSeq = 0;      // 草稿行独立索引计数器：remote/currentPage 新增的草稿行用负数自增索引，与后端 rows 的 0..n 隔离，避免 data-row-index 冲突
+
+            // 行标识计数器：行对象里的 _rowId 由此自增生成
+            // 作用：给每一行一个【运行期唯一标识】，供单行事件（rowClick/cellClick/expandChange 等）
+            //   和 getRowById 使用。它不随分页、排序变化，行删除后失效，不可存后端。
+            this._rowIdSeq = 0;
 
             // 初始化数据
             if (options.data && options.data.length) {
@@ -3867,12 +3872,66 @@
             }
 
             // 内部字段
+            row._rowId = 'r' + (++this._rowIdSeq); // 运行期唯一行标识：单行事件与 getRowById 使用，不存后端
             row._rowIndex = 0;
             row._status = 's';  // i=新增, u=修改, s=已保存
             row._selected = false;
             row._node = null;
 
             return row;
+        };
+
+        /**
+         * 按 rowId 查找内部原始行（rows 与草稿行 _tempAppendRows 都会查）
+         * @param {String} rowId 行标识（来自单行事件参数 rowId）
+         * @return {Object|null} 内部原始行对象；找不到返回 null
+         */
+        DataStore.prototype.getRowById = function(rowId) {
+            if (this._guardDestroyed('getRowById')) return null;
+            if (rowId === undefined || rowId === null || rowId === '') return null;
+
+            for (var i = 0; i < this.rows.length; i++) {
+                if (this.rows[i] && this.rows[i]._rowId === rowId) return this.rows[i];
+            }
+            if (this._tempAppendRows) {
+                for (var t = 0; t < this._tempAppendRows.length; t++) {
+                    if (this._tempAppendRows[t] && this._tempAppendRows[t]._rowId === rowId) {
+                        return this._tempAppendRows[t];
+                    }
+                }
+            }
+            return null;
+        };
+
+        /**
+         * 取一行的对业务可见副本（浅拷贝，剥离所有下划线开头的内部字段）
+         * 事件回调里的 rowData / rendered.rows 一律走这里，避免把 _rowIndex/_rowId/_node 等内部字段暴露给业务。
+         * @param {Object} row 内部行对象
+         * @return {Object} 纯业务字段对象
+         */
+        DataStore.prototype.getPlainRow = function(row) {
+            var plain = {};
+            if (!row) return plain;
+            for (var key in row) {
+                if (!row.hasOwnProperty(key)) continue;
+                if (key.charAt(0) === '_') continue; // 内部字段一律不对外
+                plain[key] = row[key];
+            }
+            return plain;
+        };
+
+        /**
+         * 批量取对业务可见副本
+         * @param {Array} rows 内部行数组
+         * @return {Array} 纯业务字段对象数组
+         */
+        DataStore.prototype.getPlainRows = function(rows) {
+            var list = [];
+            if (!rows) return list;
+            for (var i = 0; i < rows.length; i++) {
+                list.push(this.getPlainRow(rows[i]));
+            }
+            return list;
         };
 
         /**
@@ -4522,9 +4581,9 @@
      * MelUi Table 表格组件 - 核心渲染器
      * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.8.3
+     * @Version：v1.8.15
      * @Date：2026-10-10
-     * @PubDate：2026-11-06 10:46:28
+     * @PubDate：2026-11-11 17:18:38
      */
 
      (function(MelUi) {
@@ -4534,13 +4593,26 @@
          * @param {Object} options 配置项
          * @param {Object} dataStore DataStore 实例
          * @param {Object} eventBus EventBus 实例
+         * @param {Object} table TableCore 实例（可选）。供 extraBefore/extraAfter 的函数形态取用表格状态
          */
-        function Renderer(options, dataStore, eventBus) {
+        function Renderer(options, dataStore, eventBus, table) {
             this.options = options;
             this.dataStore = dataStore;
             this.eventBus = eventBus;
+            this.table = table || null;
             this.el = typeof options.el === 'string' ? document.querySelector(options.el) : options.el;
             this.isRenderComplete = false;
+
+            // extraBefore / extraAfter 渲染出的区块节点引用（未配置时为空）
+            this.extraBeforeWrap = null;
+            this.extraAfterWrap = null;
+
+            // 表头固定列缓存（合并表头时是「覆盖前N列的th列表」，滚动同步复用）
+            this._headerFixedCells = [];
+
+            // 是否启用排序能力：由 Sort 插件 init 时置 true。
+            // 未启用时表头不显示可排序光标（pointer），避免“点了没反应”的误导。
+            this.sortEnabled = false;
 
             this._renderers = MelUi.Table.cellRenderers || {};
 
@@ -4624,11 +4696,12 @@
             //              （remotePaging + enableRemotePagingFallback 的矫正规则都在该方法内，此处不重复推导）
             //   pageNo   = 当前页码，内部字段是 currentPage，对外统一叫 pageNo，与 pageChange 事件命名对应
             //   pageSize = 每页条数
-            // 注意：rows 为浅拷贝数组，行对象本身仍是内部引用，业务只读，请勿修改行数据。
+            // 注意：rows 里每一项都是【纯业务字段副本】（已剥离 _rowIndex/_rowId/_status/_node 等内部字段），
+            // 修改副本不会影响表格数据源；需要按 rowId 定位原始行请用 table.getRowById()。
             var ds = this.dataStore;
             var visibleRows = ds.getVisibleRows();
             var renderInfo = {
-                rows: visibleRows.slice(0),
+                rows: ds.getPlainRows(visibleRows),
                 total: ds.getEffectiveTotal(),
                 pageNo: ds.currentPage,
                 pageSize: ds.pageSize
@@ -4637,38 +4710,98 @@
         };
 
         /**
-         * 获取列宽总和
+         * 判断某列是否被隐藏（列配置 visible:false）
+         * 隐藏列只是界面上不显示：th / td 照常渲染进 DOM（F12 可见），
+         * 靠 mel-col-hidden 类 display:none + colgroup 列宽置 0 让它不占可见宽度，
+         * 这样列数据、列配置、导出能力全部保留，可随时用 setColumnVisible 切回来。
+         * @param {Object} col 列配置
+         * @return {Boolean}
+         */
+        Renderer.prototype._isColHidden = function(col) {
+            return !!(col && col.visible === false);
+        };
+
+        /**
+         * 获取列宽总和（隐藏列按 0 参与，避免表格右侧多出空白）
          */
         Renderer.prototype._getTotalWidth = function() {
             var totalWidth = 0;
             for (var i = 0; i < this.dataStore.columns.length; i++) {
-                totalWidth += this.dataStore.columns[i].width || 100;
+                var col = this.dataStore.columns[i];
+                if (this._isColHidden(col)) continue;
+                totalWidth += col.width || 100;
             }
             return totalWidth;
         };
 
         /**
+         * 解析 extraBefore / extraAfter 配置，得到待渲染的 html 字符串
+         * 支持两种形态：
+         *   String  ：直接作为 html 使用；
+         *   Function：以表格实例为参数调用，取其返回值作为 html。
+         * 返回 '' / null / undefined 均视为“不渲染该区块”，不会输出空容器。
+         * 注意：函数形态每次 render 都会重新执行，函数内如有重计算或高频渲染，性能由业务自行控制。
+         * @param {String|Function} extra 配置值
+         * @return {String} 待渲染 html，空字符串表示不渲染
+         */
+        Renderer.prototype._resolveExtraHtml = function(extra) {
+            if (!extra) return '';
+
+            if (typeof extra === 'function') {
+                var ret = extra(this.table);
+                if (ret === null || ret === undefined) return '';
+                return String(ret);
+            }
+
+            return String(extra);
+        };
+
+        /**
+         * 构建额外区块 html（带包裹容器）
+         * @param {String|Function} extra 配置值
+         * @param {String} className 包裹容器的样式类
+         * @return {String} 完整区块 html，无内容时返回空字符串
+         */
+        Renderer.prototype._buildExtraBlock = function(extra, className) {
+            var content = this._resolveExtraHtml(extra);
+            if (!content) return '';
+            return '<div class="' + className + '">' + content + '</div>';
+        };
+
+        /**
          * 渲染外层容器结构
+         * extraBefore / extraAfter 与表头、表身同处 mel-table-container 内部（before → 表头 → 表身 → after）：
+         *   - 同属一个父容器的普通文档流，宽度天然跟随表格，无需额外同步；
+         *   - 不属于表头、表体，不参与列对齐、固定列、排序、选中、合并表头等任何表格逻辑；
+         *   - 区块内如果放了按钮等交互 DOM，事件由业务自行绑定，组件不做代理。
          */
         Renderer.prototype._renderContainer = function() {
-            var html = [
-                '<div class="mel-table-container">',
-                '  <div class="mel-table-header-wrapper">',
-                '    <table class="mel-table-header">',
-                '      <colgroup></colgroup>',
-                '      <thead><tr></tr></thead>',
-                '    </table>',
-                '  </div>',
-                '  <div class="mel-table-body-wrapper">',
-                '    <table class="mel-table-body">',
-                '      <colgroup></colgroup>',
-                '      <tbody></tbody>',
-                '    </table>',
-                '  </div>',
-                '</div>'
-            ].join('\r\n');
+            var beforeHtml = this._buildExtraBlock(this.options.extraBefore, 'mel-table-extra-wrapper mel-table-extra-before-wrapper');
+            var afterHtml = this._buildExtraBlock(this.options.extraAfter, 'mel-table-extra-wrapper mel-table-extra-after-wrapper');
 
-            this.el.innerHTML = html;
+            var lines = ['<div class="mel-table-container">'];
+
+            // 无内容时不输出该行，不产生多余的空白区块
+            if (beforeHtml) lines.push('  ' + beforeHtml);
+
+            lines.push('  <div class="mel-table-header-wrapper">');
+            lines.push('    <table class="mel-table-header">');
+            lines.push('      <colgroup></colgroup>');
+            lines.push('      <thead><tr></tr></thead>');
+            lines.push('    </table>');
+            lines.push('  </div>');
+            lines.push('  <div class="mel-table-body-wrapper">');
+            lines.push('    <table class="mel-table-body">');
+            lines.push('      <colgroup></colgroup>');
+            lines.push('      <tbody></tbody>');
+            lines.push('    </table>');
+            lines.push('  </div>');
+
+            if (afterHtml) lines.push('  ' + afterHtml);
+
+            lines.push('</div>');
+
+            this.el.innerHTML = lines.join('\r\n');
 
             this.container = this.el.querySelector('.mel-table-container');
             this.headerWrapper = this.el.querySelector('.mel-table-header-wrapper');
@@ -4676,7 +4809,11 @@
             this.bodyWrapper = this.el.querySelector('.mel-table-body-wrapper');
             this.bodyTable = this.el.querySelector('.mel-table-body');
             this.theadTr = this.headerTable ? this.headerTable.querySelector('thead tr') : null;
+            // thead 是整个表头行容器：多级表头时有多行，表头点击统一绑在它上面（它本身不随表头重绘被替换）
+            this.thead = this.headerTable ? this.headerTable.querySelector('thead') : null;
             this.tbody = this.bodyTable ? this.bodyTable.querySelector('tbody') : null;
+            this.extraBeforeWrap = this.container ? this.container.querySelector('.mel-table-extra-before-wrapper') : null;
+            this.extraAfterWrap = this.container ? this.container.querySelector('.mel-table-extra-after-wrapper') : null;
 
             this._renderColgroup();
             this._applyAppearance();
@@ -4691,6 +4828,7 @@
             var totalWidth = 0;
 
             for (var i = 0; i < columns.length; i++) {
+                if (this._isColHidden(columns[i])) continue;
                 totalWidth += columns[i].width || 100;
             }
 
@@ -4731,7 +4869,9 @@
             // 手动创建 col 元素
             for (var i = 0; i < columns.length; i++) {
                 var col = document.createElement('col');
-                col.style.width = (columns[i].width || 100) + 'px';
+                // 隐藏列宽置 0：col 个数与单元格个数保持一一对应（表头 colspan / 表身对齐不乱），
+                // 但该列不占可见宽度，视觉上等于消失
+                col.style.width = this._isColHidden(columns[i]) ? '0px' : (columns[i].width || 100) + 'px';
                 colgroup.appendChild(col);
             }
         };
@@ -4780,6 +4920,9 @@
                 this.headerWrapper.style.width = (bodyClientWidth > 0 ? bodyClientWidth + 'px' : '100%');
             }
 
+            // 表头宽度定下来后立刻同步 extra 区块宽度（fitWidth 分支会在下面提前 return，这里不能漏）
+            this._syncExtraWidth();
+
             if (opts.fitWidth) {
                 // 判断列宽总和是否 <= 容器宽度，决定是否弹性拉伸
                 var fitContainer = this._getContentWidth(this.el);
@@ -4813,6 +4956,11 @@
             var columns = this.dataStore.columns;
             var percents = [];
             for (var i = 0; i < columns.length; i++) {
+                // 隐藏列不参与弹性分配，宽度固定为 0
+                if (this._isColHidden(columns[i])) {
+                    percents.push('0px');
+                    continue;
+                }
                 var w = columns[i].width || 100;
                 percents.push((w / totalWidth * 100) + '%');
             }
@@ -4853,7 +5001,7 @@
                 if (hcg) {
                     var hcols = hcg.children;
                     for (i = 0; i < hcols.length && i < columns.length; i++) {
-                        hcols[i].style.width = (columns[i].width || 100) + 'px';
+                        hcols[i].style.width = this._isColHidden(columns[i]) ? '0px' : (columns[i].width || 100) + 'px';
                     }
                 }
             }
@@ -4863,7 +5011,7 @@
                 if (bcg) {
                     var bcols = bcg.children;
                     for (j = 0; j < bcols.length && j < columns.length; j++) {
-                        bcols[j].style.width = (columns[j].width || 100) + 'px';
+                        bcols[j].style.width = this._isColHidden(columns[j]) ? '0px' : (columns[j].width || 100) + 'px';
                     }
                 }
             }
@@ -5096,11 +5244,36 @@
             var paginationHeight = 0;
             if (needSubPagination) {
                 var paginationDom = this.el.querySelector('.mel-pagination');
-                paginationHeight = paginationDom ? paginationDom.offsetHeight : 0;
+                paginationHeight = this._getOuterHeight(paginationDom);
             }
 
-            // container目标border-box高度 = el content高度 - 分页栏高度
+            // extraBefore / extraAfter 现在位于 mel-table-container 内部（el content = container + 分页），
+            // 因此这里只扣分页栏高度；上下额外区块的高度由 _applyContainerHeight 在 container 内部扣给表身。
             var containerTargetBox = elContent - paginationHeight;
+            if (containerTargetBox <= 0) return;
+
+            this._applyContainerHeight(containerTargetBox);
+
+            // 实测校正：上面的高度是推算值，margin折叠、字体度量、滚动条出现与否都可能让
+            // el实际总高度与目标差几个像素。应用后实测一次，超出就把差值回收到 container 上。
+            // 只校正一轮：校正后再测通常已落回目标，重复校正反而会抖动。
+            if (!this._layoutCorrecting) {
+                var actualHeight = this.el.offsetHeight;
+                var overflow = actualHeight - elTargetBox;
+                if (overflow > 0) {
+                    this._layoutCorrecting = true;
+                    this._applyContainerHeight(containerTargetBox - overflow);
+                    this._layoutCorrecting = false;
+                }
+            }
+        };
+
+        /**
+         * 按目标高度设置 container / bodyWrapper 高度（_applyLayout 唯一落地点）
+         * @param {Number} containerTargetBox container目标border-box高度
+         */
+        Renderer.prototype._applyContainerHeight = function(containerTargetBox) {
+            if (!this.container || !this.bodyWrapper) return;
             if (containerTargetBox <= 0) return;
 
             this.container.style.boxSizing = 'border-box';
@@ -5112,15 +5285,17 @@
             // 表头实际高度：headerHeight 为'auto'时读表头实际渲染高度；为数值时用指定值
             // 配置来自defaults合并结果，不写死数字
             var headerHeight = this.options.headerHeight;
-            if (typeof headerHeight === 'number' && !isNaN(headerHeight)) {
-                headerHeight = headerHeight;
-            } else {
-                // 'auto'：读取表头 wrapper 实际高度（内容撑开）
+            if (!(typeof headerHeight === 'number' && !isNaN(headerHeight))) {
                 headerHeight = this.headerWrapper ? this.headerWrapper.offsetHeight : 0;
             }
 
-            // bodyWrapper目标border-box高度 = container高度 - container border上下 - 表头高度
-            var bodyHeight = containerTargetBox - cs.borderTop - cs.borderBottom - headerHeight;
+            // extraBefore / extraAfter 在 container 内部，占地必须先从 container 高度里扣掉。
+            // 【关键】用 _getOuterHeight（offsetHeight + 上下 margin）：offsetHeight 不含外边距，
+            // 而 .mel-table-extra-before-wrapper / .mel-table-extra-after-wrapper 各带 8px margin，只减 offsetHeight 会稳定溢出 16px。
+            var extraHeight = this._getOuterHeight(this.extraBeforeWrap) + this._getOuterHeight(this.extraAfterWrap);
+
+            // bodyWrapper目标border-box高度 = container高度 - container border上下 - 表头高度 - 上下额外区块高度
+            var bodyHeight = containerTargetBox - cs.borderTop - cs.borderBottom - headerHeight - extraHeight;
             if (bodyHeight > 0) {
                 this.bodyWrapper.style.height = bodyHeight + 'px';
                 this.bodyWrapper.style.overflow = 'auto';
@@ -5129,6 +5304,49 @@
             // 表身高变化后，垂直滚动条可能出现/消失，导致 bodyClientWidth 变化；
             // 重新对齐表头 wrapper 宽度到 bodyWrapper.clientWidth，保证表头表身不错行
             this._syncHeaderWidth();
+        };
+
+        /**
+         * 取元素「外框高度」：offsetHeight + 上下外边距
+         * 用途：高度扣减必须包含 margin，否则带 margin 的区块会稳定溢出。
+         * 兼容IE9：无 getComputedStyle 时退化用 currentStyle
+         * @param {Element} el 目标元素
+         * @return {Number} 元素占据的垂直高度（含 margin），元素不存在返回 0
+         */
+        Renderer.prototype._getOuterHeight = function(el) {
+            if (!el) return 0;
+
+            var h = el.offsetHeight || 0;
+            var marginTop = 0;
+            var marginBottom = 0;
+
+            if (window.getComputedStyle) {
+                var style = window.getComputedStyle(el);
+                marginTop = parseInt(style.marginTop, 10) || 0;
+                marginBottom = parseInt(style.marginBottom, 10) || 0;
+            } else if (el.currentStyle) {
+                marginTop = parseInt(el.currentStyle.marginTop, 10) || 0;
+                marginBottom = parseInt(el.currentStyle.marginBottom, 10) || 0;
+            }
+
+            return h + marginTop + marginBottom;
+        };
+
+        /**
+         * 给表头 table 打/去「多行表头」标记（mel-header-multi）
+         * @param {Boolean} isMulti 是否多行表头
+         */
+        Renderer.prototype._setMultiHeaderFlag = function(isMulti) {
+            if (!this.headerTable) return;
+
+            var cls = ' ' + this.headerTable.className + ' ';
+            var has = cls.indexOf(' mel-header-multi ') > -1;
+
+            if (isMulti && !has) {
+                this.headerTable.className += ' mel-header-multi';
+            } else if (!isMulti && has) {
+                this.headerTable.className = cls.replace(' mel-header-multi ', ' ').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+            }
         };
 
         /**
@@ -5149,6 +5367,29 @@
                     if (this.bodyTable) this.bodyTable.style.width = cw + 'px';
                 }
             }
+            // extra 区块跟着表头宽度走，保证右边界与表头齐平
+            this._syncExtraWidth();
+        };
+
+        /**
+         * 同步 extraBefore / extraAfter 的宽度 = 表头 wrapper 可视宽度
+         * 原因：extra 区块是 el 的直接子元素，默认撑满 el；而表头 wrapper 宽度是
+         * bodyWrapper.clientWidth（已扣除垂直滚动条、且固定列宽模式下还可能比 el 窄），
+         * 两者不等宽时 extra 内容会越过表头右边界，视觉割裂。
+         * 这里统一以表头 wrapper 可视宽度为准（表头 wrapper 有背景与下边框，是最直观的右边界）。
+         */
+        Renderer.prototype._syncExtraWidth = function() {
+            if (!this.headerWrapper) return;
+
+            var w = this.headerWrapper.clientWidth;
+            if (w <= 0) return;
+
+            if (this.extraBeforeWrap) {
+                this.extraBeforeWrap.style.width = w + 'px';
+            }
+            if (this.extraAfterWrap) {
+                this.extraAfterWrap.style.width = w + 'px';
+            }
         };
 
         /**
@@ -5158,6 +5399,118 @@
          * 【背景色关键】冻结 td 不能写死固定色，必须实时取所属行 tr 的实际渲染背景色
          * (含斑马纹、hover)，否则下层滚动内容会穿透，且行间颜色不一致。
          */
+        /**
+         * 取出表头中「覆盖前 count 列」的全部 th
+         * 合并表头有多行，且有 colspan（分组）、rowspan（浅层列/非分组列），
+         * 所以要按网格推演每个 th 的实际起始列，再挑出起始列 < count 的那些。
+         * 单级表头时等价于「该行前 count 个 th」，行为与改造前完全一致。
+         * @param {Number} count 固定列数量（从第1列开始连续 count 列）
+         * @return {Array} th 列表
+         */
+        Renderer.prototype._getFixedHeaderCells = function(count) {
+            var result = [];
+            var rows = this.theadTrs;
+
+            // 固定列数量按「可见列」计：隐藏列已不占可见宽度，不能吃掉固定列的坑位。
+            // 用列配置的前缀可见列计数，把网格原始列号换算成可见列号。
+            var colsCfg = (this.dataStore && this.dataStore.columns) || [];
+            var pre = [];
+            var vis = 0;
+            for (var n = 0; n <= colsCfg.length; n++) {
+                pre[n] = vis;
+                if (n < colsCfg.length && !this._isColHidden(colsCfg[n])) vis++;
+            }
+
+            if (!rows || !rows.length) {
+                // 兜底：没有多行引用时退化为单行前 count 个可见列（如插件在表头未渲染时调用）
+                if (this.theadTr) {
+                    var single = this.theadTr.children;
+                    var picked = 0;
+                    for (var k = 0; k < single.length && picked < count; k++) {
+                        if (this._isHiddenCell(single[k])) continue;
+                        result.push(single[k]);
+                        picked++;
+                    }
+                }
+                return result;
+            }
+
+            // 网格推演：逐行逐格计算起始列，被上方 rowspan 占用的列跳过
+            var placed = [];
+            for (var r = 0; r < rows.length; r++) {
+                var cells = rows[r].children;
+                var col = 0;
+                for (var c = 0; c < cells.length; c++) {
+                    var th = cells[c];
+                    var colspan = parseInt(th.getAttribute('colspan'), 10) || 1;
+                    var rowspan = parseInt(th.getAttribute('rowspan'), 10) || 1;
+
+                    while (this._isColumnOccupied(placed, r, col)) {
+                        col++;
+                    }
+
+                    placed.push({row: r, col: col, colspan: colspan, rowspan: rowspan, th: th});
+                    col += colspan;
+                }
+            }
+
+            for (var i = 0; i < placed.length; i++) {
+                // 单元格起始列的「可见列序号」小于 count 才算固定列；隐藏单元格本身不参与固定
+                var visibleStart = pre[placed[i].col] === undefined ? placed[i].col : pre[placed[i].col];
+                if (visibleStart < count && !this._isHiddenCell(placed[i].th)) {
+                    result.push(placed[i].th);
+                }
+            }
+            return result;
+        };
+
+        /**
+         * 取某一行需要冻结的单元格
+         * 固定列数量一律按「可见列」计：隐藏列已不占可见宽度，跳过它继续数，
+         * 否则隐藏列会白吃一个固定坑位，导致后面的列没被固定、滚动时压住固定内容。
+         * 首次渲染、滚动同步、hover 换背景三处必须共用这一个口径，不能各写一套。
+         * @param {Element} tr 行节点
+         * @param {Number} count 需要冻结的可见列数
+         * @return {Array} td 列表
+         */
+        Renderer.prototype._getFixedBodyCells = function(tr, count) {
+            var result = [];
+            if (!tr || !tr.children) return result;
+            var tds = tr.children;
+            for (var i = 0; i < tds.length && result.length < count; i++) {
+                if (this._isHiddenCell(tds[i])) continue;
+                result.push(tds[i]);
+            }
+            return result;
+        };
+
+        /**
+         * 判断某个 th / td 是否为隐藏列单元格（靠渲染时打的 mel-col-hidden 类）
+         * @param {Element} cell 单元格节点
+         * @return {Boolean}
+         */
+        Renderer.prototype._isHiddenCell = function(cell) {
+            if (!cell || !cell.className) return false;
+            return (' ' + cell.className + ' ').indexOf(' mel-col-hidden ') >= 0;
+        };
+
+        /**
+         * 判断某行某列是否已被上方（rowspan）单元格占用
+         * @param {Array} placed 已排布单元格记录
+         * @param {Number} row 行号
+         * @param {Number} col 列号
+         * @return {Boolean}
+         */
+        Renderer.prototype._isColumnOccupied = function(placed, row, col) {
+            for (var i = 0; i < placed.length; i++) {
+                var p = placed[i];
+                if (p.row < row && row < p.row + p.rowspan && p.col <= col && col < p.col + p.colspan) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         Renderer.prototype._applyFixedColumns = function() {
             var fixedLeft = this.options.fixedLeftColumns || 0;
             if (fixedLeft <= 0) return;
@@ -5166,26 +5519,33 @@
             var scrollLeft = this.bodyWrapper ? this.bodyWrapper.scrollLeft : 0;
 
             // 表头固定列（表头背景固定 #f5f7fa）
-            var ths = this.theadTr.children;
-            for (var i = 0; i < fixedLeft && i < ths.length; i++) {
-                ths[i].style.position = 'relative';
-                ths[i].style.left = scrollLeft + 'px';
-                ths[i].style.zIndex = '2';
-                ths[i].style.backgroundColor = '#f5f7fa';
-                this._setFixedShadow(ths[i]);
+            // 注意：合并表头时不能简单取叶子行前 N 个 th——分组 th 有 colspan、浅层列有 rowspan，
+            // 叶子行的第 1 个 th 未必是第 1 列。这里按网格推演出的「列偏移」挑选覆盖前 N 列的 th。
+            var headerCells = this._getFixedHeaderCells(fixedLeft);
+            this._headerFixedCells = headerCells;
+            for (var h = 0; h < headerCells.length; h++) {
+                var th = headerCells[h];
+                th.style.position = 'relative';
+                th.style.left = scrollLeft + 'px';
+                th.style.zIndex = '2';
+                th.style.backgroundColor = '#f5f7fa';
+                this._setFixedShadow(th);
             }
 
             // 表身固定列：背景取所属行 tr 的实际渲染色
+            // 固定列数量按「可见列」计：隐藏列不占可见宽度，跳过它继续数，避免它白占一个固定坑位
             var trs = this.tbody.children;
             for (var r = 0; r < trs.length; r++) {
+                // 展开详情行整行跨列，不属于数据行，不参与冻结列平移
+                if (this._isExpandRowTr(trs[r])) continue;
                 var rowBg = this._getRowBackground(trs[r]);
-                var tds = trs[r].children;
-                for (var c = 0; c < fixedLeft && c < tds.length; c++) {
-                    tds[c].style.position = 'relative';
-                    tds[c].style.left = scrollLeft + 'px';
-                    tds[c].style.zIndex = '1';
-                    tds[c].style.backgroundColor = rowBg;
-                    this._setFixedShadow(tds[c]);
+                var cells = this._getFixedBodyCells(trs[r], fixedLeft);
+                for (var c = 0; c < cells.length; c++) {
+                    cells[c].style.position = 'relative';
+                    cells[c].style.left = scrollLeft + 'px';
+                    cells[c].style.zIndex = '1';
+                    cells[c].style.backgroundColor = rowBg;
+                    this._setFixedShadow(cells[c]);
                 }
             }
         };
@@ -5290,6 +5650,9 @@
                     this.bodyWrapper.style.height = opts.bodyHeight + 'px';
                     this.bodyWrapper.style.overflow = 'auto';
                 }
+                // 高度定下来后垂直滚动条可能才出现/消失，bodyWrapper可视宽度随之变化，
+                // 必须重算表头与 extra 宽度，否则表头比表身宽一个滚动条、extra 跟着错位
+                this._syncHeaderWidth();
                 return;
             }
 
@@ -5326,16 +5689,19 @@
                     var offset = this.scrollLeft;
                     var trs = self.tbody ? self.tbody.children : [];
                     for (var r = 0; r < trs.length; r++) {
-                        var tds = trs[r].children;
-                        for (var c = 0; c < fixedLeft && c < tds.length; c++) {
-                            tds[c].style.position = 'relative';
-                            tds[c].style.left = offset + 'px';
-                            tds[c].style.zIndex = '1';
+                        // 展开详情行整行跨列，不参与冻结列平移
+                        if (self._isExpandRowTr(trs[r])) continue;
+                        var cells = self._getFixedBodyCells(trs[r], fixedLeft);
+                        for (var c = 0; c < cells.length; c++) {
+                            cells[c].style.position = 'relative';
+                            cells[c].style.left = offset + 'px';
+                            cells[c].style.zIndex = '1';
                         }
                     }
 
-                    var ths = self.theadTr ? self.theadTr.children : [];
-                    for (var i = 0; i < fixedLeft && i < ths.length; i++) {
+                    // 表头固定列：多行表头时是「覆盖前 N 列的 th 列表」，不是某一行的前 N 个（由 _applyFixedColumns 缓存）
+                    var ths = self._headerFixedCells || [];
+                    for (var i = 0; i < ths.length; i++) {
                         ths[i].style.position = 'relative';
                         ths[i].style.left = offset + 'px';
                         ths[i].style.zIndex = '2';
@@ -5365,74 +5731,140 @@
          * 再从中取出解析好的 <tr> 节点迁移到真实 theadTr，彻底规避 IE9 对 table 系元素赋 innerHTML 的限制。
          * @param {String} html 表头行的 th HTML 字符串
          */
-        Renderer.prototype._setTheadHtml = function(html) {
-            if (!this.theadTr) return;
+        Renderer.prototype._setTheadHtml = function(rowsHtml) {
+            if (!this.thead) return;
 
             // IE9 兼容【彻底方案】：table / tbody / tr 系列元素直接赋 innerHTML（内容含表格内部标签）
             // 会抛"该操作的目标元件无效"(Invalid target element for this operation)，这是 IE9 的硬性限制，
             // 无论该 table 是否已挂到文档。因此不再用 table 元素做解析容器，
             // 改用普通 div 容器：div 是通用容器，IE9 允许对 div 赋含 <table> 结构的 innerHTML，
-            // 再从中取出解析好的 <tr> 节点迁移到真实 theadTr，彻底规避该限制。
+            // 再从中取出解析好的 <tr> 节点迁移到真实 thead，彻底规避该限制。
+            // 参数为完整的行 html（可多行 <tr>...</tr>，合并表头时即多行）。
             var tempDiv = document.createElement('div');
-            tempDiv.innerHTML = '<table><tbody><tr>' + html + '</tr></tbody></table>';
+            tempDiv.innerHTML = '<table><tbody>' + rowsHtml + '</tbody></table>';
             var tempTbody = tempDiv.getElementsByTagName('tbody')[0];
-            var newTr = tempTbody ? tempTbody.getElementsByTagName('tr')[0] : null;
+            if (!tempTbody) return;
 
-            if (!newTr) return;
+            // 原地替换：先清空旧 thead，再把解析出的每一行 tr 依次迁移进去。
+            // 保留 this.thead 引用不变：表头点击事件绑在 thead 上，换行不会丢事件。
+            while (this.thead.firstChild) {
+                this.thead.removeChild(this.thead.firstChild);
+            }
 
-            // 原地替换：先清空旧 theadTr，再逐个迁移 newTr 的子节点（th）到旧 theadTr。
-            // 保留 this.theadTr 引用不变，避免 replaceChild 换节点导致已绑定的排序点击事件丢失。
-            while (this.theadTr.firstChild) {
-                this.theadTr.removeChild(this.theadTr.firstChild);
+            var tr;
+            while ((tr = tempTbody.firstChild)) {
+                this.thead.appendChild(tr);
             }
-            while (newTr.firstChild) {
-                this.theadTr.appendChild(newTr.firstChild);
-            }
+
+            // 维护行引用：
+            //   theadTrs：全部表头行（合并表头时多行）
+            //   theadTr ：叶子行（最后一行），其 th 数量与表身列数一致，
+            //             固定列定位、滚动同步都以它为准；单级表头时它就是唯一一行，行为与改造前一致。
+            this.theadTrs = this.thead.getElementsByTagName('tr');
+            this.theadTr = this.theadTrs.length ? this.theadTrs[this.theadTrs.length - 1] : null;
+
+            // 多行（合并）表头标记：css 靠它区分「单级表头收边」与「多行表头保留最后一列右边框」。
+            // 表头会随排序等重绘，所以两种状态都要显式切换，不能只加不减。
+            this._setMultiHeaderFlag(this.theadTrs.length > 1);
         };
 
         /**
          * 渲染表头
          */
-        Renderer.prototype._renderHeader = function() {
-            if (!this.theadTr) return;
+        /**
+         * 生成单个叶子列的 th html（排序箭头、全选 checkbox、副标题等列级细节都在这里，唯一出口）
+         * 合并表头插件渲染叶子单元格时也走此方法，避免两处各写一套导致行为不一致
+         * @param {Object} col 列配置
+         * @param {String} extraClass 额外追加的样式类（可选）
+         * @param {Number} rowspan 纵向跨行数（可选，默认1）。多级表头里浅层列/非分组列需要纵向跨行才能与表身对齐
+         * @return {String} th html
+         */
+        /**
+         * 判断某列是否可点击表头排序（决定是否显示 pointer 光标）
+         * 规则：
+         *   1. 未启用 Sort 插件 → 一律不可排序（避免光标 pointer 却点了没反应）；
+         *   2. 分组表头（无 field）与内部列（field 以 _ 开头）不参与排序；
+         *   3. 列配置 sortable:false → 该列不可排序；不写该项默认可排序。
+         * @param {Object} col 列配置
+         * @return {Boolean}
+         */
+        Renderer.prototype._isColSortable = function(col) {
+            if (!this.sortEnabled) return false;
+            if (!col || !col.field) return false;
+            if (col.field.charAt(0) === '_') return false;
+            return col.sortable !== false;
+        };
 
-            var html = '';
-            var columns = this.dataStore.columns;
+        Renderer.prototype._buildThHtml = function(col, extraClass, rowspan) {
+            var title = col.title || '';
+            var subtitle = col.subtitle || '';
+            var align = col.align || 'center';
+            var alignClass = 'mel-align-' + align;
+            if (extraClass) alignClass += ' ' + extraClass;
+
+            // 隐藏列：th 照常渲染（DOM 保留），只挂隐藏类，CSS display:none
+            if (this._isColHidden(col)) alignClass += ' mel-col-hidden';
+
+            // 可排序列：追加标记类，CSS 只负责 cursor:pointer
+            if (this._isColSortable(col)) alignClass += ' mel-th-sortable';
+
             var sortField = this.dataStore.sortField;
             var sortOrder = this.dataStore.sortOrder;
 
-            for (var i = 0; i < columns.length; i++) {
-                var col = columns[i];
-                var title = col.title || '';
-                var subtitle = col.subtitle || '';
-                var align = col.align || 'center';
-                var alignClass = 'mel-align-' + align;
-
-                var arrow = '';
-                if (col.field === sortField && sortOrder) {
-                    arrow = '<span class="mel-sort-arrow" style="margin-left:4px;font-size:10px;color:#409eff;">' + (sortOrder === 'asc' ? '▲' : '▼') + '</span>';
-                }
-
-                // 多选列表头全选 checkbox（单选模式单选列不渲染全选，且强制忽略showSelectAll）
-                var thContent = '';
-                if (col.field === '_checkbox' && this.options.showSelectAll !== false && col.mode !== 'single') {
-                    thContent = '<input type="checkbox" class="mel-header-checkbox">';
-                } else {
-                    thContent = '<div class="mel-th-inner">';
-                    thContent += '<span class="mel-th-title">' + title + '</span>';
-                    if (subtitle) {
-                        thContent += '<em class="mel-th-subtitle">' + subtitle + '</em>';
-                    }
-                    thContent += arrow;
-                    thContent += '</div>';
-                }
-
-                html += '<th class="' + alignClass + '" data-field="' + (col.field || '') + '">';
-                html += thContent;
-                html += '</th>';
+            var arrow = '';
+            if (col.field === sortField && sortOrder) {
+                arrow = '<span class="mel-sort-arrow" style="margin-left:4px;font-size:10px;color:#409eff;">' + (sortOrder === 'asc' ? '▲' : '▼') + '</span>';
             }
 
-            this._setTheadHtml(html);
+            // 多选列表头全选 checkbox（单选模式单选列不渲染全选，且强制忽略showSelectAll）
+            var thContent = '';
+            if (col.field === '_checkbox' && this.options.showSelectAll !== false && col.mode !== 'single') {
+                thContent = '<input type="checkbox" class="mel-header-checkbox">';
+            } else {
+                thContent = '<div class="mel-th-inner">';
+                thContent += '<span class="mel-th-title">' + title + '</span>';
+                if (subtitle) {
+                    thContent += '<em class="mel-th-subtitle">' + subtitle + '</em>';
+                }
+                thContent += arrow;
+                thContent += '</div>';
+            }
+
+            var spanAttr = (rowspan && rowspan > 1) ? (' rowspan="' + rowspan + '"') : '';
+            return '<th class="' + alignClass + '" data-field="' + (col.field || '') + '"' + spanAttr + '>' + thContent + '</th>';
+        };
+
+        /**
+         * 生成默认单行表头 html（无合并表头时使用）
+         * @return {String} 单行 <tr>...</tr>
+         */
+        Renderer.prototype._buildHeaderRowsHtml = function() {
+            var columns = this.dataStore.columns;
+            var html = '';
+            for (var i = 0; i < columns.length; i++) {
+                html += this._buildThHtml(columns[i]);
+            }
+            return '<tr>' + html + '</tr>';
+        };
+
+        /**
+         * 渲染表头
+         * 表头行 html 的生成分两条路：
+         *   1. 默认：单行平铺（_buildHeaderRowsHtml）；
+         *   2. 启用 HeaderMerge 插件：由插件提供的 headerMergeBuilder 返回多行 <tr> 结构。
+         * 核心只负责把 html 落到 thead、处理表头高度、绑定全选 checkbox，合并逻辑由插件独占。
+         */
+        Renderer.prototype._renderHeader = function() {
+            if (!this.thead) return;
+
+            var rowsHtml;
+            if (typeof this.headerMergeBuilder === 'function') {
+                rowsHtml = this.headerMergeBuilder();
+            } else {
+                rowsHtml = this._buildHeaderRowsHtml();
+            }
+
+            this._setTheadHtml(rowsHtml);
 
             // 表头高度由配置 headerHeight 控制：
             // 默认'auto'不设固定高度，由内容自动撑开；仅当传入数值时才设置固定高度
@@ -5447,7 +5879,7 @@
             }
 
             // 绑定表头全选 checkbox 事件
-            var headerCheckbox = this.theadTr.querySelector('.mel-header-checkbox');
+            var headerCheckbox = this.thead.querySelector('.mel-header-checkbox');
             if (headerCheckbox) {
                 var self = this;
                 headerCheckbox.onclick = function(e) {
@@ -5456,7 +5888,7 @@
                     var checked = this.checked;
                     self.dataStore.selectAll(checked);
                     self.eventBus.emit('selectChange', {
-                        selectedRows: self.dataStore.getSelectedRows()
+                        selectedRows: self.dataStore.getPlainRows(self.dataStore.getSelectedRows())
                     });
                 };
             }
@@ -5485,6 +5917,10 @@
             // 再把解析出的 tr 节点批量迁移到真实 tbody。
             this._setTbodyHtmlSafe(html);
             this._cacheRowNodes();
+
+            // 行数变化会改变垂直滚动条的有无，bodyWrapper 可视宽度随之变化：
+            // 重算表头与 extra 宽度，保证表头表身不错行、extra 不越过表头右边界
+            this._syncHeaderWidth();
 
             this.eventBus.emit('summaryRequest');
         };
@@ -5543,6 +5979,8 @@
                 var value = rowData[col.field] !== undefined ? rowData[col.field] : '';
                 var align = col.align || 'center';
                 var alignClass = 'mel-align-' + align;
+                // 隐藏列：td 照常渲染（DOM 保留），只挂隐藏类，不占可见宽度
+                if (this._isColHidden(col)) alignClass += ' mel-col-hidden';
 
                 var renderer = this._renderers[col.renderer] || this._renderers.text;
                 var cellContent = renderer(value, col, rowData);
@@ -5553,7 +5991,26 @@
             }
 
             html += '</tr>';
+
+            // 展开行插件钩子：在数据行后面追加一条跨列详情行（RowExpand 插件接管）
+            // 插件未启用时 rowExpandBuilder 为 undefined，不产生任何额外 HTML
+            if (typeof this.rowExpandBuilder === 'function') {
+                var expandHtml = this.rowExpandBuilder(rowData);
+                if (expandHtml) html += expandHtml;
+            }
+
             return html;
+        };
+
+        /**
+         * 判断是否为展开行插件插入的详情行（不是数据行）
+         * 详情行带 data-row-expand="1"，不参与行节点缓存、冻结列平移等按「行」处理的逻辑
+         * @param {Element} tr 行节点
+         * @return {Boolean}
+         */
+        Renderer.prototype._isExpandRowTr = function(tr) {
+            if (!tr || !tr.getAttribute) return false;
+            return tr.getAttribute('data-row-expand') === '1';
         };
 
         /**
@@ -5563,11 +6020,16 @@
             if (!this.tbody) return;
 
             var trs = this.tbody.children;
-            var visibleRows = this.dataStore.getVisibleRows();
+            this.dataStore.getVisibleRows();
+            // 展开行插件会在数据行后插入详情行，导致 trs 下标与 visibleRows 不再一一对应，
+            // 因此按 data-row-index 反查行对象，不能按数组下标硬配。
+            // 注意：展开行的单元格里没有 data-row-index，按 index 找不到行，直接跳过。
             for (var i = 0; i < trs.length; i++) {
-                if (visibleRows[i]) {
-                    visibleRows[i]._node = trs[i];
-                }
+                if (this._isExpandRowTr(trs[i])) continue;
+                var rowIndex = parseInt(trs[i].getAttribute('data-row-index'));
+                if (isNaN(rowIndex)) continue;
+                var nodeRow = this.dataStore.getRow(rowIndex);
+                if (nodeRow) nodeRow._node = trs[i];
             }
         };
 
@@ -5595,11 +6057,16 @@
 
                 if (sums.titleColumn === c) {
                     cellHtml = '<strong>' + (sums.title || '合计') + '</strong>';
+                } else if (sums.blank && sums.data[col.field] !== undefined) {
+                    // blank=true：合计无数据可算（远程分页 scope='all' 但没给 externalData），直接显示占位符，别渲染成 0 误导使用者
+                    cellHtml = '<strong>' + sums.data[col.field] + '</strong>';
                 } else if (sums.data[col.field] !== undefined && !isNaN(sums.data[col.field])) {
                     cellHtml = '<strong>' + sums.data[col.field].toFixed(2) + '</strong>';
                 }
 
-                html += '<td>' + cellHtml + '</td>';
+                // 隐藏列的合计单元格同样挂隐藏类，列宽与表身保持一致，不额外占位
+                var tdClass = this._isColHidden(col) ? ' class="mel-col-hidden"' : '';
+                html += '<td' + tdClass + '>' + cellHtml + '</td>';
             }
 
             html += '</tr>';
@@ -5682,7 +6149,7 @@
          * 绑定事件（事件委托）
          */
         Renderer.prototype._bindEvents = function() {
-            if (!this.tbody || !this.theadTr) return;
+            if (!this.tbody || !this.thead) return;
 
             var self = this;
 
@@ -5699,11 +6166,24 @@
 
                 if (!rowData) return;
 
+                // 单行事件：rowId 独立作为顶层参数，rowData 为纯业务字段副本（不含内部字段）
+                var rowId = rowData._rowId;
+                var plainRow = self.dataStore.getPlainRow(rowData);
+
                 self.eventBus.emit('cellClick', {
-                    rowData: rowData,
+                    rowId: rowId,
+                    rowData: plainRow,
                     cell: {rowIndex: rowIndex, field: field, element: td}
                 });
-                self.eventBus.emit('rowClick', {rowData: rowData, rowIndex: rowIndex});
+                // 插件可提供 rowClickFilter(field)：命中返回 true 的列，点击后不抛 rowClick
+                // （展开行插件用它挡住箭头列，避免点箭头时同时触发业务「点整行」逻辑）
+                if (typeof self.rowClickFilter === 'function' && self.rowClickFilter(field)) return;
+
+                self.eventBus.emit('rowClick', {
+                    rowId: rowId,
+                    rowData: plainRow,
+                    rowIndex: rowIndex
+                });
             };
 
             // 输入变化（带类型过滤）
@@ -5739,7 +6219,10 @@
                 var oldValue = self.dataStore.getCell(rowIndex, field);
 
                 self.dataStore.setCell(rowIndex, field, newValue);
+                var changedRow = self.dataStore.getRow(rowIndex);
                 self.eventBus.emit('cellChange', {
+                    rowId: changedRow ? changedRow._rowId : '',
+                    rowData: self.dataStore.getPlainRow(changedRow),
                     rowIndex: rowIndex, field: field,
                     newValue: newValue, oldValue: oldValue
                 });
@@ -5780,14 +6263,17 @@
                     var oldValue = self.dataStore.getCell(rowIndex, field);
 
                     self.dataStore.setCell(rowIndex, field, newValue);
+                    var changedRow = self.dataStore.getRow(rowIndex);
                     self.eventBus.emit('cellChange', {
+                        rowId: changedRow ? changedRow._rowId : '',
+                        rowData: self.dataStore.getPlainRow(changedRow),
                         rowIndex: rowIndex, field: field,
                         newValue: newValue, oldValue: oldValue
                     });
                 });
             }
 
-            this.theadTr.onclick = function(e) {
+            this.thead.onclick = function(e) {
                 var event = e || window.event;
                 var target = event.target || event.srcElement;
 
@@ -5795,7 +6281,20 @@
                 if (!th) return;
 
                 var field = th.getAttribute('data-field');
-                if (!field) return;
+
+                // 分组表头（合并表头的父级 th）：没有 field，不参与排序，也不抛 headerClick，
+                // 单独抛 groupHeaderClick，由分组列解析器还原出对应的列配置对象。
+                if (!field) {
+                    var groupPath = th.getAttribute('data-group-path');
+                    if (groupPath && typeof self.groupColumnResolver === 'function') {
+                        self.eventBus.emit('groupHeaderClick', {
+                            column: self.groupColumnResolver(groupPath),
+                            element: th,
+                            event: event
+                        });
+                    }
+                    return;
+                }
 
                 self.eventBus.emit('headerClick', {field: field});
             };
@@ -5812,9 +6311,9 @@
                     if (tr.parentNode !== self.tbody) return;
                     // 重取该行背景（hover 后浏览器已应用 tr:hover 样式）
                     var rowBg = self._getRowBackground(tr);
-                    var tds = tr.children;
-                    for (var c = 0; c < fixedLeft && c < tds.length; c++) {
-                        tds[c].style.backgroundColor = rowBg;
+                    var cells = self._getFixedBodyCells(tr, fixedLeft);
+                    for (var c = 0; c < cells.length; c++) {
+                        cells[c].style.backgroundColor = rowBg;
                     }
                 };
 
@@ -5855,7 +6354,130 @@
         /**
          * 销毁清理：移除window.resize、表身scroll监听，恢复body overflow-y，清空容器DOM
          */
+        /**
+         * 聚焦单元格：滚动到可见 + 聚焦输入元素 + 可选临时高亮
+         * 供 TableCore.focusCell 调用（校验不通过时把用户直接带到出错的格子）
+         * @param {Number} rowIndex 行索引（0-based）
+         * @param {String} field 列字段名
+         * @param {Object} options highlight：是否临时高亮，默认 true
+         * @return {Boolean} 是否定位成功
+         */
+        Renderer.prototype.focusCell = function(rowIndex, field, options) {
+            var ds = this.dataStore;
+            var row = ds ? ds.getRow(rowIndex) : null;
+            if (!row || !row._node || !row._node.parentNode) return false;
+
+            var td = row._node.querySelector('td[data-field="' + field + '"]');
+            if (!td) return false;
+
+            // 1. 滚动到可见区域（滚动容器是表身，不是 window）
+            if (this.bodyWrapper) {
+                this._scrollCellIntoView(td, this.bodyWrapper);
+                // 程序化改 scrollLeft / scrollTop 部分环境不派发 scroll 事件，
+                // 这里主动同步表头横向位置与固定列 left 平移，避免固定列压盖
+                if (this.headerWrapper) this.headerWrapper.scrollLeft = this.bodyWrapper.scrollLeft;
+                if (typeof this._bodyScrollHandler === 'function') {
+                    this._bodyScrollHandler.call(this.bodyWrapper);
+                }
+            }
+
+            // 2. 聚焦可输入元素（纯展示列没有输入元素，只做高亮）
+            var input = null;
+            var tags = ['input', 'textarea', 'select'];
+            for (var i = 0; i < tags.length; i++) {
+                input = td.querySelector(tags[i]);
+                if (input) break;
+            }
+            if (input && input.focus) {
+                try {
+                    input.focus();
+                } catch (e) {
+                    // 只读 / 禁用元素聚焦失败无需处理
+                }
+            }
+
+            // 3. 临时高亮
+            if (!options || options.highlight !== false) {
+                this._flashCell(td);
+            }
+            return true;
+        };
+
+        /**
+         * 把单元格滚动到表身容器的可见范围内
+         * 用 rect 差量计算，天然兼容固定列的 position:relative + left 平移
+         * @param {Element} cell 单元格
+         * @param {Element} wrapper 表身滚动容器
+         */
+        Renderer.prototype._scrollCellIntoView = function(cell, wrapper) {
+            if (!cell || !wrapper || !cell.getBoundingClientRect) return;
+
+            var cr = cell.getBoundingClientRect();
+            var wr = wrapper.getBoundingClientRect();
+            var pad = 8;
+            var lead = 40; // 横向多留一点，避免单元格贴着边缘难以看清
+
+            var dl = cr.left - wr.left;
+            var dr = cr.right - (wr.left + wrapper.clientWidth);
+            if (dl < pad) {
+                wrapper.scrollLeft += (dl - lead);
+            } else if (dr > -pad) {
+                wrapper.scrollLeft += (dr + lead);
+            }
+
+            var dt = cr.top - wr.top;
+            var db = cr.bottom - (wr.top + wrapper.clientHeight);
+            if (dt < pad) {
+                wrapper.scrollTop += (dt - pad);
+            } else if (db > -pad) {
+                wrapper.scrollTop += (db + pad);
+            }
+        };
+
+        /**
+         * 单元格临时高亮（1.2 秒后自动恢复）
+         * 同时只亮一格，避免用户看花
+         * @param {Element} cell 单元格
+         */
+        Renderer.prototype._flashCell = function(cell) {
+            if (!cell || !cell.style) return;
+
+            // 先恢复上一格
+            if (this._flashCellEl && this._flashCellEl.style) {
+                this._flashCellEl.style.boxShadow = this._flashCellShadow || '';
+                this._flashCellEl.style.backgroundColor = this._flashCellBg || '';
+            }
+            if (this._flashTimer) {
+                clearTimeout(this._flashTimer);
+                this._flashTimer = null;
+            }
+
+            this._flashCellEl = cell;
+            this._flashCellShadow = cell.style.boxShadow || '';
+            this._flashCellBg = cell.style.backgroundColor || '';
+
+            cell.style.boxShadow = 'inset 0 0 0 2px #e53935';
+            cell.style.backgroundColor = '#fff1f0';
+
+            var self = this;
+            this._flashTimer = setTimeout(function() {
+                if (self._flashCellEl && self._flashCellEl.style) {
+                    self._flashCellEl.style.boxShadow = self._flashCellShadow || '';
+                    self._flashCellEl.style.backgroundColor = self._flashCellBg || '';
+                }
+                self._flashCellEl = null;
+                self._flashTimer = null;
+            }, 1200);
+        };
+
         Renderer.prototype._destroy = function() {
+            // 清理单元格高亮定时器
+            if (this._flashTimer) {
+                clearTimeout(this._flashTimer);
+                this._flashTimer = null;
+            }
+            this._flashCellEl = null;
+
             // 移除window.resize监听
             if (this._resizeBound && this._resizeHandler) {
                 if (window.removeEventListener) {
@@ -6046,9 +6668,9 @@
      * MelUi Table 表格组件 - 主类
      * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.7.6
+     * @Version：v1.9.4
      * @Date：2026-10-10
-     * @PubDate：2026-11-06 10:46:28
+     * @PubDate：2026-11-12 10:13:15
      */
 
      (function(MelUi) {
@@ -6097,12 +6719,23 @@
                 addRowMode: 'currentPage', // 新增行插入位置(可选)。值：'currentPage'=插入当前页数据集合(默认)，配合addRow的position控制当前页首/尾；'global'=插入全局原始数据数组首/尾。注：remotePaging=true时本参数无效(自动降级为global)
 
                 // ·插件及事件
-                plugins: [], // 插件数组(可选)。字符串简写启用+默认配置，或对象{name, ...}启用+自定义配置
-                events: {} // 事件配置(可选)。如 onCellClick/onCellChange/onRowClick 等回调
+                plugins: [], // 插件数组(可选)。'SerialNo'=字符串简写启用+默认配置；{name:'Pagination',pageSize:30}=对象形式；['RowExpand',{expandSingle:false}]=数组形式，第一项插件名、第二项配置
+                events: {}, // 事件配置(可选)。如 onCellClick/onCellChange/onRowClick 等回调
+
+                // ·表格上下额外区块
+                extraBefore: '', // 表格上方额外内容(可选)。String 直接作为html渲染；Function 以表格实例为参数，返回html字符串。取值或返回值为空则不渲染该区块
+                extraAfter: '' // 表格下方额外内容(可选)。用法同 extraBefore
             };
 
             // 合并配置
             this.options = this._extend({}, defaults, options);
+
+            // 多级表头支持：columns 允许用 children 描述分组表头（树形）。
+            // 数据源只认叶子列，必须在创建 DataStore 之前把树拍平成叶子列，
+            // 否则列宽汇总、colgroup、行渲染、字段取值、固定列都会把分组节点当成一列而错位。
+            // 表头树单独保留在 _columnTree，供 HeaderMerge 插件渲染多行表头使用；不改动用户传入的配置对象。
+            this._columnTree = this.options.columns || [];
+            this.options.columns = this._flattenColumns(this._columnTree);
 
             // 初始化核心模块
             this.eventBus = new MelUi.Table.EventBus();
@@ -6114,7 +6747,7 @@
                 addRowMode: this.options.addRowMode,
                 enableRemotePagingFallback: this.options.enableRemotePagingFallback
             });
-            this.renderer = new MelUi.Table.Renderer(this.options, this.dataStore, this.eventBus);
+            this.renderer = new MelUi.Table.Renderer(this.options, this.dataStore, this.eventBus, this);
 
             // 挂载降级兜底状态到表格实例，供业务在 onPageChange 等回调中判断：
             // true = 当前处于降级兜底分页（无需请求后端，组件内部前端切片）；
@@ -6145,6 +6778,43 @@
                 }
             }
             return target;
+        };
+
+        /**
+         * 把 columns 树拍平成叶子列数组
+         * - 叶子列 = 没有 children 的列（带 field，参与列宽、渲染、取值）；
+         * - 普通扁平 columns 原样返回（同一个数组引用，不做无谓拷贝，零开销）；
+         * - 分组节点（含 children）不进入返回值，仅用于表头渲染。
+         * @param {Array} columns 列配置（可含 children 分组）
+         * @return {Array} 叶子列数组
+         */
+        TableCore.prototype._flattenColumns = function(columns) {
+            if (!columns || !columns.length) return columns || [];
+
+            // 先探测是否存在分组，没有分组直接原样返回，保证原有行为完全不变
+            var hasGroup = false;
+            for (var i = 0; i < columns.length; i++) {
+                if (columns[i] && columns[i].children && columns[i].children.length) {
+                    hasGroup = true;
+                    break;
+                }
+            }
+            if (!hasGroup) return columns;
+
+            var leaves = [];
+            var walk = function(list) {
+                for (var j = 0; j < list.length; j++) {
+                    var col = list[j];
+                    if (!col) continue;
+                    if (col.children && col.children.length) {
+                        walk(col.children);
+                    } else {
+                        leaves.push(col);
+                    }
+                }
+            };
+            walk(columns);
+            return leaves;
         };
 
         /**
@@ -6190,7 +6860,9 @@
                 onRowDelete: 'rowDelete',
                 onDeleteRow: 'rowDelete', // deleteRow方法删除成功后抛出的回调事件
                 onSort: 'sortChange',
-                onPageChange: 'pageChange'
+                onPageChange: 'pageChange',
+                onGroupHeaderClick: 'groupHeaderClick', // 合并表头时点击分组表头（父级 th）触发
+                onExpandChange: 'expandChange' // 展开行插件：展开/收起切换完成后触发
             };
 
             for (var userEvent in eventMap) {
@@ -6226,6 +6898,11 @@
                     pluginOptions = this._extend({}, pluginConfig);
                     delete pluginOptions.name;
                 }
+                // 数组形式：['RowExpand', {expandSingle: false}] = 第一项插件名 + 第二项配置
+                else if (Object.prototype.toString.call(pluginConfig) === '[object Array]') {
+                    pluginName = pluginConfig[0] || '';
+                    pluginOptions = this._extend({}, pluginConfig[1] || {});
+                }
 
                 if (!pluginName) continue;
 
@@ -6237,9 +6914,36 @@
 
                 // 创建插件实例并初始化
                 var plugin = new PluginClass(pluginOptions);
+                // 记下注册名：业务侧 table.getPlugin('Export') 靠它匹配，
+                // 不依赖 instanceof / 私有数组下标，插件改名也不会错配
+                plugin._pluginName = pluginName;
                 plugin.init(this);
                 this._pluginInstances.push(plugin);
             }
+
+            // 插件列顺序归一：各插件都在 init 里 unshift 自己的虚拟列，
+            // 谁最后 init 谁最靠前，实际顺序会随 plugins 配置顺序漂移。
+            // 展开行箭头列在交互上必须固定最左（展开箭头 → 复选框 → 序号 → 业务列），
+            // 这里统一把它挪到列数组首位，与插件配置顺序无关。
+            this._normalizeExpandColumn();
+        };
+
+        /**
+         * 把展开行插件的虚拟箭头列(_expand)移到列数组最前面
+         * 没有启用 RowExpand 插件时不做任何事
+         */
+        TableCore.prototype._normalizeExpandColumn = function() {
+            var columns = this.dataStore.columns;
+            var idx = -1;
+            for (var i = 0; i < columns.length; i++) {
+                if (columns[i] && columns[i].field === '_expand') {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx <= 0) return;
+            var col = columns.splice(idx, 1)[0];
+            columns.unshift(col);
         };
 
         // ==================== 数据读取 ====================
@@ -6261,6 +6965,18 @@
         TableCore.prototype.getRowData = function(rowIndex) {
             if (this._guardDestroyed('getRowData')) return null;
             return this.dataStore.getRow(rowIndex);
+        };
+
+        /**
+         * 按 rowId 获取行数据
+         * rowId 来自单行类事件参数（rowClick / cellClick / cellChange / selectChange / rowAdd / rowDelete / expandChange）
+         * @param {String} rowId 行标识
+         * @return {Object|null} 内部原始行对象（含内部字段，可直接改值但不会触发重绘）；找不到返回 null
+         * 注意：rowId 是前端运行期临时标识，分页/排序不变，行删除后失效，禁止存入后端。
+         */
+        TableCore.prototype.getRowById = function(rowId) {
+            if (this._guardDestroyed('getRowById')) return null;
+            return this.dataStore.getRowById(rowId);
         };
 
         /**
@@ -6330,7 +7046,11 @@
             }
 
             this.renderer.renderBodyAll();
-            this.eventBus.emit('rowAdd', {rowData: row, rowIndex: row._rowIndex});
+            this.eventBus.emit('rowAdd', {
+                rowId: row._rowId,
+                rowData: this.dataStore.getPlainRow(row),
+                rowIndex: row._rowIndex
+            });
 
             // 新增行交互优化：
             //   1. 聚焦新增行第一个可输入控件（input/textarea），让光标落到新增行上，更醒目；
@@ -6432,7 +7152,11 @@
             // 重新渲染表身（删除行后索引变了，简单起见全量重绘）
             this.renderer.renderBodyAll();
 
-            this.eventBus.emit('rowDelete', {rowIndex: rowIndex, rowData: row});
+            this.eventBus.emit('rowDelete', {
+                rowId: row._rowId,
+                rowData: this.dataStore.getPlainRow(row),
+                rowIndex: rowIndex
+            });
         };
 
         /**
@@ -6493,6 +7217,36 @@
         };
 
         /**
+         * 设置列显隐（只影响界面显示，不删除列）
+         * 与“columns 里不配置该列”的区别：列配置、列数据、格式化规则全部保留，
+         * 表头/单元格 DOM 也照常渲染（F12 可见），只是 display:none 不占可见宽度，
+         * 导出时可用 includeHiddenColumns 把这些隐藏列一起带出去，需要时还能再显示回来。
+         * @param {String} field 列字段名
+         * @param {Boolean} visible true=显示 / false=隐藏（不传或传非 false 视为显示）
+         * @param {Boolean} skipRender 是否跳过重绘（可选）。批量切换多列时传 true，最后统一调 render()
+         */
+        TableCore.prototype.setColumnVisible = function(field, visible, skipRender) {
+            if (this._guardDestroyed('setColumnVisible')) return;
+            if (!field) return;
+
+            var columns = this.dataStore.columns || [];
+            var target = null;
+            for (var i = 0; i < columns.length; i++) {
+                if (columns[i] && columns[i].field === field) {
+                    target = columns[i];
+                    break;
+                }
+            }
+            if (!target) return;
+
+            target.visible = (visible !== false);
+
+            // 列显隐影响：列宽总和、colgroup 列宽、表头与表身单元格、固定列平移，必须整体重绘
+            if (skipRender) return;
+            this.renderer.render();
+        };
+
+        /**
          * 全选
          * 单选模式：静默忽略（不console.warn，兼容IE）
          */
@@ -6502,7 +7256,9 @@
 
             this.dataStore.selectAll(true);
             this._refreshSelectedRows();
-            this.eventBus.emit('selectChange', {selectedRows: this.dataStore.getSelectedRows()});
+            this.eventBus.emit('selectChange', {
+                selectedRows: this.dataStore.getPlainRows(this.dataStore.getSelectedRows())
+            });
         };
 
         /**
@@ -6528,7 +7284,9 @@
 
             this.dataStore.invertSelect();
             this._refreshSelectedRows();
-            this.eventBus.emit('selectChange', {selectedRows: this.dataStore.getSelectedRows()});
+            this.eventBus.emit('selectChange', {
+                selectedRows: this.dataStore.getPlainRows(this.dataStore.getSelectedRows())
+            });
         };
 
         /**
@@ -6557,7 +7315,9 @@
             if (!keys.length) {
                 this.dataStore.clearSelection();
                 this._refreshSelectedRows();
-                this.eventBus.emit('selectChange', {selectedRows: this.dataStore.getSelectedRows()});
+                this.eventBus.emit('selectChange', {
+                selectedRows: this.dataStore.getPlainRows(this.dataStore.getSelectedRows())
+            });
                 return;
             }
 
@@ -6571,7 +7331,9 @@
                 this.dataStore.setRowSelected(keys[i], true);
             }
             this._refreshSelectedRows();
-            this.eventBus.emit('selectChange', {selectedRows: this.dataStore.getSelectedRows()});
+            this.eventBus.emit('selectChange', {
+                selectedRows: this.dataStore.getPlainRows(this.dataStore.getSelectedRows())
+            });
         };
 
         /**
@@ -6587,68 +7349,385 @@
         // ==================== 校验 ====================
 
         /**
-         * 校验指定行必填项
-         * @param {Number|String} rowIndex 行索引，传 'all' 校验全部
-         * @return {String} 错误提示，空字符串表示通过
+         * 判断值是否“空”（必填判空统一口径）
+         * 纯空格 / 全角空格都算空；数字 0 不算空
+         * @param {Any} value 单元格值
+         * @return {Boolean}
          */
-        TableCore.prototype.validate = function(rowIndex) {
-            if (this._guardDestroyed('validate')) return '';
-            var columns = this.dataStore.columns;
-            var rows = this.dataStore.rows;
-            var tips = '';
-
-            var checkRow = function(rowIdx) {
-                var row = rows[rowIdx];
-                for (var i = 0; i < columns.length; i++) {
-                    var col = columns[i];
-                    if (!col.required) continue;
-
-                    var value = row[col.field];
-                    if (value === undefined || value === null || value === '') {
-                        tips += '第' + (rowIdx + 1) + '行【' + col.title + '】不能为空\n';
-                    }
-                }
-            };
-
-            if (rowIndex === 'all') {
-                for (var i = 0; i < rows.length; i++) {
-                    checkRow(i);
-                }
-            } else {
-                checkRow(rowIndex);
-            }
-
-            return tips;
+        TableCore.prototype._isBlankValue = function(value) {
+            if (value === undefined || value === null) return true;
+            return String(value).replace(/\s+/g, '') === '';
         };
 
         /**
-         * 校验唯一值列
-         * @return {String} 错误提示，空字符串表示通过
+         * 取该行在界面上显示的行号（即「序号」列的值）
+         * 优先用 SerialNo 插件写入 row._serialNo（用户眼睛看到的就是这个数），
+         * 没有则退回行对象全局下标 +1，保证提示文案里永远有个号
+         * @param {Object} row 行数据
+         * @param {Number} fallbackIndex 兜底下标（rows 下标）
+         * @return {String}
          */
-        TableCore.prototype.validateUnique = function() {
-            if (this._guardDestroyed('validateUnique')) return '';
-            var columns = this.dataStore.columns;
-            var rows = this.dataStore.rows;
-            var tips = '';
+        TableCore.prototype._getRowNo = function(row, fallbackIndex) {
+            if (row && row._serialNo !== undefined && row._serialNo !== null && String(row._serialNo) !== '') {
+                return String(row._serialNo);
+            }
+            var idx = (row && row._rowIndex !== undefined && row._rowIndex !== null) ? row._rowIndex : fallbackIndex;
+            if (idx === undefined || idx === null) idx = 0;
+            return String(idx + 1);
+        };
 
-            for (var i = 0; i < columns.length; i++) {
-                var col = columns[i];
-                if (!col.unique) continue;
+        /**
+         * 由错误明细组装校验返回结构
+         * - errors：给机器看，一条 = 一个单元格（定位 / 聚焦 / 标红）
+         * - briefs：给人看，一条 = 同一列同类错误的聚合文案（一次弹窗展示）
+         * - message：第一条错误的成品文案（逐条引导直接用）
+         * @param {Array} errors 错误明细
+         * @return {Object}
+         */
+        TableCore.prototype._buildValidateResult = function(errors) {
+            var briefs = [];
+            var map = {};
 
-                var seen = {};
-                for (var j = 0; j < rows.length; j++) {
-                    var val = rows[j][col.field];
-                    if (val === undefined || val === '') continue;
+            // 聚合：同一列 + 同一错误类型（validator 再加原始文案）合并成一句
+            for (var i = 0; i < errors.length; i++) {
+                var e = errors[i];
+                var key = e.field + '|' + e.reason + '|' + (e.reason === 'validator' ? e.raw : '');
+                var g = map[key];
+                if (!g) {
+                    g = {
+                        field: e.field,
+                        title: e.title,
+                        reason: e.reason,
+                        raw: e.reason === 'validator' ? e.raw : '',
+                        rows: [],
+                        rowNos: [],
+                        count: 0,
+                        message: ''
+                    };
+                    map[key] = g;
+                    briefs.push(g);
+                }
+                g.rows.push(e.rowIndex);
+                g.rowNos.push(e.rowNo);
+                g.count = g.rows.length;
+            }
 
-                    if (seen[val]) {
-                        tips += '【' + col.title + '】值 "' + val + '" 重复了\n';
+            // 生成聚合文案
+            for (var j = 0; j < briefs.length; j++) {
+                var b = briefs[j];
+                var prefix = b.title ? '【' + b.title + '】' : '';
+                if (b.reason === 'required') {
+                    b.message = prefix + '第 ' + b.rowNos.join('、') + ' 行不能为空';
+                } else {
+                    b.message = prefix + '第 ' + b.rowNos.join('、') + ' 行' + b.raw;
+                }
+            }
+
+            // 顶层平铺字段：只代表【第一条】错误，便于业务一句话定位
+            //   table.focusCell(result.rowIndex, result.field)
+            // 全量明细仍然看 errors；全部通过时 rowIndex = -1，其余为空串
+            var first = errors.length ? errors[0] : null;
+            return {
+                passed: errors.length === 0,
+                message: first ? first.message : '',
+                rowIndex: first ? first.rowIndex : -1,
+                rowNo: first ? first.rowNo : '',
+                field: first ? first.field : '',
+                title: first ? first.title : '',
+                errors: errors,
+                briefs: briefs
+            };
+        };
+
+        /**
+         * 校验（必填 required + 列级 validator）
+         * 注意：隐藏列（列配置 visible:false）不参与校验——用户看不见也就改不了，
+         *       报出错误只会产生一条指向无法操作单元格的提示。需要校验隐藏数据请在提交前自行核对。
+         * @param {Number|String} rowIndex 行索引（0-based）；传 'all' 校验全部行；不传等价 'all'
+         * @param {Boolean} isAllRows 是否校验所有行，默认 true。
+         *        true  = 扫完所有行，返回全部错误（errors / briefs 全量）；
+         *        false = 顺序扫描，命中第一条错误立即停止（errors 最多 1 条），
+         *                用于「逐条引导用户改」，同时省掉大数据量整表扫描的开销。
+         *        仅当 rowIndex 为 'all' 时有效，单行校验时忽略。
+         * @return {Object} {passed, message, rowIndex, rowNo, field, title, errors, briefs}
+         *        顶层 rowIndex / rowNo / field / title 是 errors[0] 的镜像，只代表第一条错误；
+         *        全部通过时 rowIndex = -1，其余为空串。全量明细请读 errors。
+         */
+        TableCore.prototype.validate = function(rowIndex, isAllRows) {
+            var emptyResult = {
+                passed: true, message: '', rowIndex: -1, rowNo: '', field: '', title: '',
+                errors: [], briefs: []
+            };
+            if (this._guardDestroyed('validate')) return emptyResult;
+
+            // 重入守卫：validator 内再调 validate() 会无限递归爆栈，直接忽略本次调用
+            if (this._validating) {
+                if (window.console && console.warn) {
+                    console.warn('[MelUi.Table] 禁止在 validator 内递归调用 validate() / validateUnique()，本次调用已忽略');
+                }
+                return emptyResult;
+            }
+
+            // 参数归一：不传（undefined / null）等价 'all'；数字则只校验该行
+            var scope = (rowIndex === undefined || rowIndex === null) ? 'all' : rowIndex;
+            var allRows = (isAllRows !== false);
+
+            // 快照：validator 里若擅自改数据/列配置，也不会让本次遍历错乱
+            var columns = this.dataStore.columns.slice(0);
+            var rows = this.dataStore.rows.slice(0);
+            var errors = [];
+            var self = this;
+
+            var pushError = function(rowIdx, col, reason, raw) {
+                var row = rows[rowIdx];
+                var rowNo = self._getRowNo(row, rowIdx);
+                var title = col.title || '';
+                var msg = (reason === 'required')
+                    ? '第' + rowNo + '行【' + title + '】不能为空'
+                    : '第' + rowNo + '行' + (title ? '【' + title + '】' : '') + raw;
+                errors.push({
+                    message: msg,
+                    rowIndex: rowIdx,
+                    rowNo: rowNo,
+                    field: col.field,
+                    title: title,
+                    reason: reason,
+                    row: row,
+                    raw: raw || ''
+                });
+            };
+
+            // 单行校验；返回 true 表示 allRows=false 时已命中错误、需停止扫描
+            var checkRow = function(rowIdx) {
+                var row = rows[rowIdx];
+                if (!row) return false;
+
+                for (var i = 0; i < columns.length; i++) {
+                    var col = columns[i];
+                    if (!col || !col.field) continue;
+                    // 隐藏列不参与校验：用户看不见、改不了，报了也是死循环
+                    if (col.visible === false) continue;
+
+                    var hasValidator = typeof col.validator === 'function';
+                    // 既没配必填、也没配自定义校验的列直接跳过
+                    if (!col.required && !hasValidator) continue;
+
+                    var value = row[col.field];
+
+                    // 1. 必填判空（纯空格也算空）
+                    if (col.required && self._isBlankValue(value)) {
+                        pushError(rowIdx, col, 'required', '不能为空');
+                        if (!allRows) return true;
+                        // 空值不再跑自定义校验，避免同一格出现两条重复提示
+                        continue;
+                    }
+
+                    // 2. 列级自定义校验 validator({value, rowData, rowIndex, field, title, table})
+                    //    返回非空字符串 = 不通过；返回 '' / undefined = 通过
+                    //    注意：validator 内只读，不要 setData / addRow / deleteRow / render / destroy
+                    if (hasValidator) {
+                        var ret;
+                        try {
+                            ret = col.validator({
+                                value: value,
+                                rowData: row,
+                                rowIndex: rowIdx,
+                                field: col.field,
+                                title: col.title || '',
+                                table: self
+                            });
+                        } catch (err) {
+                            // validator 自己抛异常不能把整轮校验打崩，转成一条错误提示
+                            ret = '校验出错：' + ((err && err.message) ? err.message : err);
+                        }
+
+                        if (typeof ret === 'string' && ret !== '') {
+                            pushError(rowIdx, col, 'validator', ret);
+                            if (!allRows) return true;
+                        } else if (ret !== undefined && ret !== null && ret !== false && ret !== '') {
+                            // 返回了非字符串的真值，忽略，仅开发期提示
+                            if (window.console && console.warn) {
+                                console.warn('[MelUi.Table] 列 "' + col.field + '" 的 validator 应返回字符串，已忽略本次返回值');
+                            }
+                        }
+                    }
+                }
+                return false;
+            };
+
+            var result;
+            this._validating = true;
+            try {
+                if (scope === 'all') {
+                    for (var r = 0; r < rows.length; r++) {
+                        if (checkRow(r)) break; // allRows=false：命中第一条错误即停止
+                    }
+                } else {
+                    var idx = parseInt(scope, 10);
+                    if (isNaN(idx) || idx < 0 || idx >= rows.length) {
+                        if (window.console && console.warn) {
+                            console.warn('[MelUi.Table] validate() 行索引超出范围：' + scope);
+                        }
                     } else {
-                        seen[val] = true;
+                        checkRow(idx);
+                    }
+                }
+                result = this._buildValidateResult(errors);
+            } finally {
+                this._validating = false;
+            }
+            return result;
+        };
+
+        /**
+         * 校验唯一值列（恒为全部 rows：本地分页=全表，远程分页=当前已加载数据）
+         * @param {Boolean} isAllRows 是否校验所有行，默认 true。
+         *        true  = 返回全部重复列；false = 命中第一组重复即停止。
+         * @return {Object} {passed, message, rowIndex, rowNo, field, title, errors, checkedFields}
+         *        顶层 rowIndex / rowNo / field / title 指向【第一组重复里的第一行】，只代表该组；
+         *        整组的行号在 errors[i].rowIndexes 里。全部通过时 rowIndex = -1，其余为空串。
+         */
+        TableCore.prototype.validateUnique = function(isAllRows) {
+            var emptyResult = {
+                passed: true, message: '', rowIndex: -1, rowNo: '', field: '', title: '',
+                errors: [], checkedFields: []
+            };
+            if (this._guardDestroyed('validateUnique')) return emptyResult;
+
+            if (this._validating) {
+                if (window.console && console.warn) {
+                    console.warn('[MelUi.Table] 禁止在 validator 内递归调用 validate() / validateUnique()，本次调用已忽略');
+                }
+                return emptyResult;
+            }
+
+            var allRows = (isAllRows !== false);
+            // 快照：避免校验期间列配置 / 数据被改动导致遍历错乱
+            var columns = this.dataStore.columns.slice(0);
+            var rows = this.dataStore.rows.slice(0);
+            var errors = [];
+            var checkedFields = [];
+            var self = this;
+
+            this._validating = true;
+            try {
+                for (var i = 0; i < columns.length; i++) {
+                    var col = columns[i];
+                    if (!col || !col.unique || !col.field) continue;
+                    // 隐藏列不参与判重，口径与 validate() 一致
+                    if (col.visible === false) continue;
+                    checkedFields.push(col.field);
+
+                    // 同一列内按“去空白后的值”分组，记录每组的行下标
+                    var groups = {};
+                    var order = [];
+
+                    for (var j = 0; j < rows.length; j++) {
+                        var val = rows[j][col.field];
+                        if (self._isBlankValue(val)) continue; // 空值不参与判重（“没填”交给 required）
+
+                        var key = String(val).replace(/\s+/g, '');
+                        if (!groups[key]) {
+                            groups[key] = {value: String(val), indexes: []};
+                            order.push(key);
+                        }
+                        groups[key].indexes.push(j);
+                    }
+
+                    // 收集重复组（行数 > 1）
+                    for (var k = 0; k < order.length; k++) {
+                        var g = groups[order[k]];
+                        if (!g || g.indexes.length < 2) continue;
+
+                        var rowNos = [];
+                        for (var m = 0; m < g.indexes.length; m++) {
+                            rowNos.push(self._getRowNo(rows[g.indexes[m]], g.indexes[m]));
+                        }
+
+                        var msg = (col.title ? '【' + col.title + '】' : '') +
+                            '第 ' + rowNos.join('、') + ' 行重复';
+
+                        errors.push({
+                            message: msg,
+                            rowIndex: g.indexes[0],
+                            rowNo: rowNos[0],
+                            field: col.field,
+                            title: col.title || '',
+                            reason: 'unique',
+                            // 整组重复行的行号（0-based），名字与 errors[i].rowIndex 同词根
+                            rowIndexes: g.indexes,
+                            rowNos: rowNos,
+                            values: [g.value],
+                            raw: g.value
+                        });
+
+                        if (!allRows) break; // 命中第一组重复即停止
+                    }
+
+                    if (!allRows && errors.length) break;
+                }
+            } finally {
+                this._validating = false;
+            }
+
+            var first = errors.length ? errors[0] : null;
+            return {
+                passed: errors.length === 0,
+                message: first ? first.message : '',
+                rowIndex: first ? first.rowIndex : -1,
+                rowNo: first ? first.rowNo : '',
+                field: first ? first.field : '',
+                title: first ? first.title : '',
+                errors: errors,
+                checkedFields: checkedFields
+            };
+        };
+
+        /**
+         * 聚焦到指定单元格：校验不通过时引导用户直接跳到那一格去改
+         * @param {Number} rowIndex 行索引（0-based，与 validate 返回的 rowIndex 一致）
+         * @param {String} field 列字段名
+         * @param {Object} options 可选项：highlight 是否临时高亮，默认 true
+         * @return {Boolean} 是否定位成功
+         */
+        TableCore.prototype.focusCell = function(rowIndex, field, options) {
+            if (this._guardDestroyed('focusCell')) return false;
+
+            // 参数严格化：只认「数值行索引 + 字段名字符串」这一种形态，不做任何猜测。
+            // 传对象 / 'all' / 数组一律拒绝并 warn，避免通用定位 API 被返回值结构绑架。
+            if (typeof rowIndex !== 'number' || isNaN(rowIndex)) {
+                if (window.console && console.warn) {
+                    console.warn('[MelUi.Table] focusCell(rowIndex, field) 的第一个参数必须是数值行索引（0-based），收到：' + rowIndex);
+                }
+                return false;
+            }
+            if (typeof field !== 'string' || field === '') {
+                if (window.console && console.warn) {
+                    console.warn('[MelUi.Table] focusCell(rowIndex, field) 的第二个参数必须是非空字段名字符串，收到：' + field);
+                }
+                return false;
+            }
+            if (!options || typeof options !== 'object') options = {};
+
+            var ds = this.dataStore;
+            var row = ds.getRow(rowIndex);
+            if (!row) return false;
+
+            // 目标行不在当前页：先翻页再定位（本地分页才有意义，远程分页 rows 本身就是当前页）
+            if ((!row._node || !row._node.parentNode) && ds.pageSize > 0 && !ds.remotePaging) {
+                var page = Math.floor(rowIndex / ds.pageSize) + 1;
+                var instances = this._pluginInstances || [];
+                for (var i = 0; i < instances.length; i++) {
+                    var plugin = instances[i];
+                    if (plugin && typeof plugin.goToPage === 'function') {
+                        plugin.goToPage(page);
+                        break;
                     }
                 }
             }
 
-            return tips;
+            if (!this.renderer || typeof this.renderer.focusCell !== 'function') return false;
+            return this.renderer.focusCell(rowIndex, field, options);
         };
 
         // ==================== 渲染控制 ====================
@@ -6678,6 +7757,52 @@
         TableCore.prototype.renderCell = function(rowIndex, field) {
             if (this._guardDestroyed('renderCell')) return;
             this.renderer.renderCell(rowIndex, field);
+        };
+
+        // ==================== 插件实例 ====================
+
+        /**
+         * 取指定插件实例（同名插件注册了多个时返回第一个）
+         * @param {String} name 注册时的插件名，与 plugins 配置里写的一致，如 'Export' / 'Pagination'
+         * @return {Object|null} 插件实例；未注册、传参非法或实例已销毁时返回 null
+         */
+        TableCore.prototype.getPlugin = function(name) {
+            var list = this.getPlugins(name);
+            return list.length ? list[0] : null;
+        };
+
+        /**
+         * 取指定插件的全部实例（同一插件注册多次的场景，如多个不同格式的 Export）
+         * @param {String} name 注册时的插件名
+         * @return {Array} 实例数组；未注册、传参非法或实例已销毁时返回空数组
+         */
+        TableCore.prototype.getPlugins = function(name) {
+            if (this._guardDestroyed('getPlugins')) return [];
+            if (typeof name !== 'string' || name === '') {
+                if (window.console && console.warn) {
+                    console.warn('[MelUi.Table] getPlugin / getPlugins 需要传入非空字符串形式的插件名');
+                }
+                return [];
+            }
+            var out = [];
+            var instances = this._pluginInstances || [];
+            for (var i = 0; i < instances.length; i++) {
+                var plugin = instances[i];
+                if (!plugin) continue;
+                if (plugin._pluginName === name) out.push(plugin);
+            }
+            return out;
+        };
+
+        /**
+         * 取全部插件实例（不分名称、不分类型）
+         * 用途：调试排查（看当前表格装了哪些插件）、上层二次封装统一处理；
+         *       业务代码请优先用 getPlugin / getPlugins 按名取，不要直接改插件内部属性。
+         * @return {Array} 插件实例数组（副本，增删不影响组件内部），顺序与 plugins 配置一致；实例已销毁时返回空数组
+         */
+        TableCore.prototype.getAllPlugins = function() {
+            if (this._guardDestroyed('getAllPlugins')) return [];
+            return (this._pluginInstances || []).slice(0);
         };
 
         // ==================== 事件绑定 ====================
@@ -6901,9 +8026,9 @@
      * 只负责修改选中状态数据，DOM 渲染由 Renderer 统一处理
      * 支持多选(multi)与单选(single)两种模式
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.2.1
+     * @Version：v1.2.2
      * @Date：2026-10-10
-     * @Pubdate：2026-11-03
+     * @PubDate：2026-11-10 10:45:00
      */
 
      (function(MelUi) {
@@ -6979,8 +8104,15 @@
                 self.table.dataStore.setRowSelected(rowIndex, target.checked);
 
                 // 发事件，Renderer 收到后刷新勾选状态
+                // 本事件是单行触发的（点击某一行的勾选框），因此带上 rowId / rowData / checked；
+                // 全选、全不选、反选等批量操作由表格 API 发出，只有 selectedRows，不带单行参数。
+                var ds = self.table.dataStore;
+                var row = ds.getRow(rowIndex);
                 self.table.eventBus.emit('selectChange', {
-                    selectedRows: self.table.dataStore.getSelectedRows()
+                    rowId: row ? row._rowId : '',
+                    rowData: ds.getPlainRow(row),
+                    checked: target.checked,
+                    selectedRows: ds.getPlainRows(ds.getSelectedRows())
                 });
             };
 
@@ -7128,9 +8260,9 @@
      * MelUi Table 表格组件 - 排序插件
      * 只负责修改数据模型的排序状态，DOM 渲染由 Renderer 统一处理
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.1.0
+     * @Version：v1.1.2
      * @Date：2026-10-10
-     * @Pubdate：2026-11-04
+     * @Pubdate：2026-11-11 18:39:02
      */
 
      (function(MelUi) {
@@ -7140,16 +8272,16 @@
          * @param {Object} options 配置
          *   defaultField: 默认排序列字段名
          *   defaultOrder: 默认排序方向 'asc' / 'desc'
-         *   sortCurrentPageOnly: 是否仅对当前页排序(可选)，默认false。
-         *     仅 remotePaging=false 前端本地分页时有效；remotePaging=true 时本参数无效，强制全量排序。
-         *     true：只对当前页切片区间排序并回填数据源该区间，其他数据顺序不变，不会出现排序后数据跑到其他页。
-         *     false：对整个数据源排序（原有逻辑），排序后重新分页切片。
+         *   sortCurrentPageOnly: 是否仅对当前页排序(可选)，默认true。
+         *     默认 true 让本地分页与远程分页口径统一：都是"只排当前这一页"，不会出现排序后数据跑到其它页。
+         *     true：只对当前页切片区间排序并回填数据源该区间，其他页数据顺序不变。
+         *     false：对整个数据源排序后重新分页切片（旧行为，需要"全表排序"时才显式传 false）。
          */
         function Sort(options) {
             this.options = this._extend({
                 defaultField: '',
                 defaultOrder: 'asc',
-                sortCurrentPageOnly: false
+                sortCurrentPageOnly: true
             }, options || {});
         }
 
@@ -7163,10 +8295,20 @@
             this.table = table;
             var self = this;
 
+            // 供 Renderer 判断“表头是否要显示可排序光标”：只有启用了 Sort 插件才有排序能力，
+            // 未启用时表头一律保持普通光标，避免光标 pointer 但点了没反应。
+            if (table.renderer) {
+                table.renderer.sortEnabled = true;
+            }
+
             // 监听表头点击 → 改排序状态 → 发事件让 Renderer 重绘
             table.eventBus.on('headerClick', function(data) {
                 var field = data.field;
                 if (!field || field.charAt(0) === '_') return;
+
+                // 列级排序开关：列配置 sortable:false 时该列点击表头不排序（不写该项默认可排序）
+                var col = self._findColumn(field);
+                if (col && col.sortable === false) return;
 
                 // 切换排序方向
                 if (table.dataStore.sortField === field) {
@@ -7176,7 +8318,7 @@
                     table.dataStore.sortOrder = 'asc';
                 }
 
-                // 仅本地分页(remotePaging=false)时 sortCurrentPageOnly 生效；远程分页强制全量排序
+                // sortCurrentPageOnly 默认 true：只排当前页（远程分页 rows 本身就是当前页，口径一致）
                 var onlyCurrentPage = self.options.sortCurrentPageOnly && !table.dataStore.remotePaging;
 
                 // 执行排序（改数据）
@@ -7198,6 +8340,19 @@
                     order: this.options.defaultOrder
                 });
             }
+        };
+
+        /**
+         * 按 field 取列配置（列级判断用）
+         * @param {String} field 字段名
+         * @return {Object|null}
+         */
+        Sort.prototype._findColumn = function(field) {
+            var columns = (this.table && this.table.dataStore && this.table.dataStore.columns) || [];
+            for (var i = 0; i < columns.length; i++) {
+                if (columns[i] && columns[i].field === field) return columns[i];
+            }
+            return null;
         };
 
         Sort.prototype._extend = function(target) {
@@ -7568,12 +8723,12 @@
      * MelUi Table 表格组件 - 合计行插件
      * 只负责计算合计数据，DOM 渲染由 Renderer 统一处理
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.0.2
+     * @Version：v1.0.3
      * @Date：2026-10-10
-     * @Pubdate：2026-10-10
+     * @Pubdate：2026-11-10 18:07:33
      */
 
-    (function(MelUi) {
+     (function(MelUi) {
 
         /**
          * Summary 合计行插件
@@ -7581,12 +8736,20 @@
          *   columns: 需要合计的字段名数组，如 ['mj', 'scjj']
          *   title: 合计行标题，默认 '合计'
          *   titleColumn: 标题放在第几列（索引），默认0
+         *   scope: 合计统计范围，默认 'currentPage'
+         *          'currentPage' —— 无论本地分页还是远程分页，只统计当前页可见行（含本页新增草稿行）
+         *          'all'         —— 统计全部数据：
+         *                           本地分页：前端对全量数据源自动聚合；
+         *                           远程分页：前端拿不到全量数据，不自动计算，只渲染 externalData，未配置则显示 "—"
+         *   externalData: 外部合计对象，仅 scope='all' 且远程分页时生效，key 与 columns 字段一一对应；scope='currentPage' 时忽略
          */
         function Summary(options) {
             this.options = this._extend({
                 columns: [],
                 title: '合计',
-                titleColumn: 0
+                titleColumn: 0,
+                scope: 'currentPage',
+                externalData: {}
             }, options || {});
         }
 
@@ -7598,6 +8761,7 @@
          */
         Summary.prototype.init = function(table) {
             this.table = table;
+            this._warned = false;
             var self = this;
 
             // 监听 Renderer 请求合计数据（每次重绘表身后触发）
@@ -7615,13 +8779,53 @@
 
         /**
          * 计算各列合计值
+         * @return {Object} {data, title, titleColumn, blank}
          */
         Summary.prototype._calcSums = function() {
-            var rows = this.table.dataStore.rows;
-            var sums = {};
+            var opts = this.options;
+            var ds = this.table.dataStore;
+            var isAll = String(opts.scope).toLowerCase() === 'all';
 
-            for (var i = 0; i < this.options.columns.length; i++) {
-                var field = this.options.columns[i];
+            // 默认 currentPage：本地 / 远程一律只统计当前页可见行，externalData 不参与
+            if (!isAll) {
+                return this._build(this._sumRows(this._getPageRows()), false);
+            }
+
+            // scope = 'all' + 远程分页：前端无全量数据，只渲染外部传入的合计
+            if (ds.remotePaging) {
+                if (this._hasExternalData()) {
+                    return this._build(this._pickExternal(), false);
+                }
+                // 未配置 externalData：控制台告警 + 合计行显示 "—"（让使用者一眼看出没配/配错）
+                this._warnMissingExternal();
+                return this._build(this._dashSums(), true);
+            }
+
+            // scope = 'all' + 本地分页：对全量数据源聚合
+            return this._build(this._sumRows(ds.rows || []), false);
+        };
+
+        /**
+         * 取当前页可见行：dataStore.getVisibleRows 已处理本地切片 / 远程 / 兜底降级 / 新增草稿行
+         */
+        Summary.prototype._getPageRows = function() {
+            var ds = this.table.dataStore;
+            if (typeof ds.getVisibleRows === 'function') {
+                return ds.getVisibleRows() || [];
+            }
+            return ds.rows || [];
+        };
+
+        /**
+         * 按行数组聚合各列合计
+         * @return {Object} {字段: 合计值}
+         */
+        Summary.prototype._sumRows = function(rows) {
+            var sums = {};
+            var columns = this.options.columns;
+
+            for (var i = 0; i < columns.length; i++) {
+                var field = columns[i];
                 sums[field] = 0;
 
                 for (var j = 0; j < rows.length; j++) {
@@ -7632,11 +8836,82 @@
                 }
             }
 
+            return sums;
+        };
+
+        /**
+         * 组装给 Renderer 的合计结构
+         * @param {Object} sums 各列合计值
+         * @param {Boolean} blank 是否无数据可算（true 时合计单元格渲染为占位符 "—"）
+         */
+        Summary.prototype._build = function(sums, blank) {
             return {
                 data: sums,
                 title: this.options.title,
-                titleColumn: this.options.titleColumn
+                titleColumn: this.options.titleColumn,
+                blank: !!blank
             };
+        };
+
+        /**
+         * 合计行整行显示 "—"（远程分页 scope='all' 但没给 externalData）
+         */
+        Summary.prototype._dashSums = function() {
+            var sums = {};
+            var columns = this.options.columns;
+
+            for (var i = 0; i < columns.length; i++) {
+                sums[columns[i]] = '—';
+            }
+
+            return sums;
+        };
+
+        /**
+         * 是否配置了有效的外部合计数据（对象且至少一个合计字段有值）
+         */
+        Summary.prototype._hasExternalData = function() {
+            var ext = this.options.externalData;
+            if (!ext || typeof ext !== 'object') return false;
+
+            var columns = this.options.columns;
+            for (var i = 0; i < columns.length; i++) {
+                var v = ext[columns[i]];
+                if (v !== undefined && v !== null && v !== '') return true;
+            }
+            return false;
+        };
+
+        /**
+         * 取外部合计值，统一转成数字，缺失字段按 0（避免出现 NaN / 字符串 toFixed 报错）
+         */
+        Summary.prototype._pickExternal = function() {
+            var ext = this.options.externalData || {};
+            var sums = {};
+            var columns = this.options.columns;
+
+            for (var i = 0; i < columns.length; i++) {
+                var field = columns[i];
+                var num = parseFloat(ext[field]);
+                sums[field] = isNaN(num) ? 0 : num;
+            }
+            return sums;
+        };
+
+        /**
+         * 远程分页 + scope='all' 未配置 externalData：只告警一次
+         */
+        Summary.prototype._warnMissingExternal = function() {
+            if (this._warned) return;
+            this._warned = true;
+
+            if (window.console && window.console.warn) {
+                window.console.warn(
+                    '[MelUi Table / Summary] 远程分页模式下前端无法计算全量合计。'
+                    + '如需展示全部数据总合计，请配置 externalData（后端返回的合计对象）；'
+                    + '如需统计当前页合计，请把 scope 改为 "currentPage"。合计行已显示为 "—"。'
+                );
+            }
         };
 
         Summary.prototype._extend = function(target) {
@@ -7658,27 +8933,129 @@
     })(window.MelUi = window.MelUi || {});
 
     /**
-     * MelUi Table 表格组件 - 导出Excel插件
-     * 将表格数据导出为 Excel 文件（.xls）
+     * MelUi Table 表格组件 - 导出插件
+     * 支持导出 Excel（.xls / .xlsx）与 CSV
      * 兼容性：IE9 / IE10 / IE11 / Edge
-     * @Version：v1.0.0
+     * @Version：v1.3.0
      * @Date：2026-10-10
-     * @Pubdate：2026-10-10
+     * @Pubdate：2026-11-11 12:16:46
      */
 
-    (function(MelUi) {
+     (function(MelUi) {
+
+        // ==================== CRC32（xlsx 的 ZIP 容器用） ====================
+
+        var _crcTable = null;
 
         /**
-         * Export 导出Excel插件
+         * 构建 CRC32 查表（首次调用生成，之后复用）
+         */
+        function getCrcTable() {
+            if (_crcTable) return _crcTable;
+            var table = [];
+            for (var n = 0; n < 256; n++) {
+                var c = n;
+                for (var k = 0; k < 8; k++) {
+                    c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                }
+                table[n] = c >>> 0;
+            }
+            _crcTable = table;
+            return table;
+        }
+
+        /**
+         * 计算字节数组的 CRC32
+         * @param {Uint8Array} bytes 数据
+         * @return {Number} CRC32 值
+         */
+        function crc32(bytes) {
+            var table = getCrcTable();
+            var crc = 0xFFFFFFFF;
+            for (var i = 0; i < bytes.length; i++) {
+                crc = (crc >>> 8) ^ table[(crc ^ bytes[i]) & 0xFF];
+            }
+            return (crc ^ 0xFFFFFFFF) >>> 0;
+        }
+
+        // ==================== 字节工具 ====================
+
+        /**
+         * 字符串 → UTF-8 字节数组（不依赖 TextEncoder，IE10 可用）
+         * @param {String} str 文本
+         * @return {Uint8Array}
+         */
+        function utf8Bytes(str) {
+            var text = String(str == null ? '' : str);
+            var bytes = [];
+            for (var i = 0; i < text.length; i++) {
+                var c = text.charCodeAt(i);
+                if (c < 0x80) {
+                    bytes.push(c);
+                } else if (c < 0x800) {
+                    bytes.push(0xC0 | (c >> 6), 0x80 | (c & 0x3F));
+                } else if (c >= 0xD800 && c <= 0xDBFF && i + 1 < text.length) {
+                    // 代理对（emoji 等）
+                    var c2 = text.charCodeAt(++i);
+                    var cp = 0x10000 + ((c - 0xD800) << 10) + (c2 - 0xDC00);
+                    bytes.push(0xF0 | (cp >> 18), 0x80 | ((cp >> 12) & 0x3F), 0x80 | ((cp >> 6) & 0x3F), 0x80 | (cp & 0x3F));
+                } else {
+                    bytes.push(0xE0 | (c >> 12), 0x80 | ((c >> 6) & 0x3F), 0x80 | (c & 0x3F));
+                }
+            }
+            return new Uint8Array(bytes);
+        }
+
+        /**
+         * 小端 16 位字节
+         */
+        function u16(n) {
+            return new Uint8Array([n & 0xFF, (n >>> 8) & 0xFF]);
+        }
+
+        /**
+         * 小端 32 位字节
+         */
+        function u32(n) {
+            return new Uint8Array([n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF]);
+        }
+
+        /**
+         * 拼接多段字节
+         */
+        function concatBytes(parts) {
+            var total = 0;
+            for (var i = 0; i < parts.length; i++) total += parts[i].length;
+            var out = new Uint8Array(total);
+            var offset = 0;
+            for (var j = 0; j < parts.length; j++) {
+                out.set(parts[j], offset);
+                offset += parts[j].length;
+            }
+            return out;
+        }
+
+        // ==================== 插件 ====================
+
+        /**
+         * Export 导出插件
          * @param {Object} options 配置
-         *   filename: 文件名，默认 '导出数据'
-         *   extension: 扩展名 '.xls'（默认）/ '.xlsx'
-         *   includeHiddenColumns: 是否包含隐藏列，默认false
+         *   filename: 文件名（不含扩展名），默认 '导出数据'
+         *   format: 导出格式，'xlsx'（默认，真 Excel 2007+）/ 'xls'（HTML 伪装 Excel，兼容 IE9）/ 'csv'（纯文本）
+         *   csvDelimiter: 仅 format='csv' 生效，单元格分隔符，默认 '\t'（制表符，Excel 双击即按列展开）；
+         *                 给后端使用(导入数据时)可改成 ','（Excel 里整行显示为一条，便于当纯文本行解析）
+         *   includeInnerColumns: 是否导出内部列（field 以 _ 开头的序号 / 状态 / 选择列），默认 false
+         *   includeHiddenColumns: 是否导出隐藏列（列配置 visible:false 的列），默认 false
+         * 说明：
+         *   includeInnerColumns 管"内部列"，includeHiddenColumns 管"业务隐藏列"，两者互不相关；
+         *   扩展名由 format 决定；CSV 内部固定 UTF-16LE(FF FE) 编码，不对外暴露开关。
          */
         function Export(options) {
             this.options = this._extend({
                 filename: '导出数据',
-                extension: '.xls',
+                format: 'xlsx',
+                csvDelimiter: '\t',
+                includeInnerColumns: false,
                 includeHiddenColumns: false
             }, options || {});
         }
@@ -7695,12 +9072,98 @@
 
         /**
          * 执行导出
+         * @param {String} formatOverride 可选。临时指定格式 'xls' / 'xlsx' / 'csv'，不传则用 options.format
          */
-        Export.prototype.export = function() {
-            var columns = this.table.dataStore.columns;
-            var rows = this.table.dataStore.rows;
+        Export.prototype.export = function(formatOverride) {
+            var format = String(formatOverride || this.options.format || 'xlsx').toLowerCase();
+            if (format !== 'csv' && format !== 'xlsx') format = 'xls';
 
-            // 生成 HTML 表格
+            // xlsx 要二进制 Blob（ZIP），csv 要二进制 Blob（UTF-16 字节）；
+            // IE9 完全没有 Blob、IE10 的 Blob 不吃二进制片段，两者都得降级成 xls（HTML，中文与分列都正常）
+            if (format !== 'xls' && !this._canBinaryBlob()) {
+                var tip = format === 'csv' ? '.csv' : '.xlsx';
+                var ok = window.confirm('您当前是老掉牙的IE9，不能导出' + tip + '，系统将自动降级导出.xls，确认要导出吗？');
+                if (!ok) return;
+                format = 'xls';
+            }
+
+            var columns = this._getExportColumns();
+            var rows = this.table.dataStore.rows || [];
+
+            if (format === 'csv') {
+                this._exportCsv(columns, rows);
+            } else if (format === 'xlsx') {
+                this._exportXlsx(columns, rows);
+            } else {
+                this._exportXls(columns, rows);
+            }
+        };
+
+        /**
+         * 当前环境是否有 Blob（IE9 没有，只能走 iframe + SaveAs 文本兜底）
+         */
+        Export.prototype._canBlob = function() {
+            return !!(window.Blob && window.URL && window.URL.createObjectURL);
+        };
+
+        /**
+         * 当前环境的 Blob 是否支持「二进制片段」（Uint8Array 作为 parts）
+         * IE10 的 Blob 只支持字符串片段，塞 Uint8Array 进去会被吞掉/报错，
+         * xlsx（ZIP 二进制）就是靠它，所以必须单独探一次；探不到就降级 xls。
+         */
+        Export.prototype._canBinaryBlob = function() {
+            if (!this._canBlob()) return false;
+            try {
+                var probe = new Blob([new Uint8Array([0xE7, 0xBC, 0x96])]);
+                return probe.size === 3;
+            } catch (e) {
+                return false;
+            }
+        };
+
+        /**
+         * 取需要导出的列
+         * 按两个开关过滤：
+         *   includeInnerColumns=false  → 跳过 field 以 _ 开头的内部列（序号 / 状态 / 勾选等）
+         *   includeHiddenColumns=false → 跳过 visible:false 的隐藏列
+         * @return {Array}
+         */
+        Export.prototype._getExportColumns = function() {
+            var columns = this.table.dataStore.columns || [];
+            var out = [];
+
+            for (var i = 0; i < columns.length; i++) {
+                var col = columns[i];
+                if (!col) continue;
+
+                if (!this.options.includeInnerColumns && col.field && col.field.charAt(0) === '_') continue;
+                if (!this.options.includeHiddenColumns && col.visible === false) continue;
+
+                out.push(col);
+            }
+            return out;
+        };
+
+        /**
+         * 取单元格导出值：先取值，再走列 formatter，最后转字符串
+         */
+        Export.prototype._getCellValue = function(row, col) {
+            var value = row[col.field];
+            if (value === undefined || value === null) value = '';
+
+            if (typeof col.formatter === 'function') {
+                value = col.formatter(value, row);
+            }
+            if (value === undefined || value === null) value = '';
+            return String(value);
+        };
+
+        // ==================== xls（HTML 伪装，IE9 也能用） ====================
+
+        /**
+         * 导出 Excel（.xls，HTML 伪装表格；Excel 打开可能提示"格式与扩展名不一致"）
+         */
+        Export.prototype._exportXls = function(columns, rows) {
             var html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
             html += '<head><meta charset="UTF-8"></head>';
             html += '<body>';
@@ -7709,9 +9172,7 @@
             // 表头
             html += '<tr>';
             for (var i = 0; i < columns.length; i++) {
-                // 跳过内部字段列
-                if (columns[i].field.charAt(0) === '_' && !this.options.includeHiddenColumns) continue;
-                html += '<th>' + (columns[i].title || '') + '</th>';
+                html += '<th>' + this._escapeHtml(columns[i].title || '') + '</th>';
             }
             html += '</tr>';
 
@@ -7719,18 +9180,7 @@
             for (var r = 0; r < rows.length; r++) {
                 html += '<tr>';
                 for (var c = 0; c < columns.length; c++) {
-                    var col = columns[c];
-                    if (col.field.charAt(0) === '_' && !this.options.includeHiddenColumns) continue;
-
-                    var value = rows[r][col.field];
-                    if (value === undefined || value === null) value = '';
-
-                    // 如果有 formatter，格式化后再导出
-                    if (typeof col.formatter === 'function') {
-                        value = col.formatter(value, rows[r]);
-                    }
-
-                    html += '<td>' + value + '</td>';
+                    html += '<td>' + this._escapeHtml(this._getCellValue(rows[r], columns[c])) + '</td>';
                 }
                 html += '</tr>';
             }
@@ -7738,30 +9188,404 @@
             html += '</table>';
             html += '</body></html>';
 
-            // 创建下载链接
-            var fileName = this.options.filename + this.options.extension;
+            if (this._canBlob()) {
+                this._save(new Blob([html], {type: 'application/vnd.ms-excel;charset=UTF-8'}), this.options.filename + '.xls');
+            } else {
+                // IE9：没有 Blob，直接把 HTML 文本交给 iframe 兜底
+                this._save(null, this.options.filename + '.xls', html);
+            }
+        };
 
-            if (window.Blob && window.URL) {
-                // 现代浏览器
-                var blob = new Blob([html], {encoding: 'UTF-8', type: 'text/html'});
+        // ==================== xlsx（真 OOXML，纯 JS 手写 ZIP） ====================
+
+        /**
+         * 导出真 xlsx（Excel 2007+ 标准格式，打开无格式警告）
+         * 结构：ZIP 容器 + 5 个 XML 部件，store（不压缩）方式写入
+         */
+        Export.prototype._exportXlsx = function(columns, rows) {
+            var sheetXml = this._buildSheetXml(columns, rows);
+
+            var contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                + '<Default Extension="xml" ContentType="application/xml"/>'
+                + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+                + '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+                + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+                + '</Types>';
+
+            var rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+                + '</Relationships>';
+
+            var workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+                + ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                + '<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>'
+                + '</workbook>';
+
+            var workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+                + '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+                + '</Relationships>';
+
+            var zip = this._zip([
+                {'name': '[Content_Types].xml', 'text': contentTypes},
+                {'name': '_rels/.rels', 'text': rootRels},
+                {'name': 'xl/workbook.xml', 'text': workbook},
+                {'name': 'xl/_rels/workbook.xml.rels', 'text': workbookRels},
+                {'name': 'xl/worksheets/sheet1.xml', 'text': sheetXml},
+                {'name': 'xl/styles.xml', 'text': this._buildStylesXml()}
+            ]);
+
+            this._save(zip, this.options.filename + '.xlsx');
+        };
+
+        /**
+         * 生成 sheet1.xml
+         * 数字写数值单元格（Excel 里可直接求和），其余写内联字符串（免维护 sharedStrings）
+         */
+        Export.prototype._buildSheetXml = function(columns, rows) {
+            var xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+
+            // 冻结首行（sheetViews 必须排在 cols / sheetData 之前）
+            xml += '<sheetViews><sheetView workbookViewId="0">'
+                + '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
+                + '</sheetView></sheetViews>';
+
+            // 列宽（单位：字符宽度，约等于 px/7）
+            xml += '<cols>';
+            for (var i = 0; i < columns.length; i++) {
+                var px = columns[i].width || 100;
+                xml += '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + (Math.round(px / 7) || 12) + '" customWidth="1"/>';
+            }
+            xml += '</cols>';
+
+            xml += '<sheetData>';
+
+            // 表头行（加粗样式 s="1"）
+            xml += '<row r="1">';
+            for (var h = 0; h < columns.length; h++) {
+                xml += '<c r="' + this._colName(h) + '1" t="inlineStr" s="1"><is><t>' + this._escapeXml(columns[h].title || '') + '</t></is></c>';
+            }
+            xml += '</row>';
+
+            // 数据行
+            for (var r = 0; r < rows.length; r++) {
+                var rowNum = r + 2;
+                xml += '<row r="' + rowNum + '">';
+                for (var c = 0; c < columns.length; c++) {
+                    var ref = this._colName(c) + rowNum;
+                    var val = this._getCellValue(rows[r], columns[c]);
+                    if (/^-?\d+(\.\d+)?$/.test(val)) {
+                        xml += '<c r="' + ref + '"><v>' + val + '</v></c>';
+                    } else if (val !== '') {
+                        xml += '<c r="' + ref + '" t="inlineStr"><is><t>' + this._escapeXml(val) + '</t></is></c>';
+                    }
+                }
+                xml += '</row>';
+            }
+
+            xml += '</sheetData>';
+            xml += '</worksheet>';
+            return xml;
+        };
+
+        /**
+         * 生成 styles.xml
+         * 注意：格式（字体/填充/边框）必须独立成 xl/styles.xml 部件，
+         * 塞进 worksheet 里 Excel 会判定文件损坏（fills 也要求至少 2 项）。
+         * @return {String}
+         */
+        Export.prototype._buildStylesXml = function() {
+            return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                + '<fonts count="2">'
+                + '<font><sz val="11"/><name val="宋体"/><charset val="134"/></font>'
+                + '<font><b/><sz val="11"/><name val="宋体"/><charset val="134"/></font>'
+                + '</fonts>'
+                + '<fills count="2">'
+                + '<fill><patternFill patternType="none"/></fill>'
+                + '<fill><patternFill patternType="gray125"/></fill>'
+                + '</fills>'
+                + '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+                + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+                + '<cellXfs count="2">'
+                + '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+                + '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+                + '</cellXfs>'
+                + '<cellStyles count="1"><cellStyle name="常规" xfId="0" builtinId="0"/></cellStyles>'
+                + '</styleSheet>';
+        };
+
+        /**
+         * 列号 → Excel 列名（0 → A，25 → Z，26 → AA）
+         */
+        Export.prototype._colName = function(index) {
+            var name = '';
+            var n = index;
+            while (n >= 0) {
+                name = String.fromCharCode(65 + (n % 26)) + name;
+                n = Math.floor(n / 26) - 1;
+            }
+            return name;
+        };
+
+        /**
+         * 手写 ZIP（store 方式，不压缩；xlsx 规范允许 store）
+         * @param {Array} files [{name: '路径', text: '内容'}]
+         * @return {Blob}
+         */
+        Export.prototype._zip = function(files) {
+            var parts = [];
+            var centralParts = [];
+            var offset = 0;
+
+            // 固定时间戳（DOS 格式）：2026-11-11 11:22
+            var dosTime = ((11 & 0x1F) << 11) | ((22 & 0x3F) << 5) | 0;
+            var dosDate = (((2026 - 1980) & 0x7F) << 9) | ((11 & 0x0F) << 5) | 11;
+
+            for (var i = 0; i < files.length; i++) {
+                var nameBytes = utf8Bytes(files[i].name);
+                var dataBytes = utf8Bytes(files[i].text);
+                var crc = crc32(dataBytes);
+
+                // 本地文件头
+                var local = concatBytes([
+                    u32(0x04034b50),       // 签名
+                    u16(20),               // 解压所需版本
+                    u16(0),                // 标志位（文件名全 ASCII，无需 UTF-8 标志）
+                    u16(0),                // 压缩方式：0 = store
+                    u16(dosTime),
+                    u16(dosDate),
+                    u32(crc),
+                    u32(dataBytes.length), // 压缩后大小
+                    u32(dataBytes.length), // 原始大小
+                    u16(nameBytes.length),
+                    u16(0)                 // extra 长度
+                ]);
+
+                parts.push(local, nameBytes, dataBytes);
+
+                // 中央目录项
+                centralParts.push(concatBytes([
+                    u32(0x02014b50),       // 签名
+                    u16(20),               // 创建版本
+                    u16(20),               // 解压所需版本
+                    u16(0),                // 标志位
+                    u16(0),                // 压缩方式
+                    u16(dosTime),
+                    u16(dosDate),
+                    u32(crc),
+                    u32(dataBytes.length),
+                    u32(dataBytes.length),
+                    u16(nameBytes.length),
+                    u16(0),                // extra
+                    u16(0),                // 注释
+                    u16(0),                // 起始磁盘
+                    u16(0),                // 内部属性
+                    u32(0),                // 外部属性
+                    u32(offset),           // 本地头偏移
+                    nameBytes
+                ]));
+
+                offset += local.length + nameBytes.length + dataBytes.length;
+            }
+
+            var centralStart = offset;
+            var centralSize = 0;
+            for (var c = 0; c < centralParts.length; c++) {
+                parts.push(centralParts[c]);
+                centralSize += centralParts[c].length;
+            }
+
+            // 中央目录结束记录
+            parts.push(concatBytes([
+                u32(0x06054b50),
+                u16(0), u16(0),
+                u16(files.length), u16(files.length),
+                u32(centralSize),
+                u32(centralStart),
+                u16(0)
+            ]));
+
+            var all = concatBytes(parts);
+            return new Blob([all], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+        };
+
+        // ==================== csv ====================
+
+        /**
+         * 导出 CSV（原生纯文本）
+         * 要点：
+         *   1. 编码固定 UTF-16LE + BOM(FF FE)，Excel 一看就按 Unicode 解析，中文不会乱码；
+         *   2. 分隔符默认 Tab（Excel 的 Unicode 文本解析器只认 Tab，按 Tab 一列列展开）；
+         *      给后端消费时把 csvDelimiter 改成 ','，Excel 里整行显示为一条，便于按纯文本行解析；
+         *   3. 单元格含 分隔符 / 双引号 / 换行 时，整体用双引号包裹，内部引号翻倍；
+         *   4. 行分隔用 \r\n，兼容 Windows 记事本与 Excel。
+         */
+        Export.prototype._exportCsv = function(columns, rows) {
+            var delimiter = this._getCsvDelimiter();
+            var lines = [];
+            var i;
+
+            var headCells = [];
+            for (i = 0; i < columns.length; i++) {
+                headCells.push(this._csvCell(columns[i].title || '', delimiter));
+            }
+            lines.push(headCells.join(delimiter));
+
+            for (var r = 0; r < rows.length; r++) {
+                var cells = [];
+                for (i = 0; i < columns.length; i++) {
+                    cells.push(this._csvCell(this._getCellValue(rows[r], columns[i]), delimiter));
+                }
+                lines.push(cells.join(delimiter));
+            }
+
+            var text = lines.join('\r\n');
+
+            // 编码固定 UTF-16LE（首两字节 FF FE）：这是 Excel 无条件按 Unicode 解析的标记，
+            // 不依赖 BOM 探测，也不会被"把文件当文本重编码"的下载链路吃掉；
+            // 分隔符由 csvDelimiter 决定，默认 Tab —— Excel 的 Unicode 文本解析器只认 Tab，
+            // 用逗号会让整行挤成一列（这就是之前"一堆文本"的原因）。
+            this._save(
+                new Blob([this._utf16Bytes(text)], {type: 'text/csv;charset=utf-16le'}),
+                this.options.filename + '.csv'
+            );
+        };
+
+        /**
+         * 取 CSV 分隔符（只认单字符；非法值退回 Tab）
+         * 注意：插件内部按 \t / tab / 单字符 三种写法识别
+         * @return {String}
+         */
+        Export.prototype._getCsvDelimiter = function() {
+            var d = this.options.csvDelimiter;
+            if (d === '\\t' || d === 'tab') return '\t';
+            if (typeof d === 'string' && d.length === 1) return d;
+            return '\t';
+        };
+
+        /**
+         * 文本 → UTF-16LE 字节（首两字节 FF FE，即 Unicode BOM）
+         * Excel 见到 FF FE 会直接按 Unicode 解析，不用猜编码
+         * @param {String} text 文本
+         * @return {Uint8Array}
+         */
+        Export.prototype._utf16Bytes = function(text) {
+            var str = String(text == null ? '' : text);
+            var bytes = new Uint8Array(2 + str.length * 2);
+            bytes[0] = 0xFF;
+            bytes[1] = 0xFE;
+            for (var i = 0; i < str.length; i++) {
+                var code = str.charCodeAt(i);
+                bytes[2 + i * 2] = code & 0xFF;
+                bytes[3 + i * 2] = (code >> 8) & 0xFF;
+            }
+            return bytes;
+        };
+
+        /**
+         * CSV 单元格转义
+         */
+        Export.prototype._csvCell = function(text, delimiter) {
+            var str = String(text === undefined || text === null ? '' : text);
+            var sep = delimiter || this._getCsvDelimiter();
+            var quoted = str.indexOf('"') >= 0 || str.indexOf('\r') >= 0 || str.indexOf('\n') >= 0 ||
+                (sep === '\t' ? str.indexOf('\t') >= 0 : str.indexOf(sep) >= 0);
+            if (quoted) {
+                str = '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        };
+
+        // ==================== 通用 ====================
+
+        /**
+         * HTML 转义（.xls 分支用，防止值里的 < & 把表格结构撑坏）
+         */
+        Export.prototype._escapeHtml = function(text) {
+            return String(text === undefined || text === null ? '' : text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        };
+
+        /**
+         * XML 文本转义（xlsx 分支用）
+         */
+        Export.prototype._escapeXml = function(text) {
+            return String(text === undefined || text === null ? '' : text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/\r?\n/g, '&#10;');
+        };
+
+        /**
+         * 触发下载
+         * @param {Blob} blob 文件内容
+         * @param {String} fileName 文件名（含扩展名）
+         * @param {String} textFallback IE9 兜底用的文本内容（可选）
+         */
+        Export.prototype._save = function(blob, fileName, textFallback) {
+            if (this._canBlob()) {
+                // IE10 / IE11：浏览器不支持 a[download]，点 blob 链接会抛「拒绝访问」，
+                // 必须走自家的 msSaveOrOpenBlob（IE10 起提供）
+                if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+                    try {
+                        window.navigator.msSaveOrOpenBlob(blob, fileName);
+                        return;
+                    } catch (e) {}
+                }
+
                 var link = document.createElement('a');
+                if (typeof link.download === 'undefined') {
+                    // 没有 download 属性（老 IE 且 msSave 也失败）：退回文本兜底，别去点它会报拒绝访问
+                    this._saveByIframe(fileName, textFallback);
+                    return;
+                }
+
                 link.href = window.URL.createObjectURL(blob);
                 link.download = fileName;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-            } else {
-                // IE9 兼容
-                var iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                document.body.appendChild(iframe);
-                var doc = iframe.contentWindow.document;
-                doc.open();
-                doc.write(html);
-                doc.close();
-                iframe.contentWindow.document.execCommand('SaveAs', true, fileName);
-                document.body.removeChild(iframe);
+
+                if (window.URL.revokeObjectURL) {
+                    var href = link.href;
+                    setTimeout(function() {
+                        try {
+                            window.URL.revokeObjectURL(href);
+                        } catch (e) {}
+                    }, 100);
+                }
+                return;
             }
+
+            this._saveByIframe(fileName, textFallback);
+        };
+
+        /**
+         * IE9 兜底：把文本写进隐藏 iframe，再调 execCommand('SaveAs')
+         * @param {String} fileName 文件名
+         * @param {String} text 文本内容
+         */
+        Export.prototype._saveByIframe = function(fileName, text) {
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            var doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write('<meta charset="UTF-8">' + (text || ''));
+            doc.close();
+            iframe.contentWindow.document.execCommand('SaveAs', true, fileName);
+            document.body.removeChild(iframe);
         };
 
         /**

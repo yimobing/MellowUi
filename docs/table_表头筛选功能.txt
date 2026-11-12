@@ -1,0 +1,265 @@
+
+
+================================================================================
+                  # 表头筛选功能设计
+                    20261112
+================================================================================
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         设计思路
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. **checkbox 类型：做【模式 A】枚举筛选**
+   - 两个子选项：
+     - 选项 1：`autoOptions:true`：插件自动扫描当前数据集，收集该列去重值，生成复选框候选项（就像业务自己遍历 tableData 那种效果）
+     - 选项 2：`options:[...]`：手动写死候选项，不扫描数据，和 Element `filters` 完全一样
+   - ✅ 用户**只能勾选已有的候选项，不能随意打字输入陌生值**。
+2. **input /date‑range 类型：做【模式 B】自由输入条件**
+   - 面板里面是输入框，用户可以随便敲文字、填起止日期；
+   - 没有候选项列表，用户自己输入筛选条件，点确定执行过滤。
+   - 例如姓名列：输入 “张”，模糊匹配包含 “张” 的行。
+
+### 列配置示例（修正版）
+
+   columns: [
+  // ① 枚举复选框，自动从表格数据提取候选项（模式A）
+  {
+    field: 'status',
+    title: '状态',
+    filter: {
+      type: 'checkbox',
+      autoOptions: true   // 自动收集本列所有去重值生成勾选列表
+    }
+  },
+  // ② 枚举复选框，手动指定候选项，不从表格拿数据（模仿原生ElementUI filters）
+  {
+    field: 'tag',
+    title: '标签',
+    filter: {
+      type: 'checkbox',
+      options: [
+        {text:'普通',value:'normal'},
+        {text:'重要',value:'important'}
+      ]
+    }
+  },
+  // ③ 自由文本输入筛选，用户随便输入内容（模式B）
+  {
+    field: 'name',
+    title: '姓名',
+    filter: {
+      type: 'input',
+      placeholder: '输入姓名模糊搜索'
+    }
+  },
+  // ④ 日期区间输入
+  {
+    field: 'createTime',
+    title: '创建时间',
+    filter: {
+      type: 'dateRange'
+    }
+  }
+]
+
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   完整的 API 要点清单
+   包含插件配置、列 filter 配置、事件、返回的 conditions 数据结构。
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# HeaderFilter 表头筛选插件 · API要点清单
+
+> 
+> 说明：独立插件 `header‑filter.js`，按需启用；仅管理**表头UI产生的筛选条件**，不感知页面顶部自定义搜索框，同字段同时存在外部查询条件时由业务做合并处理。
+> 区分两种模式：`remotePaging=false`【本地前端过滤】；`remotePaging=true`【仅组装条件抛事件，不做前端过滤】。
+
+## 一、插件启用方式
+
+```
+plugins: [
+  ['HeaderFilter', {
+    // 插件全局配置
+    filterIconActiveClass: '',      // 筛选生效时漏斗图标附加class
+    popoverZIndex: 1050,           // 筛选浮层z‑index
+    popoverWidth: 260,             // 浮层面板宽度(px)
+    confirmText: '确定',
+    resetText: '重置',
+    clearAllText: '清除全部筛选'
+  }]
+]
+```
+
+### 插件全局配置表
+
+| 配置项 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| filterIconActiveClass | String | `''` | 列存在生效筛选条件时，漏斗图标附加样式类 |
+| popoverZIndex | Number | `1050` | 筛选弹出浮层z‑index，规避冻结列、弹窗遮挡问题 |
+| popoverWidth | Number | `260` | 浮层面板像素宽度 |
+| confirmText | String | `确定` | 面板确认按钮文案 |
+| resetText | String | `重置` | 面板重置本列条件按钮文案 |
+| clearAllText | String | `清除全部筛选` | 全局清除全部筛选条件按钮文案 |
+
+## 二、columns列配置 filter（给每一列开启/定义筛选器）
+
+> 
+> 不在列写`filter`则该列表头不出现筛选漏斗图标。
+
+```
+columns: [
+  {
+    field: 'status',
+    title: '状态',
+    filter: {
+      type: 'checkbox',
+      autoOptions: true,
+      options: [],
+      placeholder: ''
+    }
+  }
+]
+```
+
+### filter 对象配置项
+
+| 字段 | 类型 | 支持type | 默认 | 说明 |
+| --- | --- | --- | --- | --- |
+| type | String | 全部 | 必填 | 筛选器类型：   `checkbox`多选复选框   `input`文本模糊输入   `radio`单选   `dateRange`日期区间   `numberRange`数字区间 |
+| autoOptions | Boolean | `checkbox` | `false` | 自动从**原始未过滤数据集**提取本列去重值生成候选项；   ⚠️`remotePaging=true`时自动失效，必须手动填`options` |
+| options | Array<{text,value}> | `checkbox`/`radio` | `[]` | 手动指定候选项，格式 `[{text:'显示文本', value:'实际值'}]`；优先级高于autoOptions |
+| placeholder | String | `input`/`dateRange`/`numberRange` | `''` | 输入框占位提示文字 |
+
+> 
+> 类型说明：
+> 
+> 
+> 1. `checkbox`：多选勾选；autoOptions自动提取选项 / options手动写选项，**不能自由输入陌生值**
+> 2. `radio`：单选，二选一或多选一
+> 3. `input`：自由文本输入，做模糊包含匹配（本地模式）
+> 4. `dateRange`：日期起止输入
+> 5. `numberRange`：数字 min / max 区间
+
+## 三、conditions 条件数据结构（事件输出、实例读取的统一格式）
+
+> 
+> 数组，一条代表一列的筛选条件；无筛选条件返回空数组`[]`
+
+```
+[
+  {
+    field: "status",
+    type: "checkbox",
+    value: ["wait","reject"]
+  },
+  {
+    field: "name",
+    type: "input",
+    value: "张"
+  },
+  {
+    field: "amount",
+    type: "numberRange",
+    value: { min: 100, max: 5000 }
+  },
+  {
+    field: "createTime",
+    type: "dateRange",
+    value: { start:"2026‑01‑01", end:"2026‑11‑12" }
+  }
+]
+```
+
+### condition 单条字段说明
+
+| 字段 | 说明 |
+| --- | --- |
+| field | 对应列的`field`字段名 |
+| type | 和列filter配置的type保持一致 |
+| value | 条件值：   checkbox → 数组`[v1,v2]`   radio → 单个基础值   input → 字符串   dateRange / numberRange → 对象 `{start,end}` / `{min,max}` |
+
+## 四、实例方法（表格实例table调用）
+
+| 方法 | 参数 | 返回 | 说明 |
+| --- | --- | --- | --- |
+| getFilterConditions() | 无 | `Array<condition>` | 获取当前全部表头筛选条件，没有返回`[]` |
+| setFilterConditions(conditions) | conditions条件数组 | void | 编程式设置筛选条件，会触发filterChange事件，更新UI漏斗状态；本地模式自动执行过滤；远程模式仅更新状态抛事件 |
+| clearAllFilters() | 无 | void | 清除全部列筛选条件，重置UI状态，触发filterChange |
+| clearColumnFilter(field) | field:String | void | 清除指定单个字段的筛选条件 |
+
+示例
+
+```
+// 获取当前筛选条件
+var conds = table.getFilterConditions();
+
+// 编程设置筛选条件
+table.setFilterConditions([
+  {field:'status', type:'checkbox', value:['wait']}
+]);
+
+// 清除某一列筛选
+table.clearColumnFilter('status');
+
+// 全部清空
+table.clearAllFilters();
+```
+
+## 五、事件
+
+### filterChange
+
+> 
+> 筛选条件发生变更（勾选、确定、重置、清除全部、调用setFilterConditions/clearXXX）触发。
+
+```
+table.on('filterChange', function(conditions){
+  // conditions：Array<condition>，就是上面的条件结构
+});
+```
+
+使用示例‑远程分页场景：
+
+```
+table.on('filterChange', function(conditions){
+  // conditions 是表头筛选产生的条件
+  // 业务自行合并页面顶部查询条件，传给后端接口
+  requestList({
+    curPage:1,
+    pageSize:20,
+    filters: conditions
+  }).then(res=>{
+    table.setData(res.list);
+    table.options.total = res.total;
+  })
+});
+```
+
+## 六、重要行为&边界约定（文档warn提示）
+
+1. **条件逻辑**：多列筛选条件使用 `AND` 逻辑同时满足；**不支持OR或逻辑**。
+2. `remotePaging: false`（本地模式）
+   - 插件内部读取完整原始数据集做内存过滤；
+   - 过滤完成后再执行排序、分页、Summary合计；
+   - `autoOptions:true` 基于**原始未过滤全量数据**提取候选项，不受其它列筛选影响。
+3. `remotePaging: true`（远程分页）
+   - ❌ **不会做任何前端数据过滤**；仅收集UI条件，抛出`filterChange`事件交给后端；
+   - ❌ `autoOptions:true` 自动失效，必须手动配置`options`；前端只有当前页数据，无法拿到全量枚举值。
+4. 联动关系
+   - Pagination分页：本地模式总条数自动变为过滤后行数；远程模式total完全由后端返回。
+   - Sort排序：本地模式排序作用于过滤之后数据集；远程模式排序参数业务和filters一起传给后端。
+   - Summary合计：本地模式基于过滤后数据统计；远程模式`scope:"all"`仍然依赖后端返回`externalData`。
+   - Export导出：插件增加配置`exportFilteredOnly:Boolean`，true导出过滤后数据；false导出原始全部数据。
+5. 浮层定位：兼容`fixedLeftColumns`，后续兼容`fixedRightColumns`，处理z‑index，避免被滚动容器截断。
+6. ⚠️ **和页面顶部自定义搜索框共存警告**> 
+> HeaderFilter仅维护表头UI生成的条件，**无法感知页面外部DOM写的顶部查询组件**。
+> 如果同一字段同时存在【顶部查询条件】+【表头筛选条件】，简单直接合并会生成同field多条条件，AND叠加容易查询结果为空。
+> 最佳实践：**同一个业务字段不要两边同时开启查询**；若确实要同时开启，业务层自行做条件覆盖/合并，并且同步UI输入框状态，避免界面显示与实际查询条件不一致。
+
+## 七、本次不实现范围（边界约束，防止需求膨胀）
+
+1. 不支持自定义表达式脚本筛选（例如 `>100 && <200`）；数值范围使用`numberRange`类型。
+2. 不提供插槽，浮层内部控件固定渲染，不支持完全自定义浮层HTML。
+3. 不支持OR逻辑。
+4. 不自动处理外部页面查询框条件冲突，交由业务代码处理。
