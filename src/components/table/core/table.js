@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 主类
  * 对外暴露的入口类，整合 DataStore / EventBus / Renderer
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.9.4
+ * @Version：v1.10.0
  * @Date：2026-10-10
- * @PubDate：2026-11-12 10:13:15
+ * @PubDate：2026-11-12 16:50:19
  */
 
  (function(MelUi) {
@@ -36,7 +36,9 @@
             fixedLeftColumns: 0, // 表格固定几列不动(可选)。值：0 0列, 1 1列
             rowHeight: 40, // 行高(可选)。默认40px
             headerHeight: 'auto', // 表头高度(可选)。默认'auto'由内容自动撑开；传入数值时表头使用指定高度
-            bordered: true, // 是否显示边框(可选)。true显示边框，false不显示
+            bordered: false, // 是否显示边框(可选)。true=完整边框(外框+单元格横竖分隔线)；false=无外框、无单元格竖线，仅保留横向分隔线
+            headBgEnable: false, // 是否启用表头背景色(可选)。true启用，false表头透明
+            headBgColor: '', // 表头背景色(可选)。仅在headBgEnable=true时生效；留空则使用内置默认色#f5f7fa
             stripe: false, // 是否隔行变色斑马纹(可选)。true交替行背景色
             hoverHighlight: true, // 是否行悬浮高亮(可选)。true鼠标悬停行高亮
             showSelectAll: true, // 选择列是否显示全选复选框(可选)。true显示，false不显示

@@ -5,9 +5,9 @@
  *   不在分组里的列（复选框、序号、状态列等插件注入列）与不等深结构中的浅层列纵向跨行（rowspan），
  *   保证表头每行覆盖的列数与表身完全一致，不会留空洞或错位。
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.0.2
+ * @Version：v1.0.3
  * @Date：2026-11-09
- * @PubDate：2026-11-09 18:40:59
+ * @PubDate：2026-11-12 16:50:19
  */
 
  (function(MelUi) {
@@ -273,12 +273,17 @@
 
         var inner = '<div class="mel-th-inner">';
         inner += '<span class="mel-th-title">' + (col.title || '') + '</span>';
+        // 与叶子表头保持同一顺序：标题 → (无箭头) → 副标题
         if (col.subtitle) {
             inner += '<em class="mel-th-subtitle">' + col.subtitle + '</em>';
         }
         inner += '</div>';
 
-        return '<th class="' + cls + '" colspan="' + colspan + '" data-group-path="' + path + '">' + inner + '</th>';
+        // 分组表头同样支持列级/全局表头背景：取分组列自身的 headBgColor，未配置则走全局
+        var renderer = this.table ? this.table.renderer : null;
+        var styleAttr = (renderer && typeof renderer._getThStyleAttr === 'function') ? renderer._getThStyleAttr(col) : '';
+
+        return '<th class="' + cls + '" colspan="' + colspan + '" data-group-path="' + path + '"' + styleAttr + '>' + inner + '</th>';
     };
 
     /**

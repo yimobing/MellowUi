@@ -1,9 +1,9 @@
 /**
  * MelUi Table 表格组件 - 基础样式
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.5.9
+ * @Version：v1.7.3
  * @Date：2026-10-10
- * @Pubdate：2026-11-11 09:50:21
+ * @Pubdate：2026-11-12 18:05:00
  */
 
 /* ===== 容器 ===== */
@@ -18,8 +18,9 @@
 /* ===== 表头 ===== */
 .mel-table-header-wrapper {
     overflow: hidden;
-    background-color: #f5f7fa;
-    border-bottom: 1px solid #e4e7ed;
+    background-color: #ffffff;
+    /* 下边框已移除：表头 table 的 th 自带 border-bottom，表身 table 另有顶边时
+       两线会叠成 2px。分割线统一由 th 的 border-bottom（1px）提供 */
     box-sizing: border-box;
 }
 
@@ -32,7 +33,8 @@
     padding: 10px 8px;
     font-weight: 600;
     text-align: center;
-    border-right: 1px solid #e4e7ed;
+    /* 默认（bordered=false）不画竖线，只保留表头底部分隔线 */
+    border-bottom: 1px solid #e4e7ed;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -72,6 +74,13 @@
     vertical-align: middle;
 }
 
+/* 排序箭头：必须 inline-block（IE9 支持），跟随标题文字同一行；
+   副标题是 block 元素，所以 th 内部顺序固定为「标题 → 箭头 → 副标题」 */
+.mel-sort-arrow {
+    display: inline-block;
+    vertical-align: middle;
+}
+
 .mel-th-subtitle {
     display: block;
     font-size: 11px;
@@ -94,7 +103,6 @@
 
 .mel-table-body td {
     padding: 8px;
-    border-right: 1px solid #ebeef5;
     border-bottom: 1px solid #ebeef5;
     text-align: center;
     vertical-align: middle;
@@ -126,9 +134,34 @@
 }
 
 /* ===== 边框 ===== */
-.mel-table-bordered .mel-table-header,
+/* 默认（bordered=false，ElementUI 风格）：无外框、无单元格竖线，只有横向分隔线 */
+.mel-table-bordered .mel-table-header th {
+    border-right: 1px solid #e4e7ed;
+}
+
+.mel-table-bordered .mel-table-body td {
+    border-right: 1px solid #ebeef5;
+}
+
+.mel-table-bordered .mel-table-footer td {
+    border-right: 1px solid #ebeef5;
+}
+
+/* 外框：表头 table 画上/左/右，表身 table 画左/右/下。
+   接缝只留表头 th 的 border-bottom 一条 1px 线，避免表头 table 底边 + 表身 table 顶边叠成 2px */
+.mel-table-bordered .mel-table-header {
+    border: 1px solid #ebeef5;
+    border-bottom: 0;
+}
+
 .mel-table-bordered .mel-table-body {
     border: 1px solid #ebeef5;
+    border-top: 0;
+}
+
+.mel-table-bordered .mel-table-footer {
+    border: 1px solid #ebeef5;
+    border-top: 0;
 }
 
 /* ===== 隔行变色 ===== */
@@ -236,7 +269,70 @@
 /* ===== 合计行 ===== */
 .mel-summary-row td {
     background-color: #f5f7fa !important;
-    border-top: 2px solid #e4e7ed;
+    /* 顶部分隔线只要 1px：与上一数据行的 border-bottom 折叠后仍是 1px，
+       原来写 2px 会明显粗一圈 */
+    border-top: 1px solid #e4e7ed;
+}
+
+/* ===== 固定表尾（纵向冻结合计行） ===== */
+/* 独立于表身滚动容器之外的第三张 table：只同步横向滚动，垂直方向常驻底部
+   未启用时渲染层保持 display:none，不占高度，与未改造前完全一致 */
+.mel-table-footer-wrapper {
+    overflow: hidden;
+    background-color: #ffffff;
+    box-sizing: border-box;
+}
+
+/* ===== 右侧 gutter（滚动条视觉占位块） =====
+   表身出现纵向滚动条时，表头/表尾右侧会空出滚动条宽度的一截。
+   这一截由容器级绝对定位的空块铺满（只覆盖表头带 / 表尾带，不压住表身滚动条），
+   并补上与表头/表尾同高的分隔线，让滚动条看起来被包在表格内部。
+   位置、宽度、显隐全部由 renderer._syncGutter() 按实测滚动条宽度动态设置。 */
+.mel-table-gutter {
+    position: absolute;
+    width: 0;
+    display: none;
+    box-sizing: border-box;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e4e7ed;   /* 与表头 th 底边线对齐 */
+    z-index: 3;                          /* 盖在表头/表尾之上，不被表格裁掉 */
+}
+
+.mel-table-gutter-footer {
+    background-color: #f5f7fa;          /* 与合计行同色 */
+    border-bottom: 0;
+    border-top: 1px solid #e4e7ed;      /* 与合计行顶线对齐 */
+}
+
+.mel-table-bordered .mel-table-gutter {
+    border-right: 1px solid #ebeef5;     /* 边框模式：外框把滚动条一起包住 */
+}
+
+/* 边框模式下 gutter 要把外框闭合：表头顶边、表尾底边各补一条，否则右侧会缺一段框线 */
+.mel-table-bordered .mel-table-gutter-header {
+    border-top: 1px solid #ebeef5;
+}
+
+.mel-table-bordered .mel-table-gutter-footer {
+    border-bottom: 1px solid #ebeef5;
+}
+
+.mel-table-footer {
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.mel-table-footer td {
+    padding: 8px;
+    border-bottom: 1px solid #ebeef5;
+    text-align: center;
+    vertical-align: middle;
+    background-color: #f5f7fa;
+}
+
+/* 表尾在表格最下方，顶边线由 .mel-summary-row td 的 border-top 提供，这里只补底边 */
+.mel-table-footer .mel-summary-row td {
+    border-bottom: 1px solid #e4e7ed;
 }
 
 /* ===== 分页 ===== */
@@ -353,8 +449,6 @@
 /* ===== 合并表头（HeaderMerge 插件） ===== */
 /* 分组表头单元格（父级 th）：叶子单元格沿用原有 th 样式，分组仅补齐边框与背景 */
 .mel-table-header th.mel-th-group {
-    background-color: #f5f7fa;
-    border-right: 1px solid #e4e7ed;
     border-bottom: 1px solid #e4e7ed;
 }
 
@@ -370,14 +464,14 @@
    并不是同一列，整列右边线被逐行抹掉 —— 这就是合并表头后“最后一列没有右边框”的原因。
    修法：HeaderMerge 渲染时给每一行的逻辑最后一列 th 打上 mel-th-merge-lastcol，
    由下面这条规则把被抹掉的右边框补回来；单级表头没有这个类，行为保持原样。 */
-.mel-table-header th.mel-th-merge-lastcol {
+.mel-table-bordered .mel-table-header th.mel-th-merge-lastcol {
     border-right: 1px solid #e4e7ed;
 }
 
 /* 表身最后一列同步收边：表头/表身是两张独立 table，css 没法从表头选中表身，
    所以 HeaderMerge 给共同父容器挂 mel-table-merge-head 标记，表身最后一格跟着补右边框，
    否则一条竖线会在表头和表身的交界处断色（表头深、表身浅）。 */
-.mel-table-container.mel-table-merge-head .mel-table-body td:last-child {
+.mel-table-bordered .mel-table-container.mel-table-merge-head .mel-table-body td:last-child {
     border-right: 1px solid #e4e7ed;
 }
 

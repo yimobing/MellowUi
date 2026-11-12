@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 合计行插件
  * 只负责计算合计数据，DOM 渲染由 Renderer 统一处理
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.0.3
+ * @Version：v1.1.1
  * @Date：2026-10-10
- * @Pubdate：2026-11-10 18:07:33
+ * @Pubdate：2026-11-12 17:59:30
  */
 
  (function(MelUi) {
@@ -21,6 +21,10 @@
      *                           本地分页：前端对全量数据源自动聚合；
      *                           远程分页：前端拿不到全量数据，不自动计算，只渲染 externalData，未配置则显示 "—"
      *   externalData: 外部合计对象，仅 scope='all' 且远程分页时生效，key 与 columns 字段一一对应；scope='currentPage' 时忽略
+     *   fixedFooter: 是否把合计行渲染到纵向固定表尾，默认 true。
+     *          true  —— 合计行渲染到独立固定层，贴在表格可视区底部，垂直滚动不动、横向滚动跟随表身（默认）
+     *          false —— 旧行为：合计行是表身末尾的普通行，跟随垂直滚动
+     *          仅对单条全局合计行生效；可用高度不足时渲染层会自动降级回表身末尾并 warn
      */
     function Summary(options) {
         this.options = this._extend({
@@ -28,7 +32,8 @@
             title: '合计',
             titleColumn: 0,
             scope: 'currentPage',
-            externalData: {}
+            externalData: {},
+            fixedFooter: true
         }, options || {});
     }
 
@@ -45,14 +50,25 @@
 
         // 监听 Renderer 请求合计数据（每次重绘表身后触发）
         table.eventBus.on('summaryRequest', function() {
-            var sums = self._calcSums();
-            table.eventBus.emit('summaryChange', {sums: sums});
+            self._emitSums(self._calcSums());
         });
 
         // 单元格变化时重新计算
         table.eventBus.on('cellChange', function() {
-            var sums = self._calcSums();
-            table.eventBus.emit('summaryChange', {sums: sums});
+            self._emitSums(self._calcSums());
+        });
+    };
+
+    /**
+     * 发出合计数据
+     * 渲染层只认载荷里的 fixed 标记决定渲染目标（表身末尾 / 固定表尾），
+     * 这样插件不需要去读 renderer 内部结构，耦合点只有这一个布尔值
+     * @param {Object} sums 合计数据
+     */
+    Summary.prototype._emitSums = function(sums) {
+        this.table.eventBus.emit('summaryChange', {
+            sums: sums,
+            fixed: this.options.fixedFooter === true
         });
     };
 

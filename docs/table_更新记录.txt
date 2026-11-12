@@ -1,0 +1,25 @@
+
+------------------------------------
+    2026.11.12
+------------------------------------
+【Summary 新增配置】fixedFooter
+类型：Boolean　默认：true
+作用：把全局合计行渲染到独立的纵向固定表尾层，垂直滚动贴底不动，横向滚动跟随表身
+限制：仅单条全局合计行生效；分组小计（后续）不适用
+联动：fitViewport / bodyHeight 自动扣减表尾高度；表身可用高度 < 80px 自动降级回 tbody 并 warn
+兼容：默认 false，升级后老页面零变化
+
+
+【Summary 修改 titleColumn 】
+titleColumn：合计标题放在第几列，按 columns 数组**原始下标**计（含 Checkbox、SerialNo 等插件自动插入的虚拟列）
+落在隐藏列时：自动向右找第一个可见列，右侧没有则向左回退；越界会夹到合法范围并 warn 一次
+落点列原有的合计数值会被标题覆盖，若发现合计值不见了，先检查 titleColumn 是否指到了有数值的列
+
+
+【表格外观修改 】
+bordered    默认 false。false=无外框、无竖线，仅横向分隔线；true=完整边框（默认值已从 true 改为 false，老页面要框线请显式传 true）
+headBgEnable 默认 false。表头背景开关
+headBgColor  默认 ''。仅 headBgEnable=true 生效；留空用内置 #f5f7fa
+columns[].headBgColor   默认 ''。该列表头背景，有值就覆盖全局开关
+columns[].headTextColor 默认 ''。该列表头文字色
+优先级：列 headBgColor > 全局 headBgEnable+headBgColor > 透明

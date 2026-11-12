@@ -473,7 +473,7 @@
         <li>配置 <a href="#s3-2" class="anchor-link">columns</a> 渲染列：标题、副标题、字段、列宽、对齐、输入控件、格式化。</li>
         <li>录入能力：只读 readonly、禁用 disabled、默认值 defaultValue、必填 required、唯一值 unique、列级自定义校验 <a href="#s3-2" class="anchor-link">validator</a>、数字过滤 type、小数位 digit、<a href="#s3-2" class="anchor-link">formatter</a> 显示格式化。</li>
         <li>增删改查：新增行（自动滚动定位 + 自动聚焦输入框）、删除行、清空、整表替换。</li>
-        <li>外观：边框 <span class="inline-code">bordered</span>、斑马纹 <span class="inline-code">stripe</span>、行悬浮高亮 <span class="inline-code">hoverHighlight</span>、行高 <span class="inline-code">rowHeight</span>、表头高度 <span class="inline-code">headerHeight</span>。</li>
+        <li>外观：边框 <span class="inline-code">bordered</span>、斑马纹 <span class="inline-code">stripe</span>、行悬浮高亮 <span class="inline-code">hoverHighlight</span>、行高 <span class="inline-code">rowHeight</span>、表头高度 <span class="inline-code">headerHeight</span>、表头背景 <span class="inline-code">headBgEnable</span> / <span class="inline-code">headBgColor</span>、列级表头底色与文字色 <span class="inline-code">headBgColor</span> / <span class="inline-code">headTextColor</span>。</li>
         <li>布局：左侧冻结列 <a href="#opt-fixedleft" class="anchor-link">fixedLeftColumns</a>、列宽弹性铺满 <a href="#opt-fitwidth" class="anchor-link">fitWidth</a>、视口高度自适应 <a href="#opt-fitviewport" class="anchor-link">fitViewport</a>、表头固定。</li>
         <li>表格上下额外区块 <a href="#s3-1" class="anchor-link">extraBefore / extraAfter</a>，用于多表格 / 多切片场景在上方放查询条件、标题说明。</li>
         <li>列级控制：<a href="#s3-2" class="anchor-link">sortable</a> 控制该列能否点击排序、<a href="#s3-2" class="anchor-link">visible</a> 控制该列显示与隐藏（DOM 保留、可运行时切换）。</li>
@@ -616,13 +616,20 @@
     <h4 id="s3-1-2">外观</h4>
     <table class="cfg">
         <tr><th style="width:190px">参数</th><th style="width:150px">类型</th><th style="width:100px">默认值</th><th>说明</th></tr>
-        <tr><td class="code-cell">bordered</td><td>Boolean</td><td>true</td><td>是否显示单元格边框。</td></tr>
+        <tr><td class="code-cell">bordered</td><td>Boolean</td><td>false</td><td>是否显示完整边框。<b>默认值已改为 false</b>：<br><b>false</b>：无外框、无竖线，只保留横向分隔线，看起来清爽简约；<br><b>true</b>：完整外框 + 全部单元格竖线。<br>升级提示：老页面要框线请显式写 <span class="inline-code">bordered: true</span>。</td></tr>
+        <tr><td class="code-cell">headBgEnable</td><td>Boolean</td><td>false</td><td>表头背景开关。<b>false</b> 表头透明；<b>true</b> 时用 headBgColor，留空用内置 <span class="inline-code">#f5f7fa</span>。合并表头的分组 th 同样生效。</td></tr>
+        <tr><td class="code-cell">headBgColor</td><td>String</td><td>''</td><td>自定义表头背景色，<b>仅 headBgEnable=true 生效</b>；留空用内置 <span class="inline-code">#f5f7fa</span>。列级 columns[].headBgColor 优先于本参数。</td></tr>
         <tr><td class="code-cell">stripe</td><td>Boolean</td><td>false</td><td>是否隔行变色（斑马纹）。</td></tr>
         <tr><td class="code-cell">hoverHighlight</td><td>Boolean</td><td>true</td><td>鼠标悬停行是否高亮。</td></tr>
         <tr><td class="code-cell">showSelectAll</td><td>Boolean</td><td>true</td><td>勾选列表头是否显示全选复选框（配合 <a href="#p-checkbox" class="anchor-link">Checkbox 插件</a>）。</td></tr>
         <tr><td class="code-cell">rowHeight</td><td>Number</td><td>40</td><td>行高，单位 px。</td></tr>
         <tr><td class="code-cell">headerHeight</td><td>Number / 'auto'</td><td>'auto'</td><td>表头高度。'auto' 由内容自动撑开（合并表头会自然变高）；传数值时使用固定高度（px）。</td></tr>
     </table>
+
+    <div class="tip">
+        <b>表头底色优先级：</b>列级 <span class="inline-code">columns[].headBgColor</span> &gt; 全局 <span class="inline-code">headBgEnable</span>+<span class="inline-code">headBgColor</span>（留空用内置 #f5f7fa）&gt; 透明。
+        列级 <span class="inline-code">headTextColor</span> 单独控制该列表头文字色，不受全局开关影响。
+    </div>
 
     <h4 id="s3-1-3">布局与尺寸</h4>
     <table class="cfg">
@@ -701,6 +708,8 @@
         <tr><td class="code-cell">subtitle</td><td>String</td><td>''</td><td>列副标题，显示在标题下方的小字，如 "(元)"、"(㎡)"。</td></tr>
         <tr><td class="code-cell">width</td><td>Number</td><td>—</td><td>列宽（px）。table-layout:fixed 模式下由该值决定列宽。</td></tr>
         <tr><td class="code-cell">align</td><td>String</td><td>'left'</td><td>单元格水平对齐：'left' / 'center' / 'right'。</td></tr>
+        <tr><td class="code-cell">headBgColor</td><td>String</td><td>''</td><td>该列表头背景色。有值就直接覆盖全局 <span class="inline-code">headBgEnable</span> / <span class="inline-code">headBgColor</span>（即使全局开关是 false 也生效）；为空则走全局。合并表头的分组 th 取分组列自己的配置，跨列分组取最左列。</td></tr>
+        <tr><td class="code-cell">headTextColor</td><td>String</td><td>''</td><td>该列表头文字颜色，直接作用在表头 th 上。</td></tr>
         <tr><td class="code-cell"><a href="#s3-2-1" class="anchor-link">renderer</a></td><td>String</td><td>'text'</td><td>单元格渲染器名称，详见 <a href="#s3-2-1" class="anchor-link">单元格渲染器 renderer</a>。</td></tr>
         <tr><td class="code-cell">readonly</td><td>Boolean</td><td>false</td><td>整列只读。input / textarea / radio 渲染时加 readonly，不可编辑。</td></tr>
         <tr><td class="code-cell">disabled</td><td>Boolean</td><td>false</td><td>整列禁用。input / textarea / radio / button 渲染时加 disabled。</td></tr>
@@ -1013,7 +1022,7 @@ table.on('sortChange', function(data) {
         <tr><th style="width:210px">参数</th><th style="width:130px">类型</th><th style="width:100px">默认值</th><th>说明</th></tr>
         <tr><td class="code-cell">columns</td><td>Array</td><td>[]</td><td>需要合计的字段名数组，如 <span class="inline-code">['mj', 'scjj', 'zje']</span>。</td></tr>
         <tr><td class="code-cell">title</td><td>String</td><td>'合计'</td><td>合计行标题文字。</td></tr>
-        <tr><td class="code-cell">titleColumn</td><td>Number</td><td>0</td><td>标题放在第几列（列索引，从 0 开始）。</td></tr>
+        <tr><td class="code-cell">titleColumn</td><td>Number</td><td>0</td><td>合计标题放在第几列，按 columns 数组<b>原始下标</b>计（包含 Checkbox / SerialNo 等插件自动插入的虚拟列，不是「第几个可见列」）。<br><b>落点列被隐藏（visible:false）时</b>：自动向右找第一个可见列；右侧没有则向左回退；整行都隐藏则不渲染标题。越界会夹到合法范围并 warn 一次。<br><b>落点列原有的合计数值会被标题覆盖</b>：如果发现某列表的合计值不见了，先检查 titleColumn 是否指到了有数值的列。</td></tr>
         <tr><td class="code-cell">scope</td><td>String</td><td>currentPage</td><td>合计统计范围。`currentPage`：仅统计当前分页(比如第2页)的数据；`all`：统计所有分页(第1,2,3...最后一页)的全部数据。远程分页设置`all`时，组件不会自动计算，需要配置 externalData。
         <br>具体解释：
         <br>    'currentPage' —— 无论本地分页还是远程分页，只统计当前页可见行（含本页新增草稿行）
@@ -1029,8 +1038,21 @@ table.on('sortChange', function(data) {
                 zje: 300
             }
         </td></tr>
+        <tr><td class="code-cell">fixedFooter</td><td>Boolean</td><td>true</td><td>是否把全局合计行渲染到独立的纵向固定表尾层。<br><b>true（默认）</b>：合计行贴在表格可视区底部，垂直滚动不动、横向滚动跟随表身；表身出现纵向滚动条时，表头 / 表尾右侧还会补一块与滚动条等宽的 gutter 空块，滚动条看起来被包在表格内部。<br><b>false</b>：旧行为，合计行是表身末尾的普通行，跟随垂直滚动。<br>联动：fitViewport / bodyHeight 会自动扣减表尾高度；表身可用高度不足 80px 时自动降级回表身末尾并 <span class="inline-code">console.warn</span> 一次，本实例后续不再启用固定表尾。<br>限制：只对单条全局合计行生效，分组小计不适用。</td></tr>
     </table>
-<pre><code>plugins: [['Summary', {columns: ['mj', 'scjj', 'zje'], title: '合计', titleColumn: 2, scope: 'currentPage', externalData: {}}]]</code></pre>
+<pre><code>plugins: [['Summary', {
+    columns: ['mj', 'scjj', 'zje'],   // 需要合计的字段
+    title: '合计',
+    titleColumn: 2,                    // columns 原始下标
+    scope: 'currentPage',
+    externalData: {},
+    fixedFooter: true                  // 默认 true：合计行固定在底部
+}]]</code></pre>
+<div class="tip">
+    <b>升级提示：</b>fixedFooter 默认值已由 false 改为 true，未配置该参数的老页面合计行会移到固定表尾；
+    想保持「合计行在表身末尾、跟随滚动」请显式写 <span class="inline-code">fixedFooter: false</span>。
+</div>
+
 <div class="warn">
     <b>说明：</b>启用分端远程分页时，如果要想统计当前表格所有分页的某些字段的汇总数据，则后端：必须返回汇总数据，否则前端无法知道所有页的全部汇总数据。前端：必须设置 scope = 'all'，且 externalData 必须传值，不能是空对象。
     <pre><code>eg. 以下数据表示当前表格（假设10页）10页汇总起来的面积、市场价值、总金额

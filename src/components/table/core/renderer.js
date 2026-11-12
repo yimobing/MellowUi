@@ -2,9 +2,9 @@
  * MelUi Table 表格组件 - 核心渲染器
  * 负责根据 DataStore 数据渲染表头和表身 DOM，所有 DOM 操作统一在此
  * 兼容性：IE9 / IE10 / IE11 / Edge
- * @Version：v1.8.15
+ * @Version：v1.10.2
  * @Date：2026-10-10
- * @PubDate：2026-11-11 17:18:38
+ * @PubDate：2026-11-12 18:05:00
  */
 
  (function(MelUi) {
@@ -27,6 +27,20 @@
         // extraBefore / extraAfter 渲染出的区块节点引用（未配置时为空）
         this.extraBeforeWrap = null;
         this.extraAfterWrap = null;
+
+        // 纵向固定表尾（独立 table，不在滚动容器内；未启用时 display:none 不占高度）
+        this.footerWrapper = null;
+        this.footerTable = null;
+        this.footerTbody = null;
+        // 最近一次合计数据：表尾因空间不足降级时，要用它把合计行挪回表身
+        this._lastSums = null;
+        // 表尾降级标记（一旦降级本次实例不再启用表尾，避免高度抖动）
+        this._footerDegraded = false;
+        this._footerWarned = false;
+        // 表身最小可用高度：低于该值时表尾降级，避免把表身压成 0
+        this._footerMinBodyHeight = 80;
+        // 合计标题列越界告警标记（只警告一次，避免每次重算刷屏）
+        this._titleColumnWarned = false;
 
         // 表头固定列缓存（合并表头时是「覆盖前N列的th列表」，滚动同步复用）
         this._headerFixedCells = [];
@@ -53,7 +67,7 @@
         });
 
         this.eventBus.on('summaryChange', function(data) {
-            self._renderSummaryRow(data.sums);
+            self._renderSummaryRow(data.sums, data.fixed);
         });
 
         this.eventBus.on('selectChange', function() {
@@ -218,6 +232,22 @@
         lines.push('    </table>');
         lines.push('  </div>');
 
+        // 纵向固定表尾：独立 table（colgroup + 单行 tbody），位于滚动容器之外，
+        // 因此垂直滚动不影响它；横向滚动由 _initLayout 的 onScroll 同步 scrollLeft。
+        // 未启用表尾固定时保持 display:none，不占任何高度，与改造前行为一致。
+        lines.push('  <div class="mel-table-footer-wrapper" style="display:none;">');
+        lines.push('    <table class="mel-table-footer">');
+        lines.push('      <colgroup></colgroup>');
+        lines.push('      <tbody></tbody>');
+        lines.push('    </table>');
+        lines.push('  </div>');
+
+        // 右侧 gutter：容器级绝对定位覆盖块（不是 wrapper 的子元素）。
+        // 放容器级的好处：不改变任何 wrapper 的宽度，横向滚动最大值、fitWidth 基准、
+        // extra 宽度全部保持原样；块只覆盖「表头带」「表尾带」这两段，不压住表身的滚动条。
+        lines.push('  <div class="mel-table-gutter mel-table-gutter-header"></div>');
+        lines.push('  <div class="mel-table-gutter mel-table-gutter-footer"></div>');
+
         if (afterHtml) lines.push('  ' + afterHtml);
 
         lines.push('</div>');
@@ -229,6 +259,11 @@
         this.headerTable = this.el.querySelector('.mel-table-header');
         this.bodyWrapper = this.el.querySelector('.mel-table-body-wrapper');
         this.bodyTable = this.el.querySelector('.mel-table-body');
+        this.footerWrapper = this.el.querySelector('.mel-table-footer-wrapper');
+        this.footerTable = this.el.querySelector('.mel-table-footer');
+        this.footerTbody = this.footerTable ? this.footerTable.querySelector('tbody') : null;
+        this.headerGutter = this.el.querySelector('.mel-table-gutter-header');
+        this.footerGutter = this.el.querySelector('.mel-table-gutter-footer');
         this.theadTr = this.headerTable ? this.headerTable.querySelector('thead tr') : null;
         // thead 是整个表头行容器：多级表头时有多行，表头点击统一绑在它上面（它本身不随表头重绘被替换）
         this.thead = this.headerTable ? this.headerTable.querySelector('thead') : null;
@@ -273,6 +308,17 @@
             }
             this._fillColgroup(bcg, columns);
             this.bodyTable.style.width = totalWidth + 'px';
+        }
+
+        // 处理固定表尾 table：列骨架与表身完全同源，否则单元格对不齐
+        if (this.footerTable !== null && typeof this.footerTable !== 'undefined') {
+            var fcg = this.footerTable.querySelector('colgroup');
+            if (fcg === null || typeof fcg === 'undefined') {
+                fcg = document.createElement('colgroup');
+                this.footerTable.insertBefore(fcg, this.footerTable.firstChild);
+            }
+            this._fillColgroup(fcg, columns);
+            this.footerTable.style.width = totalWidth + 'px';
         }
 
         // 动态调整 wrapper 宽度：列宽总和小于容器时，wrapper=table宽度，滚动条紧贴表格
@@ -340,6 +386,7 @@
         if (this.headerWrapper) {
             this.headerWrapper.style.width = (bodyClientWidth > 0 ? bodyClientWidth + 'px' : '100%');
         }
+        this._syncFooterWidth();
 
         // 表头宽度定下来后立刻同步 extra 区块宽度（fitWidth 分支会在下面提前 return，这里不能漏）
         this._syncExtraWidth();
@@ -407,6 +454,17 @@
                 }
             }
         }
+
+        // 表尾 colgroup：百分比必须与表身一致，否则弹性拉伸时列宽错位
+        if (this.footerTable) {
+            var fcg2 = this.footerTable.querySelector('colgroup');
+            if (fcg2) {
+                var cols3 = fcg2.children;
+                for (var m = 0; m < cols3.length && m < percents.length; m++) {
+                    cols3[m].style.width = percents[m];
+                }
+            }
+        }
     };
 
     /**
@@ -433,6 +491,16 @@
                 var bcols = bcg.children;
                 for (j = 0; j < bcols.length && j < columns.length; j++) {
                     bcols[j].style.width = this._isColHidden(columns[j]) ? '0px' : (columns[j].width || 100) + 'px';
+                }
+            }
+        }
+
+        if (this.footerTable) {
+            var fcg = this.footerTable.querySelector('colgroup');
+            if (fcg) {
+                var fcols = fcg.children;
+                for (var n = 0; n < fcols.length && n < columns.length; n++) {
+                    fcols[n].style.width = this._isColHidden(columns[n]) ? '0px' : (columns[n].width || 100) + 'px';
                 }
             }
         }
@@ -476,7 +544,7 @@
     Renderer.prototype._applyAppearance = function() {
         var opts = this.options;
 
-        if (opts.bordered !== false && this.container) {
+        if (opts.bordered === true && this.container) {
             this.container.className += ' mel-table-bordered';
         }
         if (opts.stripe && this.container) {
@@ -717,7 +785,21 @@
         var extraHeight = this._getOuterHeight(this.extraBeforeWrap) + this._getOuterHeight(this.extraAfterWrap);
 
         // bodyWrapper目标border-box高度 = container高度 - container border上下 - 表头高度 - 上下额外区块高度
-        var bodyHeight = containerTargetBox - cs.borderTop - cs.borderBottom - headerHeight - extraHeight;
+        // 固定表尾占用高度：display:none 时为 0（未启用/已降级都不扣）
+        var footerVisible = this._isFooterVisible();
+        var footerHeight = footerVisible ? this._getOuterHeight(this.footerWrapper) : 0;
+
+        // bodyWrapper目标border-box高度 = container高度 - border - 表头 - extra - 固定表尾
+        var bodyHeight = containerTargetBox - cs.borderTop - cs.borderBottom - headerHeight - extraHeight - footerHeight;
+
+        // 空间不足保护：表尾吃掉了大部分高度时自动降级回表身内渲染，避免表身被压成 0/负数
+        if (footerVisible && bodyHeight < this._footerMinBodyHeight) {
+            this._degradeFooter();
+            footerVisible = false;
+            footerHeight = 0;
+            bodyHeight = containerTargetBox - cs.borderTop - cs.borderBottom - headerHeight - extraHeight;
+        }
+
         if (bodyHeight > 0) {
             this.bodyWrapper.style.height = bodyHeight + 'px';
             this.bodyWrapper.style.overflow = 'auto';
@@ -789,8 +871,128 @@
                 if (this.bodyTable) this.bodyTable.style.width = cw + 'px';
             }
         }
+        // 表尾宽度与表身可视宽度同源（与表头同一基准）
+        this._syncFooterWidth();
         // extra 区块跟着表头宽度走，保证右边界与表头齐平
         this._syncExtraWidth();
+        // 滚动条宽度可能因表身高度变化而改变，最后统一校准 gutter 与 wrapper 宽度
+        this._syncGutter();
+    };
+
+    /**
+     * 同步固定表尾宽度
+     * 表尾不在滚动容器内，宽度必须显式对齐 bodyWrapper.clientWidth（已扣除垂直滚动条），
+     * 否则会被滚动条宽度带偏，右侧差几像素露出底色
+     */
+    Renderer.prototype._syncFooterWidth = function() {
+        if (!this.footerWrapper || !this.bodyWrapper) return;
+        var cw = this.bodyWrapper.clientWidth;
+        if (cw <= 0) return;
+
+        this.footerWrapper.style.width = cw + 'px';
+        // fitWidth 模式：表尾 table 与表身 table 同基准，否则弹性列宽比例不一致
+        if (this.options.fitWidth && this.footerTable) {
+            this.footerTable.style.width = cw + 'px';
+        }
+
+        this._syncGutter();
+    };
+
+    /**
+     * 读取元素某一边的边框宽度（像素数值）
+     * @param {Element} el 目标元素
+     * @param {String} side 'Left' / 'Right' / 'Top' / 'Bottom'
+     * @return {Number} 边框宽度，取不到时为 0
+     */
+    Renderer.prototype._getBorderWidth = function(el, side) {
+        if (!el) return 0;
+        var val = '';
+        if (window.getComputedStyle) {
+            val = window.getComputedStyle(el)['border' + side + 'Width'];
+        } else if (el.currentStyle) {
+            val = el.currentStyle['border' + side + 'Width'];
+        }
+        var num = parseFloat(val);
+        return isNaN(num) ? 0 : num;
+    };
+
+    /**
+     * 解析右侧 gutter 空块的底色
+     * 表头 gutter 紧挨最后一列，取最后一列的 headBgColor 保证颜色连续；
+     * 未配置则回退到全局表头背景，再回退白色
+     */
+    Renderer.prototype._getGutterBg = function() {
+        var columns = this.dataStore.columns || [];
+        for (var i = columns.length - 1; i >= 0; i--) {
+            if (this._isColHidden(columns[i])) continue;
+            if (columns[i].headBgColor) return columns[i].headBgColor;
+            break;
+        }
+        return this._getHeadBgColor(null) || '#ffffff';
+    };
+
+    /**
+     * 同步右侧 gutter（视觉占用块）
+     * 表身出现纵向滚动条时，表头/表尾右侧会空出「滚动条宽度」的一截；
+     * 这里把 wrapper 宽度补到 bodyWrapper.offsetWidth（含滚动条），
+     * 再用绝对定位的空块铺满这一截，让滚动条看起来在表格内部而不是贴在表外。
+     * 只影响 wrapper 宽度与空块尺寸，表头/表尾 table 宽度仍按 clientWidth 设置，列结构与宽度账本不动。
+     */
+    Renderer.prototype._syncGutter = function() {
+        if (!this.bodyWrapper || !this.container) return;
+
+        var bw = this.bodyWrapper;
+        var client = bw.clientWidth;
+
+        // 滚动条宽度必须把 wrapper 自身的 border 排除掉：offsetWidth - clientWidth 里含 border，
+        // 直接把差值当滚动条宽度会让 gutter 宽出 1~2px，并让 left 偏移 1px（大屏/高 DPI 下更明显）
+        var borderLeft = this._getBorderWidth(bw, 'Left');
+        var borderRight = this._getBorderWidth(bw, 'Right');
+
+        var gutter;
+        var left;
+        if (bw.getBoundingClientRect && this.container.getBoundingClientRect) {
+            // 用 rect 计算：分数像素（高 DPI、125% 缩放）下也能对齐，不依赖整数化的 offsetLeft/clientWidth
+            var bwRect = bw.getBoundingClientRect();
+            var cRect = this.container.getBoundingClientRect();
+            gutter = bwRect.width - borderLeft - borderRight - client;
+            // 覆盖块左边界 = 表身内容区右边界 = wrapper 右边 - 右边框 - 滚动条宽度
+            left = bwRect.right - cRect.left - borderRight - gutter;
+        } else {
+            gutter = bw.offsetWidth - borderLeft - borderRight - client;
+            left = bw.offsetLeft + borderLeft + client;
+        }
+        if (gutter < 0) gutter = 0;
+
+        // 0/1px 视为没有滚动条（部分环境滚动条宽度就是 0，不能硬留空）
+        var show = gutter > 1;
+
+        var hg = this.headerGutter;
+        if (hg) {
+            if (show && this.headerWrapper) {
+                hg.style.display = 'block';
+                hg.style.left = left + 'px';
+                hg.style.top = this.headerWrapper.offsetTop + 'px';
+                hg.style.width = gutter + 'px';
+                hg.style.height = this.headerWrapper.offsetHeight + 'px';
+                hg.style.backgroundColor = this._getGutterBg();
+            } else {
+                hg.style.display = 'none';
+            }
+        }
+
+        var fg = this.footerGutter;
+        if (fg) {
+            if (show && this.footerWrapper && this._isFooterVisible()) {
+                fg.style.display = 'block';
+                fg.style.left = left + 'px';
+                fg.style.top = this.footerWrapper.offsetTop + 'px';
+                fg.style.width = gutter + 'px';
+                fg.style.height = this.footerWrapper.offsetHeight + 'px';
+            } else {
+                fg.style.display = 'none';
+            }
+        }
     };
 
     /**
@@ -803,7 +1005,8 @@
     Renderer.prototype._syncExtraWidth = function() {
         if (!this.headerWrapper) return;
 
-        var w = this.headerWrapper.clientWidth;
+        // 基准用表身可视宽度：与表头 wrapper 宽度同源，宽表时也不会取到列总宽把 extra 撑出去
+        var w = this.bodyWrapper ? this.bodyWrapper.clientWidth : this.headerWrapper.clientWidth;
         if (w <= 0) return;
 
         if (this.extraBeforeWrap) {
@@ -943,6 +1146,8 @@
         // 表头固定列（表头背景固定 #f5f7fa）
         // 注意：合并表头时不能简单取叶子行前 N 个 th——分组 th 有 colspan、浅层列有 rowspan，
         // 叶子行的第 1 个 th 未必是第 1 列。这里按网格推演出的「列偏移」挑选覆盖前 N 列的 th。
+        // 表头固定列：底色取该 th 当前生效的背景（列级/全局表头背景都算在内），
+        // 不能再写死 #f5f7fa，否则会盖掉 columns.headBgColor 与「表头无背景」这两种配置
         var headerCells = this._getFixedHeaderCells(fixedLeft);
         this._headerFixedCells = headerCells;
         for (var h = 0; h < headerCells.length; h++) {
@@ -950,7 +1155,7 @@
             th.style.position = 'relative';
             th.style.left = scrollLeft + 'px';
             th.style.zIndex = '2';
-            th.style.backgroundColor = '#f5f7fa';
+            th.style.backgroundColor = this._getEffectiveBgColor(th);
             this._setFixedShadow(th);
         }
 
@@ -967,6 +1172,33 @@
                 cells[c].style.left = scrollLeft + 'px';
                 cells[c].style.zIndex = '1';
                 cells[c].style.backgroundColor = rowBg;
+                this._setFixedShadow(cells[c]);
+            }
+        }
+
+        // 表尾行单独处理（不在 this.tbody.children 里）
+        this._applyFixedToFooter(scrollLeft);
+    };
+
+    /**
+     * 给固定表尾行应用左冻结样式
+     * 复用 _getFixedBodyCells（隐藏列跳过、按可见列数计），与表身/表头同一套口径，
+     * 否则会出现"表身冻结 2 列、表尾冻结 1 列"的错位
+     * @param {Number} scrollLeft 当前横向滚动偏移
+     */
+    Renderer.prototype._applyFixedToFooter = function(scrollLeft) {
+        var fixedLeft = this.options.fixedLeftColumns || 0;
+        if (fixedLeft <= 0 || !this.footerTbody) return;
+
+        var trs = this.footerTbody.children;
+        for (var r = 0; r < trs.length; r++) {
+            var cells = this._getFixedBodyCells(trs[r], fixedLeft);
+            for (var c = 0; c < cells.length; c++) {
+                cells[c].style.position = 'relative';
+                cells[c].style.left = (scrollLeft || 0) + 'px';
+                cells[c].style.zIndex = '1';
+                // 合计行固定列背景跟随合计行底色，避免透出下方内容
+                cells[c].style.backgroundColor = '#f5f7fa';
                 this._setFixedShadow(cells[c]);
             }
         }
@@ -1103,6 +1335,10 @@
             if (self.headerWrapper) {
                 self.headerWrapper.scrollLeft = this.scrollLeft;
             }
+            // 同步固定表尾横向滚动（表尾自带 overflow:hidden，不产生独立滚动条）
+            if (self.footerWrapper) {
+                self.footerWrapper.scrollLeft = this.scrollLeft;
+            }
 
             // 固定列平移（左侧连续N列）
             // 注意：left 取 +scrollLeft，因为滚动容器内容向左移动了 scrollLeft，
@@ -1128,6 +1364,9 @@
                     ths[i].style.left = offset + 'px';
                     ths[i].style.zIndex = '2';
                 }
+
+                // 表尾固定列：表尾已不在 tbody 内，必须单独平移，否则横向滚动时合计行的冻结列会跟着跑
+                self._applyFixedToFooter(offset);
             }
         };
 
@@ -1217,6 +1456,55 @@
         return col.sortable !== false;
     };
 
+    /**
+     * 解析表头单元格应使用的背景色（列配置优先于全局）
+     * 优先级：columns[i].headBgColor > options.headBgEnable+headBgColor > 无背景
+     * @param {Object} col 列配置（合并表头的分组列也适用）
+     * @return {String} 背景色，'' 表示不设置
+     */
+    Renderer.prototype._getHeadBgColor = function(col) {
+        if (col && col.headBgColor) return col.headBgColor;
+        if (this.options.headBgEnable) return this.options.headBgColor || '#f5f7fa';
+        return '';
+    };
+
+    /**
+     * 解析表头单元格的内联样式（背景色 / 文字颜色）
+     * 直接作用在 th 上，因此天然覆盖全局 CSS；表身 td 不受影响
+     * @param {Object} col 列配置
+     * @return {String} style 属性片段，空字符串表示不设置样式
+     */
+    Renderer.prototype._getThStyleAttr = function(col) {
+        var bg = this._getHeadBgColor(col);
+        var color = (col && col.headTextColor) || '';
+        var style = '';
+        if (bg) style += 'background-color:' + bg + ';';
+        if (color) style += 'color:' + color + ';';
+        return style ? (' style="' + style + '"') : '';
+    };
+
+    /**
+     * 读取元素当前生效的背景色，透明时回退到容器色 / 白色
+     * 冻结列表头必须有不透明底色，否则横向滚动时下层内容会透出来
+     * @param {Element} el 目标元素
+     * @return {String} 背景色
+     */
+    Renderer.prototype._getEffectiveBgColor = function(el) {
+        if (!el) return '#ffffff';
+
+        var bg = '';
+        if (window.getComputedStyle) {
+            bg = window.getComputedStyle(el).backgroundColor;
+        } else if (el.currentStyle) {
+            bg = el.currentStyle.backgroundColor;
+        }
+
+        if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)' || bg === 'rgba(0,0,0,0)') {
+            return this._getRowBackground(this.container) || '#ffffff';
+        }
+        return bg;
+    };
+
     Renderer.prototype._buildThHtml = function(col, extraClass, rowspan) {
         var title = col.title || '';
         var subtitle = col.subtitle || '';
@@ -1245,15 +1533,19 @@
         } else {
             thContent = '<div class="mel-th-inner">';
             thContent += '<span class="mel-th-title">' + title + '</span>';
+            // 顺序必须是「标题 → 排序箭头 → 副标题」：
+            // 副标题是 block 元素（独占一行且必须在标题下方，IE9 不能用 flex），
+            // 箭头放在副标题之前才能跟标题文字同一行，跑到副标题那一行就换行了
+            thContent += arrow;
             if (subtitle) {
                 thContent += '<em class="mel-th-subtitle">' + subtitle + '</em>';
             }
-            thContent += arrow;
             thContent += '</div>';
         }
 
         var spanAttr = (rowspan && rowspan > 1) ? (' rowspan="' + rowspan + '"') : '';
-        return '<th class="' + alignClass + '" data-field="' + (col.field || '') + '"' + spanAttr + '>' + thContent + '</th>';
+        var styleAttr = this._getThStyleAttr(col);
+        return '<th class="' + alignClass + '" data-field="' + (col.field || '') + '"' + styleAttr + spanAttr + '>' + thContent + '</th>';
     };
 
     /**
@@ -1458,32 +1750,121 @@
     /**
      * 画合计行
      */
-    Renderer.prototype._renderSummaryRow = function(sums) {
+    Renderer.prototype._renderSummaryRow = function(sums, fixed) {
         if (!this.tbody) return;
 
-        var oldRows = this.tbody.querySelectorAll('.mel-summary-row');
-        for (var i = 0; i < oldRows.length; i++) {
-            if (oldRows[i].parentNode) {
-                oldRows[i].parentNode.removeChild(oldRows[i]);
+        // 记录最近一次合计数据：表尾降级时要用它把合计行原样挪回表身
+        this._lastSums = sums || null;
+
+        var wasVisible = this._isFooterVisible();
+
+        // 两处都清：固定表尾与表身末尾，避免切换/重算后出现两条合计
+        this._clearSummaryRows();
+
+        if (!sums) {
+            this._hideFooter();
+            this._refreshLayoutAfterFooterToggle(wasVisible);
+            return;
+        }
+
+        var html = this._buildSummaryRowHtml(sums);
+
+        // 表尾固定：若启用且未降级，渲染到独立表尾层；否则渲染到表身末尾（旧行为）
+        var useFooter = !!fixed && !this._footerDegraded && this.footerTbody;
+
+        if (useFooter) {
+            this._insertRowHtml(this.footerTbody, html);
+            this._showFooter();
+            // 宽度与表身同源、固定列平移、隐藏列零宽占位（td 已带类名）都在这两步里完成
+            this._syncFooterWidth();
+            this._applyFixedToFooter(this.bodyWrapper ? this.bodyWrapper.scrollLeft : 0);
+        } else {
+            this._insertRowHtml(this.tbody, html);
+            if (!this.footerTbody || !this.footerTbody.children.length) {
+                this._hideFooter();
             }
         }
 
-        if (!sums) return;
+        this._refreshLayoutAfterFooterToggle(wasVisible);
+    };
 
-        var columns = this.dataStore.columns;
+    /**
+     * 解析合计标题最终落在哪一列
+     * titleColumn 语义保持不变（columns 数组原始下标，含插件自动插入的虚拟列），
+     * 但该列被隐藏时标题会落在零宽格子里看不见，因此在这里做一次落点修正：
+     *   1. 从 titleColumn 起向右找第一个可见列（含自身）；
+     *   2. 右侧没有可见列时向左回退到最近的可见列；
+     *   3. 整行没有可见列（或没有列）时返回 -1，标题不渲染（整行本来也不可见）；
+     *   4. titleColumn 越界（负数或超过总列数）夹到合法区间后走上面同一套规则，并只警告一次。
+     * 注意：标题会占用落点列的格子，该列原有的合计数值会被标题覆盖（已知且接受的取舍）。
+     * @param {Object} sums 合计结构 {data, title, titleColumn, blank}
+     * @param {Array} columns 当前列定义数组
+     * @return {Number} 标题列下标，-1 表示无处可放
+     */
+    Renderer.prototype._resolveTitleColumn = function(sums, columns) {
+        var count = columns ? columns.length : 0;
+        if (!count) return -1;
+
+        // 整行全隐藏时不做任何落点计算，直接放弃标题
+        var hasVisible = false;
+        for (var v = 0; v < count; v++) {
+            if (!this._isColHidden(columns[v])) {
+                hasVisible = true;
+                break;
+            }
+        }
+        if (!hasVisible) return -1;
+
+        var raw = sums ? parseInt(sums.titleColumn, 10) : 0;
+        if (isNaN(raw)) raw = 0;
+
+        var start = raw;
+        if (start < 0 || start >= count) {
+            // 越界不抛错：夹到两端之一，再按可见列规则继续找
+            start = start < 0 ? 0 : count - 1;
+
+            if (!this._titleColumnWarned && window.console && console.warn) {
+                console.warn('[MelUi.Table] Summary 合计标题列 titleColumn 超出范围（0 ~ ' + (count - 1) + '），已按 ' + start + ' 继续解析');
+                this._titleColumnWarned = true;
+            }
+        }
+
+        // 向右（含自身）找第一个可见列
+        for (var i = start; i < count; i++) {
+            if (!this._isColHidden(columns[i])) return i;
+        }
+
+        // 右侧没有，向左回退
+        for (var j = start - 1; j >= 0; j--) {
+            if (!this._isColHidden(columns[j])) return j;
+        }
+
+        return -1;
+    };
+
+    /**
+     * 构建合计行 <tr> 的 HTML
+     * 表身末尾 / 固定表尾 / 表尾降级三条路径共用同一份构建逻辑，避免标题落点规则只改一处
+     * @param {Object} sums 合计结构 {data, title, titleColumn, blank}
+     * @return {String} 合计行 HTML
+     */
+    Renderer.prototype._buildSummaryRowHtml = function(sums) {
+        var columns = this.dataStore.columns || [];
+        var data = sums.data || {};
+        var titleIndex = this._resolveTitleColumn(sums, columns);
         var html = '<tr class="mel-summary-row">';
 
         for (var c = 0; c < columns.length; c++) {
             var col = columns[c];
             var cellHtml = '';
 
-            if (sums.titleColumn === c) {
+            if (titleIndex === c) {
                 cellHtml = '<strong>' + (sums.title || '合计') + '</strong>';
-            } else if (sums.blank && sums.data[col.field] !== undefined) {
+            } else if (sums.blank && data[col.field] !== undefined) {
                 // blank=true：合计无数据可算（远程分页 scope='all' 但没给 externalData），直接显示占位符，别渲染成 0 误导使用者
-                cellHtml = '<strong>' + sums.data[col.field] + '</strong>';
-            } else if (sums.data[col.field] !== undefined && !isNaN(sums.data[col.field])) {
-                cellHtml = '<strong>' + sums.data[col.field].toFixed(2) + '</strong>';
+                cellHtml = '<strong>' + data[col.field] + '</strong>';
+            } else if (data[col.field] !== undefined && !isNaN(data[col.field])) {
+                cellHtml = '<strong>' + data[col.field].toFixed(2) + '</strong>';
             }
 
             // 隐藏列的合计单元格同样挂隐藏类，列宽与表身保持一致，不额外占位
@@ -1491,18 +1872,102 @@
             html += '<td' + tdClass + '>' + cellHtml + '</td>';
         }
 
-        html += '</tr>';
+        return html + '</tr>';
+    };
 
-        if (this.tbody.insertAdjacentHTML) {
-            this.tbody.insertAdjacentHTML('beforeend', html);
-        } else {
-            // IE9 兜底【彻底方案】：改用普通 div 容器解析含 <table> 结构的 html，
-            // 再取出 <tr> 迁移到 tbody，规避 IE9 对 table/tbody 赋 innerHTML 写表格内部标签的限制。
-            var tempDiv = document.createElement('div');
-            tempDiv.innerHTML = '<table><tbody>' + html + '</tbody></table>';
-            var tempTbody = tempDiv.getElementsByTagName('tbody')[0];
-            var tr = tempTbody ? tempTbody.getElementsByTagName('tr')[0] : null;
-            if (tr) this.tbody.appendChild(tr);
+    /**
+     * 清掉表身与固定表尾里的旧合计行
+     */
+    Renderer.prototype._clearSummaryRows = function() {
+        var targets = [this.tbody, this.footerTbody];
+        for (var t = 0; t < targets.length; t++) {
+            var box = targets[t];
+            if (!box) continue;
+            var oldRows = box.querySelectorAll('.mel-summary-row');
+            for (var i = 0; i < oldRows.length; i++) {
+                if (oldRows[i].parentNode) oldRows[i].parentNode.removeChild(oldRows[i]);
+            }
+        }
+    };
+
+    /**
+     * 往 tbody 追加一行 tr 的 HTML（IE9 兼容）
+     * 抽出来给表身 / 固定表尾共用，避免两处各写一套 IE9 兜底
+     * @param {Element} tbody 目标 tbody
+     * @param {String} html 单个 <tr> 的 HTML
+     */
+    Renderer.prototype._insertRowHtml = function(tbody, html) {
+        if (!tbody) return;
+
+        if (tbody.insertAdjacentHTML) {
+            tbody.insertAdjacentHTML('beforeend', html);
+            return;
+        }
+
+        // IE9 兜底【彻底方案】：改用普通 div 容器解析含 <table> 结构的 html，
+        // 再取出 <tr> 迁移到 tbody，规避 IE9 对 table/tbody 赋 innerHTML 写表格内部标签的限制。
+        var tempDiv = document.createElement('div');
+        tempDiv.innerHTML = '<table><tbody>' + html + '</tbody></table>';
+        var tempTbody = tempDiv.getElementsByTagName('tbody')[0];
+        var tr = tempTbody ? tempTbody.getElementsByTagName('tr')[0] : null;
+        if (tr) tbody.appendChild(tr);
+    };
+
+    /**
+     * 固定表尾是否处于显示状态
+     */
+    Renderer.prototype._isFooterVisible = function() {
+        if (!this.footerWrapper) return false;
+        return this.footerWrapper.style.display !== 'none';
+    };
+
+    /**
+     * 显示固定表尾（占高度）
+     */
+    Renderer.prototype._showFooter = function() {
+        if (this.footerWrapper) this.footerWrapper.style.display = '';
+    };
+
+    /**
+     * 隐藏固定表尾（不占高度）
+     */
+    Renderer.prototype._hideFooter = function() {
+        if (this.footerWrapper) this.footerWrapper.style.display = 'none';
+    };
+
+    /**
+     * 表尾显示状态变化后，按当前高度模式重算一次高度
+     * 只有 fitViewport 需要（其它模式容器高度自适应，表尾自然堆叠）
+     * 首屏渲染阶段不重算：render() 尾部的 setTimeout(_fitViewport) 会用最终结构再算一次
+     * @param {Boolean} wasVisible 变化前的显示状态
+     */
+    Renderer.prototype._refreshLayoutAfterFooterToggle = function(wasVisible) {
+        var nowVisible = this._isFooterVisible();
+        if (nowVisible === wasVisible) return;
+        if (!this.options.fitViewport) return;
+        if (!this.isRenderComplete) return;
+        this._doFitViewport();
+    };
+
+    /**
+     * 表尾降级：可用高度不足时，把合计行挪回表身末尾，并关闭表尾
+     * 触发点只有 _applyContainerHeight 里的空间检查（表身 < _footerMinBodyHeight）
+     */
+    Renderer.prototype._degradeFooter = function() {
+        if (this._footerDegraded) return;
+        this._footerDegraded = true;
+
+        if (!this._footerWarned && window.console && console.warn) {
+            console.warn('[MelUi.Table] 表尾固定：可用高度不足（表身 < ' + this._footerMinBodyHeight + 'px），已自动降级为普通合计行（渲染在表身末尾）');
+            this._footerWarned = true;
+        }
+
+        this._clearSummaryRows();
+        this._hideFooter();
+
+        // 把合计行按旧行为放回表身末尾（不重算高度，交给当前这轮 _applyContainerHeight 用无表尾的高度继续算）
+        if (this._lastSums && this.tbody) {
+            this._insertRowHtml(this.tbody, this._buildSummaryRowHtml(this._lastSums));
         }
     };
 
@@ -1893,6 +2358,14 @@
     };
 
     Renderer.prototype._destroy = function() {
+        // 固定表尾引用与数据（容器 DOM 由 el 整体销毁，这里只断引用，避免实例持有节点）
+        this.footerWrapper = null;
+        this.footerTable = null;
+        this.footerTbody = null;
+        this.headerGutter = null;
+        this.footerGutter = null;
+        this._lastSums = null;
+
         // 清理单元格高亮定时器
         if (this._flashTimer) {
             clearTimeout(this._flashTimer);
