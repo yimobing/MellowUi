@@ -1,0 +1,119 @@
+# 一、大厂 UI 框架 Core（内核层）通用能力盘点
+
+> 
+> 前提：这里的 Core = **全局底层运行时**（不是组件，不是业务工具 util），职责：全局 DOM 管理、全局实例、遮罩 / 全局浮层、事件调度、样式注入、全局状态、基础 DOM 辅助、兼容补丁。
+> 代表：ElementPlus / Arco Design / Ant Design / Layui
+
+## ✅ 大厂 Core 必备能力清单
+
+### 1. 全局浮层基础设施（你现在正在做的，优先级最高）
+
+1. 全局遮罩 mask 管理器：单例遮罩、层级 z-index 管理、锁定 body 滚动、解锁滚动、多浮层堆叠（Dialog/Drawer/Loading 共用同一套 mask 栈）
+2. 全局 Loading 管理器：全局转圈，单例控制，支持多个实例计数（连续调用 showLoading，必须 close 相同次数才消失），自定义文字 / 图标 / 背景色
+3. 全局消息类容器基座：message /notification/confirm 的 DOM 挂载容器（这些组件 DOM 默认挂在 body 末尾，不是挂载在组件根节点）
+
+> 
+> 关键点：**Dialog、Drawer 组件本身是组件，但是它们共用 Core 提供的 mask、zIndex、body 滚动锁**。这是 Core 的核心价值。
+
+### 2. Z-index 层级管理
+
+自动维护全局 zIndex 自增计数器。
+弹窗、抽屉、loading、message 弹出时，从 Core 拿最新 z 值，避免层级错乱。很多 UI 库的层级混乱就是没有统一 zIndex 管理器。
+
+### 3. Body 滚动锁（scroll lock）
+
+固定背景滚动：弹出浮层时禁止页面滚动；关闭浮层恢复滚动。
+需要记录滚动位置，防止页面抖动（移动端 + PC 都要用）。
+
+### 4. 全局事件总线 EventBus
+
+全局订阅 / 发布。组件之间跨实例通信（比如 table 和弹窗联动），Core 内置简易事件中心。
+
+### 5. 动态样式注入（CSS-in-JS / 动态 style 标签）
+
+运行时动态创建`<style>`标签，注入全局样式（loading/mask 动态样式，不需要强制依赖外部 css）。可选，很多原生 JS 框架会带。
+
+### 6. DOM 基础辅助（仅限 Core 内部使用，不对外暴露到 util）
+
+内部私有 DOM 工具：创建元素、设置属性、追加 body、移除节点，**注意：这类 DOM 辅助是 core/internal 私有，不要放到 util**。util 是纯数据函数，不碰 DOM。
+
+### 7. 全局实例管理器
+
+记录当前激活浮层列表（mask 栈），可以批量关闭全部弹窗 /loading。例如 `melui.closeAll()`。
+
+### 8. 浏览器兼容补丁（IE 兼容相关，你的场景需要）
+
+兼容旧浏览器的事件、DOM 方法垫片（只放 UI 渲染相关兼容，不要混入数据处理）
+
+### 9. 可选扩展能力（中大型框架才会加，小框架可以不做）
+
+- 全局配置管理器：全局默认配置，例如全局 loading 默认文字、zIndex 起始值
+- 焦点管理：弹窗打开自动捕获焦点，关闭恢复焦点（无障碍 accessibility）
+- 全局销毁 API：页面卸载，清理所有全局 DOM、事件监听，防止内存泄漏
+
+## ❗ 大厂 Core**不会放**的东西（重点区分，很多人踩坑）
+
+1. ❌ 不会放对象合并、类型判断、日期格式化（全部放到 utils/util，纯数据函数）
+2. ❌ 不会放业务相关逻辑
+3. ❌ 不会放 Table、Dialog 这类业务组件代码（组件在 components，依赖 Core，不属于 Core）
+
+# 二、对比：你旧的 neatui.min.js（旧框架）典型问题（根据你描述推测）
+
+> 
+> neatui 是早期手写框架，很多是**组件、全局弹窗、工具函数全部揉在一起，没有分层**
+
+1. **没有分层：Core、util、组件代码全部打包在同一个 js 文件**
+   - DOM 操作、弹窗逻辑、对象合并、类型判断、表格逻辑全部混在一起。
+   - 没有单独的 mask 栈、zIndex 统一管理。Dialog、Loading 各自写一套遮罩，代码重复。
+2. 全局浮层互相独立
+neatui 的 loading、dialog 各自创建 mask，z-index 硬写死；同时打开弹窗 + loading，层级容易错乱；滚动锁各自实现，容易出现滚动锁冲突（页面锁不住或者解锁失效）
+3. 工具函数和 UI 内核混在一起
+数据工具（日期、对象合并）跟 DOM 操作写在一块。无法拆分独立 util 扩展包。
+4. 没有统一实例栈
+不能批量关闭所有浮层，实例状态分散。
+5. API 暴露混乱：内部辅助方法直接全局暴露，没有白名单，私有方法泄露。
+6. 函数命名、对外 API 没有统一规范，想到怎么写就怎么写。
+
+## 三、MelUI Core 和 neatui 的核心差异对比表
+
+表格
+
+| 对比项 | 大厂标准 Core | 旧 neatui.min.js | MelUI 新规划（你的方案） |
+| --- | --- | --- | --- |
+| 职责边界 | 只做全局 UI 底层（mask/loading/zIndex/ 滚动锁 / 浮层栈 /eventBus） | UI、组件、工具全部混杂 | Core 只处理全局 DOM 浮层基础设施，util 纯数据，components 放组件 |
+| 浮层管理 | 统一 mask 栈，Dialog/Drawer/Loading 共用 mask | 每个组件各自写遮罩，重复代码 | 统一 mask 管理器，全部全局浮层复用 Core 底层 |
+| zIndex | 全局自增计数器统一分配 | 硬编码固定 z-index，容易层级冲突 | Core 维护 zIndex 计数器 |
+| 滚动锁 | 统一管理 body 滚动锁定 / 解锁 | 各组件独立实现，容易冲突 | Core 统一滚动锁 |
+| 代码分层 | core 内部区分公开 API /internal 私有方法 | 无私有隔离，所有方法全部暴露 | core/internal 私有目录 + publicApi 白名单导出 |
+| 和 util 关系 | core 可以少量引入基础 util；util 完全不依赖 core | util 工具和 DOM 代码写在同一文件 | util 纯函数、无 DOM，不依赖 core |
+| 打包 | core 集成进主包，单独扩展 util 包 | 全部打包到单个 js，无法拆分 | melui 主包（core + 组件 + 少量基础 util），melui-util 可选扩展包 |
+| 对外调用 | 扁平化顶层 API melui.showLoading ()，底层 Core 保留高级入口 | API 暴露杂乱，没有统一命名空间 | `melui.showLoading()`；底层保留`melui.Core`高级入口 |
+
+# 四、给你 melui Core 的取舍建议（结合你的场景：原生 JS、兼容 IE9+，不搞太重）
+
+### ✅ 【必做，必须放进 melui core】
+
+1. Mask 遮罩管理器（浮层栈管理）
+2. Global Loading 全局转圈管理器（计数控制）
+3. 全局 zIndex 自增管理
+4. Body 滚动锁
+5. 简易 EventBus 事件总线
+6. 全局浮层批量关闭（closeAll）
+7. core/internal 私有 DOM 辅助方法（仅 core 内部使用）
+
+### ⚠️【可选，按需后续再加，第一版可以不做】
+
+1. 全局默认配置管理器
+2. 焦点捕获 / 无障碍处理
+3. 动态注入样式（第一版直接用 css 文件即可）
+
+### ❌【不要放到 Core，放到 util】
+
+isObject、mergeObj、日期格式化、金额格式化、防抖节流等纯数据工具
+
+# 五、一句话总结
+
+大厂 Core 本质：**给所有全局浮层组件（Dialog/Drawer/Loading/Message）提供一套统一的底层基础设施**，统一管理遮罩、层级、滚动、实例栈，消除各个组件里重复写的 DOM 浮层代码。
+
+neatui 最大问题就是**没有这一层公共基础设施**，弹窗、loading 各自造轮子，代码重复，层级和滚动锁容易出 bug。
+MelUI 的 core 就是补上这一层基础设施，并且做好分层隔离，util 和 core 解耦。

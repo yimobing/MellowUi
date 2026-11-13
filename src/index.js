@@ -5,10 +5,13 @@
 //----------------------------------------
 
 // · 基础UI样式优先导入，保证css输出顺序正确
-import './styles/layout.css';
-import './styles/button.css';
+import './components/layout/index.css';
+import './components/button/index.css';
 
 // · 各个组件
+// layout 组件
+import './components/layout/index.js';
+
 // dialog 组件
 import './components/dialog/index.js';
 import './components/dialog/index.css';

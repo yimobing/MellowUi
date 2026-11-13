@@ -1,0 +1,319 @@
+# MelUI 打包‑demo复制完整整合流程
+
+> 
+> 现状：
+> 
+> 
+> 1. 源码组件库：`src/`
+> 2. 开发调试示例目录：项目根目录 `demo/`（与src同级）
+> 3. 打包输出：`dist/`
+> 4. 打包工具：rollup + rollup‑plugin‑[copy@3.4.0](mailto:copy@3.4.0)
+> 5. 需求：
+>    - 开发阶段：直接打开 `demo/*.html`，引用 `../src/**` 源码，不用打包，改源码刷新即生效
+>    - `npm run build` 打包：把demo下html复制到 `dist/demo/`
+>    - 删除html里面所有引用`../src/`的script、link标签，统一注入1次 `../melui.min.css`、`../melui.min.js`
+>    - demo目录自身的css、图片等静态资源原样复制到dist/demo，不做修改
+>    - copy插件**仅在最后一个bundle（melui.min.js）执行一次**，防止重复复制
+
+## 一、安装依赖（已经装过可以跳过）
+
+```
+npm install rollup-plugin-copy@3.4.0 --save‑dev
+```
+
+## 二、package.json（无需修改脚本）
+
+```
+{
+  "name": "MellowUi",
+  "version": "1.0.0",
+  "description": "MellowUI，简写为melui，一款原生 JS 轻量 UI 框架",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "if exist dist rmdir /s /q dist",
+    "build:js": "rollup -c",
+    "build:css": "node build-css.js",
+    "build": "npm run clean && npm run build:js && npm run build:css"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.5.4",
+    "cssnano": "^5.0.17",
+    "fs-extra": "^9.1.0",
+    "postcss": "^8.5.26",
+    "rollup": "^2.79.1",
+    "rollup-plugin-copy": "^3.4.0",
+    "rollup-plugin-css-only": "^4.3.0",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-terser": "^7.0.2"
+  }
+}
+```
+
+## 三、完整 rollup.config.js（关键改动标记）
+
+
+## 1、头部导入 rollup-plugin-copy
+```
+import { terser } from 'rollup-plugin-terser';
+import postcss from 'rollup-plugin-postcss';
+import cssnano from 'cssnano';
+import autoprefixer from 'autoprefixer';
+// ==========【新增】导入copy插件 ==========
+import copy from 'rollup-plugin-copy';
+
+
+## 2、写 copy 插件配置对象（单独抽出来，复用，不要重复写一大段）
+放在 terserConfig、createCssDev/createCssProd 后面，`export default [ ... ]` 之前：
+
+// =====================【新增】copyDemoPlugin：复制&处理demo示例文件 =====================
+const copyDemoPlugin = copy({
+  verbose: true,
+  targets: [
+    {
+      src: 'demo/**/*.html',
+      dest: 'release/test',
+      transform(contents) {
+        let html = contents.toString('utf8');
+
+        // 删除所有含有 src="../src/components/*.js 的script标签，兼容带type/id等任意属性
+        html = html.replace(/<script\b[^>]*src="\.\.\/src\/components[^"]+\.js"[^>]*><\/script>/gi, '');
+        // 删除所有含有 href="../src/components/*.css 的link标签，兼容任意属性、兼容自闭合 <link ... />
+        html = html.replace(/<link\b[^>]*href="\.\.\/src\/components[^"]+\.css"[^>]*\/?>/gi, '');
+
+        // polyfill 脚本路径替换
+        html = html.replace(
+          /<script\b[^>]*src="\.\.\/src\/polyfill\/([^"]+\.js)"[^>]*><\/script>/gi,
+          '<script src="./polyfill/$1"></script>'
+        );
+
+        // 在 </head> 之前注入打包后的css、js
+        const injectCss = '<link rel="stylesheet" href="../dist/melui.min.css">';
+        const injectJs = '<script src="../dist/melui.min.js"><\/script>';
+        html = html.replace(/<\/head>/i, `${injectCss}\n${injectJs}\n</head>`);
+
+        return html;
+      }
+    },
+    {
+      // demo 目录自身静态资源原样复制：css
+      src: ['demo/**/*.css'],
+      dest: 'release/test/css'
+    },
+    {
+      // demo 目录自身静态资源原样复制：图片
+      src: ['demo/**/*.png', 'demo/**/*.jpg', 'demo/**/*.gif'],
+      dest: 'release/test/img'
+    },
+    {
+      // polyfill 目录自身静态资源原样复制
+      src: ['demo/**/*.js'],
+      dest: 'release/test/polyfill'
+    }
+  ]
+});
+
+
+
+
+##  3、每个 bundle 的 plugins 数组末尾加上 `copyDemoPlugin`
+
+你现在每一个 `{input:..., output:{}, plugins:[ ... ]}` 都要加上 `copyDemoPlugin`。
+但是！**rollup‑plugin‑copy 多次执行会重复复制文件**，会输出多次日志。
+### 解决办法：只在【最后一组 bundle（全量压缩版 melui.min.js）】加上 `copyDemoPlugin`，其他所有 bundle 不加！
+
+只执行一次复制逻辑，在整个 rollup 所有打包任务**全部完成那一刻**执行复制 + transform，避免重复拷贝。
+
+修改你 rollup.config.js 末尾那两段（完整库打包）：
+
+```
+    // 全量开发版
+    {
+        input: 'src/index.js',
+        output: {
+            file: 'release/dist/melui.js',
+            format: 'umd',
+            name: 'MelUi'
+        },
+        plugins: [createCssDev()]
+    },
+    // 全量压缩版【这里加上 copyDemoPlugin，只在这里加！】
+    {
+        input: 'src/index.js',
+        output: {
+            file: 'release/dist/melui.min.js',
+            format: 'umd',
+            name: 'MelUi'
+        },
+        plugins: [
+          createCssProd(),
+          terser(terserConfig),
+          copyDemoPlugin // ← 只放在这里！！其他所有bundle不要加这个插件
+        ]
+    }
+```
+
+
+eg.
+
+export default [
+    //======================== 一. 独立组件打包 ========================
+    {
+      input: 'src/components/dialog/index.js',
+      output: { file: 'release/dist/dialog/dialog.js', format: 'umd', name: 'MelUi' },
+      plugins: [createCssDev()]
+    },
+    {
+      input: 'src/components/dialog/index.js',
+      output: { file: 'release/dist/dialog/dialog.min.js', format: 'umd', name: 'MelUi' },
+      plugins: [createCssProd(), terser(terserConfig)]
+    },
+	//...
+
+    //======================== 二. 全局完整库打包 ========================
+    // 全量开发版
+    {
+        input: 'src/index.js',
+        output: {
+            file: 'release/dist/melui.js',
+            format: 'umd',
+            name: 'MelUi'
+        },
+        plugins: [createCssDev()]
+    },
+    // 全量压缩版【❗唯一在这里加入 copyDemoPlugin，其他bundle不要加】
+    {
+        input: 'src/index.js',
+        output: {
+            file: 'release/dist/melui.min.js',
+            format: 'umd',
+            name: 'MelUi'
+        },
+        plugins: [
+          createCssProd(),
+          terser(terserConfig),
+          copyDemoPlugin
+        ]
+    }
+];
+```
+
+
+
+## 四、demo目录下html开发时的书写规范（必须遵守）
+
+> 
+> 文件：`demo/loading.html`
+
+1. 引用**框架源码**使用 `../src/xxx`；
+2. demo自己的业务css、图片，使用**相对当前html的路径**，例如 `./demo.css`；
+3. html必须存在完整闭合标签 `</head>`；
+4. link、script属性全部使用**双引号**，不要单引号。
+
+示例 demo/loading.html：
+
+```
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf‑8">
+  <!-- 框架源码css，开发调试用 -->
+  <link rel="stylesheet" href="../src/styles/reset.css">
+  <link rel="stylesheet" href="../src/components/spinner/index.css">
+  <!-- demo自己的业务css，原样复制，不会被替换 -->
+  <link rel="stylesheet" href="./demo.css">
+
+  <!-- 框架源码js，开发调试用 -->
+  <script src="../src/core/index.js"></script>
+  <script src="../src/components/spinner/index.js"></script>
+</head>
+<body>
+  <button onclick="melui.showLoading()">打开loading</button>
+</body>
+</html>
+```
+
+## 五、执行命令与完整工作流程
+
+### 1）本地开发调试（不执行build）
+
+直接打开 `demo/loading.html`（可以用vscode的Live Server）
+
+- 读取 `../src/` 下面源码，修改src下js/css，刷新浏览器立即看到效果。
+- **不会产生dist目录，不经过rollup复制逻辑。**
+
+### 2）打包构建
+
+```
+npm run build
+```
+
+完整执行顺序：
+
+1. `npm run clean`：删除整个dist文件夹，清理旧产物
+2. `build:js` rollup执行多bundle打包：
+   - 依次打包各个独立组件（layout/dialog/table等）
+   - 打包全量开发版 `dist/melui.js` / `dist/melui.css`
+   - 打包全量压缩版 `dist/melui.min.js` / `dist/melui.min.css`
+   - ⚠️**执行最后这个min打包时触发 copyDemoPlugin**
+     - 读取 `demo/**/*.html`，删除所有 `../src/` 的script、link
+     - 在`</head>`前注入 `<link ../melui.min.css>` + `<script ../melui.min.js>`
+     - 将处理后的html输出到 `dist/demo/`
+     - 原样复制demo目录下的css、图片到 `dist/demo/`
+3. `build:css` 执行额外css处理脚本。
+
+### 3）打包后预览效果
+
+打开 `dist/demo/loading.html`，此时html被转换为：
+
+```
+<head>
+  <meta charset="utf‑8">
+  <!-- demo自己的css保留 -->
+  <link rel="stylesheet" href="./demo.css">
+  <!-- 插件自动注入打包后的库文件 -->
+  <link rel="stylesheet" href="../melui.min.css">
+  <script src="../melui.min.js"></script>
+</head>
+```
+
+> 
+> `dist/demo/loading.html` 的`../`指向dist根目录，正确加载`melui.min.js`、`melui.min.css`。
+
+## 六、输出 dist 目录关键产物
+
+```
+dist/
+├─ melui.js
+├─ melui.min.js
+├─ melui.css
+├─ melui.min.css
+├─ layout/ dialog/ table/ ... # 各个独立组件打包产物
+└─ demo/
+   ├─ loading.html   # 经过转换的示例页面
+   ├─ demo.css       # demo自身的样式原样复制过来
+   └─ 其他html、图片
+```
+
+## 七、重要约束&坑点汇总
+
+1. `copyDemoPlugin` **只放在melui.min.js这一个bundle的plugins**，其他组件bundle不要放，否则会重复复制文件。
+2. html必须有 `</head>`，否则注入css/js失效。
+3. 属性必须双引号，正则匹配依赖双引号 `"`。
+4. demo自己的静态资源（css/png）靠第二个target原样拷贝，不会做内容修改。
+5. 原始的 `demo/*.html` 文件**永远不会被修改**；改动全部发生在复制输出到dist的副本上。
+6. git：dist加入 `.gitignore`，不要提交dist目录到版本库。
+
+## 八、兜底备选（rollup‑plugin‑copy异常时）
+
+如果出现复制时机不对，可以放弃rollup‑plugin‑copy，写独立node脚本 `build‑copy‑demo.js`，然后修改package.json：
+
+```
+"build": "npm run clean && npm run build:js && npm run build:css && node build‑copy‑demo.js"
+```
+
+需要的话我可以直接给出这个独立脚本完整代码。

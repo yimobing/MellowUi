@@ -17,7 +17,7 @@
     <meta name="description" content="">
     <!-- 页面布局样式统一引用（不内嵌） -->
     <link rel="stylesheet" href="css/demo_docs.css">
-    <link rel="stylesheet" href="../src/styles/layout.css">
+    <link rel="stylesheet" href="../src/components/layout/index.css">
     <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/styles/stackoverflow-light.min.css">
     <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
     <style>
@@ -72,6 +72,24 @@
         }
         .demo-input-item{
             margin:6px 0;
+        }
+        button[type="button"] {
+            padding: 5px 10px;
+            background-color: #1296db;
+            border: 0;
+            border-radius: 4px;
+            color: #fff;
+        }
+        button[type="button"]:hover {
+            opacity: .7;
+        }
+        .tip {
+            padding: 1px 5px;
+            background: #f1f4f8;
+            border: 1px solid #e1e6ed;
+            border-radius: 3px;
+            font-size: 13px;
+            color: #b42318;
         }
     </style>
 </head>
@@ -521,19 +539,22 @@
                 </div>
                 <div class="demo-form-panel">
                     <div class="demo-input-item">
-                        <label>容器宽度(px)：</label>
+                        <label>根容器宽度(px)：</label>
                         <input id="inpWrapWidth" type="number" value="320">
+                        <span class="tip"> （输入完成后，光标失焦，下面的容器大小会自动变化）
                     </div>
                     <div class="demo-input-item">
                         <label>threshold阈值(px)：</label>
                         <input id="inpThreshold" type="number" value="220">
+                        <span class="tip"> （点【启动容器自动堆叠】按钮，本行输入数值，当“根容器”内部元素宽度小于threshold阈值时，本行光标失去焦点后，“根容器”内部元素的显示名称和输入框会分2行显示）</span>
                     </div>
                     <div style="margin:8px 0;">
-                        <button id="btnStartStack">启动容器自动堆叠</button>
-                        <button id="btnStopStack">停止销毁实例</button>
+                        <button type="button" id="btnStartStack">启动容器自动堆叠</button>
+                        <button type="button" id="btnStopStack">停止销毁实例</button>
                     </div>
+                    <div> 根容器如下 </div>
                     <div id="demo-auto-stack-wrap" class="box-dashed" style="width:320px;">
-                        <div class="mel-form-item mel-form-item--search">
+                        <div class="mel-form-item mel-form-item--search" style="border: 1px solid purple">
                             <div class="mel-form-item__hd">供应商简称</div>
                             <div class="mel-form-item__bd">
                                 <input class="mel-form-ctrl" placeholder="改变容器宽度自动切换">
@@ -759,8 +780,8 @@ setThreshold(val)：运行时动态修改阈值
         </div>
     </div>
 
-    <!--【重要】layout.js 默认注释，页面加载不会自动运行；demo点击按钮才需要开启，取消下面注释方可测试demo -->
-    <script src="../src/util/layout.js"></script>
+    <!-- 【重要】 layout.js 用来设置表单自动堆叠功能：即显示名称和文本框分2行显示 -->
+    <script src="../src/components/layout/index.js"></script>
 
     <!-- demo演示脚本 -->
     <script>

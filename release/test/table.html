@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="网站名称">
+    <meta name="applicable-device" content="pc,mobile">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title>MelUi Table 演示</title>
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!--[======== 引入表格控件样式 ========] -->
+    
+<link rel="stylesheet" href="../dist/melui.min.css">
+<script src="../dist/melui.min.js"></script>
+</head>
+<body>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 15px;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f0f2f5;
+        }
+        .toolbar {
+            margin-bottom: 15px;
+        }
+        .toolbar button {
+            margin-right: 8px;
+            margin-bottom: 8px;
+            padding: 6px 14px;
+            border: 1px solid #dcdfe6;
+            border-radius: 3px;
+            background-color: #fff;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .toolbar button:hover {
+            color: #409eff;
+            border-color: #c6e2ff;
+            background-color: #ecf5ff;
+        }
+        
+        #table-box {
+            /* test1 */
+            /* height: 800px; */
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 4px;
+            font-size: 12px;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+        #result1 {
+            display: none;
+            position: fixed;
+            z-index: 99;
+            top: 100px;
+            left: 100px;
+            right: 100px;
+            height: 500px;
+            background: #fff;
+            box-shadow: 2px 3px 4px #999;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+
+    <div class="toolbar">
+        <button onclick="closeResult()"> 关闭result 弹出窗口 </button>
+        <button onclick="addRow()">新增一行</button>
+        <button onclick="saveData()">保存（只提交修改过的）</button>
+        <button onclick="saveAllData()">保存（保存所有行数据）</button>
+        <button onclick="selectAll()">全选</button>
+        <button onclick="selectNone()">全不选</button>
+        <button onclick="invertSelect()">反选</button>
+        <button onclick="exportData('xlsx')">导出Excel(xlsx)</button>
+        <button onclick="exportData('xls')">导出Excel(xls)</button>
+        <button onclick="exportData('csv')">导出Excel(csv)</button>
+    </div>
+    <!-- 选中API测试按钮 -->
+    <div class="toolbar">
+        <button onclick="testSetSelectedKeys()">setSelectedKeys([0,2,4])</button>
+        <button onclick="testClearSelection()">clearSelection()</button>
+        <button onclick="testGetSelectedData()">getSelectedData()</button>
+    </div>
+    <!-- 内置API演示按钮 -->
+    <div class="toolbar">
+        <button onclick="testDeleteRow()">deleteRow(0)</button>
+        <button onclick="testClearData()">clearData()</button>
+
+
+        <button onclick="testSetCellValue()">setCellValue(0)</button>
+        <button onclick="testSetCellReadonly()">setCellReadonly(0)</button>
+        <button onclick="testSetRowData()">setRowData(0)</button>
+
+        <button onclick="testGetRowData()">getRowData(0)</button>
+
+        <button onclick="testValidate()">validate('all')</button>
+        <button onclick="testValidateUnique()">validateUnique()</button>
+        <button onclick="testRenderCell()">renderCell(0)</button>
+        <button onclick="testRenderRow()">renderRow(0)</button>
+        <button onclick="testRender()">render()</button>
+        <button onclick="testDestroy()">destroy()</button>
+    </div>
+
+    <div id="table-box"></div>
+    <div class="result" id="result1"></div>
+    <div class="result" id="result2"></div>
+
+    
+    <!--[======== 引入表格控件脚本 ========] -->
+    
+
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+   
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <script>
+        //================================================================
+        //      默认值
+        //================================================================
+        // ————————————————————————————————————————————————
+        var PAGESIZE = 20; // 每页记录数
+
+
+        //================================================================
+        //      获取数据
+        //================================================================
+        // ————————————————————————————————————————————————
+        /**
+         * 获取列表数据
+         * @param {Number} ps_nowPage 当前页码
+         * @param {Number} ps_pageSize 每页记录数
+         * @returns {Array} 返回列表数据数组
+         */
+        function get_data_list(ps_nowPage, ps_pageSize) {
+            var now_page = isNaN(parseInt(ps_nowPage)) ? 1 : parseInt(ps_nowPage),
+                page_size = isNaN(parseInt(ps_pageSize)) ? 20 : parseInt(ps_pageSize);
+
+            var data = [];
+            if(now_page == 1) {
+                for (var i = 1; i <= 45; i++) {
+                    data.push({
+                        xh_self: 'B100' + i,
+                        mj: (80 + Math.random() * 100).toFixed(2),
+                        area: '福建省-泉州市-丰泽区',
+                        scjj: (9000 + Math.random() * 5000).toFixed(0),
+                        // scjj: 100,
+                        zje: Math.ceil(100 * Math.random()),
+                        check_wc: i % 2 === 0 ? '1' : '0',
+                        remark: ''
+                    })
+                }
+            }
+
+            else {
+                for (var i = 1; i <= page_size; i++) {
+                    data.push({
+                        "xh_self": "D200" + (i + (page_size * (now_page - 1))),
+                        "mj": (80 + Math.random() * 100).toFixed(2),
+                        "area": "福建省-福州市-鼓楼区",
+                        "scjj": 150, // (9000 + Math.random() * 5000).toFixed(0),
+                        "zje": "200",
+                        "check_wc": i % 2 === 0 ? '1': '0',
+                        "remark": ''
+                    });
+                }
+            }
+            return data;
+        }
+
+
+
+        // ————————————————————————————————————————————————
+        // 初始数据
+        var initData = get_data_list(1, PAGESIZE);
+        // var initData = [];
+        // for (var i = 1; i <= 45; i++) {
+        //     initData.push({
+        //         xh_self: 'B10' + (100 + i),
+        //         mj: (80 + Math.random() * 100).toFixed(2),
+        //         area: '福建省-泉州市-丰泽区',
+        //         scjj: (9000 + Math.random() * 5000).toFixed(0),
+        //         // scjj: 100,
+        //         zje: Math.ceil(100 * Math.random()),
+        //         check_wc: i % 2 === 0 ? '1' : '0',
+        //         remark: ''
+        //     });
+        // }
+        
+
+
+
+
+
+        //================================================================
+        //      表格控件
+        //================================================================
+        //————————————————————————————————————————————————
+        // 列配置 test1
+        var columns = [
+            // {field: "xh_self", title: "编号", width: 100, renderer: "text", align: "center", required: false},
+            // {field: "mj", title: "面积", subtitle: "(㎡)", width: 100, renderer: "input", type: "float", digit: 2, required: true, align: "center"},
+            // {field: "area", title: "省市区", width: 200, renderer: "input", readonly: true, align: "left", required: false, sortable: false, visible: false},
+            
+            // {field: "scjj", title: "楼盘均价", width: 200, renderer: "input", type: "float", required: true, align: "right"},
+            // {field: "zje", title: "总金额", width: 120, renderer: "input", type: "float", digit: 2, required: false, align: "right"},
+
+            // 合并表头
+            {
+                title: "基础信息",
+                children: [
+                    {field: "xh_self", title: "编号", width: 100, renderer: "text", align: "center", required: false, visible: true},
+                    {field: "mj", title: "面积", subtitle: "(㎡)", width: 100, renderer: "input", type: "float", digit: 2, required: true, align: "center", visible: true },
+                    {field: "area", title: "省市区", width: 200, renderer: "input", readonly: true, align: "left", required: false, sortable: false, visible: true},
+                ]
+            },
+
+            {
+                title: "价格信息",
+                children: [
+                    {field: "scjj", title: "楼盘均价", width: 200, renderer: "input", type: "float", required: true, align: "right"
+                    ,required: true,  headBgColor: '#c0ece0', headTextColor: '',
+                    },
+                    {
+                        field: "zje", title: "总金额", width: 120, renderer: "input", type: "float", digit: 2, align: "right",
+
+                        // test3
+                        required: true, unique: true, visible: true,
+                        headBgColor: '#ffe2dc', headTextColor: '#ff0000',
+                        
+                        validator: function(e) {
+                            console.log('校验数据validator-e', e);
+                            var value = e.value;
+                            if(value == '') return '怎么能是空';
+                            if(parseFloat(value) < 0) return '必须大于0啦啦啦';
+                            return '';
+                        }
+                    }
+                ]
+            },
+
+            {field: "check_wc", title: "是否完成", width: 150, renderer: "radio", radioOptions: {yes: "1", no: "0"}, formatter: function(v) { return v == "1" ? "是" : "否"; }, align: "center"},
+            {field: "remark", title: "备注", width: 150, renderer: "textarea", align: "left", required: false},
+            {field: "operation", title: "操作", width: 80, renderer: "button", buttonText: "保存", align: "center", required: false}
+        ];
+
+
+        
+        //————————————————————————————————————————————————
+        // 初始化表格
+        var table = MelUi.Table({
+            el: '#table-box',
+            columns: columns,
+            data: initData,
+
+            bordered: true, // 是否显示边框，默认false
+            headBgEnable: true, // 是否启用表头背景色，默认false
+            headBgColor: '', // 自定义表头背景色，默认空
+            stripe: false, // 是否隔色变色斑马纹，默认false
+            hoverHighlight: true, // 是否行悬浮高亮，默认true
+            
+            // ·表格上下额外区块
+            extraBefore: '顶部信息：询价单号1001，用户姓名：张三，电话：170850823', // 表格上方额外内容(可选)。String 直接作为html渲染；Function 以表格实例为参数，返回html字符串。取值或返回值为空则不渲染该区块
+            extraAfter: '底部信息：123456', // 表格下方额外内容(可选)。用法同 extraBefore
+
+
+            fixedLeftColumns: 2, // 冻结列、表格左侧连续几列固定不动(可选)。值：0 0列, 1 1列
+            headerHeight: 'auto', // 表头高度(可选)。默认'auto'由内容自动撑开；传入数值时表头使用指定高度
+            rowHeight: 40, // 行高(可选)。默认40px
+            showSelectAll: true, // 多选列表头是否显示全选checkbox
+
+            // test1
+            bodyHeight: 0, // 表身固定高度(可选)。0表示不限制，由el节点控制。fitViewport=true时本参数无效；fitViewport=false && bodyHeight>0时，会强制el高度为auto!important
+            fitViewport: true, // 是否垂直适配视口(可选)。true时，bodyHeight、el自定义高度失效，整套表格在视口内展示，即自动占满页面剩余高度且页面不出现垂直滚动条。
+            fitWidth: false, // 是否开启列宽自适应(可选)。false 固定列宽模式：使用columns配置的固定px列宽；true 弹性自适应模：以各列width为权重，根据容器宽度弹性分配填满容器
+            viewportBottomGap: 5, // fitViewport模式下视口底部预留间隙(可选)。仅fitViewport=true生效，单位px，在表格与视口底边之间留出空隙露出body背景色
+
+            // test1
+            // ·分页
+            remotePaging: false, // 是否后端远程分页(可选)。值：false=前端本地分页(默认)，一次性传全部data组件内部切片；true=后端远程分页，点击分页触发onPageChange(page,pageSize)，由外部请求后端并setData回填
+            total: 100, // 总记录数(可选)。仅remotePaging=true时生效，由外部传入总条数，组件据此渲染分页UI
+            enableRemotePagingFallback: false, // 是否兜底后端远程分页，默认true表示启用(可选)。
+            // 说明：仅 remotePaging=true 生效。
+            // 当后端返回 total=0 或者 total <div 当前返回列表条数，本参数值为true时则组件自动降级，使用当前这批数据前端本地分页；
+            // 值为false时关闭则严格信任后端返回的total，不会自动切换成前端本地分页。
+            // 注意：标准分页接口时设置本参数值为false；接口本身不支持一次性返回总记录数时，设置为true。
+
+            // 以下仅 remotePaging = false 时有效
+            addRowMode: 'currentPage', // 新增行插入位置(可选)。remotePaging=true时本参数无效。值：'currentPage'=插入当前页数据集合(默认)，配合addRow的position控制当前页首/尾；'global'=插入全局原始数据数组首/尾
+
+
+            expandRender: function(rowData, columnList) { // 展开行 add 20261110-1
+                // 自定义展开行内容
+                console.log('当前展开行数据：', rowData, columnList);
+                // return '<div class="block__expand_row">省市区县：' + rowData["area"] + '</div>';
+            },
+          
+            // ·插件
+            plugins: [
+                // 布局增强插件
+                // { name:"Layout" }, // 暂未开发完成，当前启用不会生效
+
+                // 序号列
+                // 'SerialNo',
+                {
+                    name: "SerialNo",
+                    width: 50, // 列宽
+                    showNewRowSerialNumber: false // 新增行是否显示序号，默认false(可选)。false 新增行序号为空（便于一眼识别是新增行）；true 正常展示序号 test1
+                },
+                // 多选列
+                // 'Checkbox',
+                {name: "Checkbox", width: 60, mode: "multi" }, // 多选列、复选框列。mode 值：single 多选模式, multi 单选模式：渲染radio、互斥、表头无全选框
+
+                // 合并表头
+                {   
+                    name: "HeaderMerge",
+                    groupHeaderClass: "", // 分组表头(父th)追加样式类
+                    leafHeaderClass: "",  // 叶子表头追加样式类
+                    borderPatch: true     // IE9 合并边框修复，默认true
+                },
+
+                // 展开行 add 20261110-1
+                {   
+                    name: "RowExpand",
+                    expandSingle: false, // 是否手风琴模式，默认false。false=允许多行同时展开；true=同一时间只能展开一行
+                    expandColWidth: 40 // 展开箭头列宽度(px)，默认40
+                },
+                
+                // 'StateColumn', // 状态列
+                {
+                    name: "StateColumn", 
+                    columnPosition: "behind", // 状态列显示位置(可选，配合StateColumn插件)。'behind'=状态列在所有数据列的最后面(默认)；'front'=状态列在checkbox/序号列前(无这两列时在数据第一列前)
+                    newText: "新",
+                    savedText: "",
+                    unsaveText: "改",
+                    width: 60
+                },
+
+                 // 排序
+                {
+                    name: "Sort", 
+                    defaultField: "", // 默认排序列字段名
+                    defaultOrder: "asc", // 默认排序方向 'asc' / 'desc'
+                    sortCurrentPageOnly: true // 是否仅对当前页排序(可选)，默认false。仅 remotePaging=false 前端本地分页时有效；remotePaging=true 时本参数无效，强制全量排序。
+                },
+
+                // 分页
+                {
+                    name: "Pagination",
+                    pageSize: PAGESIZE,
+                    pageMode: "list", // 'list'：数字页码按钮；'select"：页码下拉选择。
+                    pageListSize: 5, // 数字列表模式显示几个页码按钮
+                    position: "fixed", // top/bottom/fixed
+                    align: "center",
+                    showQuickJumper: true, // 是否显示页码快速跳转下拉
+                    showSizeChanger: true // 是否显示每页条数切换下拉
+                },
+
+                // 合计行
+                {
+                    name: "Summary",
+                    fixedFooter: true, // 是否固定在表尾，默认 false。值：true 是，效果跟fixed绝对定位类似帖在表尾而不随表身内容滚动
+                    columns: ["mj", "scjj", "zje"], 
+                    title: "合计", 
+                    titleColumn: 1, // 标题放在第几列（列索引，从 0 开始）
+                    scope: "currentPage", // 合计统计范围。值： currentPage 只统计当前页可见行, all 统计全部数据
+                    externalData: {} // 远程分页且scope = 'all'时传递的汇总数据。eg.  { scjj: 3200, zje: 5800 }
+                },
+
+                // 导出excel
+                // 'Export',
+                {
+                    name: "Export",
+                    filename: "导出数据", // 文件名，默认 '导出数据"
+                    format: "xlsx", // 导出格式。'xls'（HTML 伪装 Excel，兼容 IE9）/ 'xlsx'（真 Excel 2007+）/ 'csv"（纯文本）
+                    includeInnerColumns: false, // 是否导出内部列（field 以 `_` 开头：序号 / 状态 / 勾选），默认false
+                    includeHiddenColumns: false, // 是否导出隐藏列，默认false
+
+                    csvDelimiter: "\t" // csv时的单元格分隔符，默认 '\t'。注：仅 format='csv' 时生效。参数值说明：\t 表示制表符，打开csv文件时会像正常的Excel一样一个个单元格。如果要给后端程序使用(比如导入数据库)可改成逗号 ',"，此时Excel 里整行显示为一条，便于当纯文本行解析。
+                }
+            ],
+            events: {
+                // 表格完成一次整体渲染后触发。适合在渲染完成后做二次处理（如调整列宽、定位）。
+                onRendered: function(data) {
+                    console.log('表格完成渲染时xxx:', data);
+                },
+                onSort: function(data) {
+                    console.log('表格排序时：', data);
+                },
+                // test2
+                // onRowAdd: function(data) {
+                //     console.log('新增一行时：', data)
+                // },
+
+                onGroupHeaderClick: function(data) { // 合并表头时点击分组表头（父级 th）触发
+                    console.log('点击合并后的表头：', data)
+                },
+
+                onCellChange: function(data) {
+                    console.log('单元格变化：', data);
+                },
+                onCellClick: function(data) {
+                    console.log('单元格点击：', data);
+                },
+                onPageChange: function(data) {
+                    console.log('分页变化：', data);
+
+                    // console.log('分页时，全局数据源：', table.getData());
+                    // console.log('table.isFallbackPaging:', table.isFallbackPaging); // 
+                    
+                    // 仅后端远程分页(remotePaging = true)才请求后端且兜底降级时不请求后端
+                    // 可使用setData回填数据
+                    if (table.options.remotePaging && !table.isFallbackPaging) {
+                        var data = get_data_list(data.curpage, data.pagesize); // 请求后端数据
+                        table.setData(data); // 使用setData回填
+                    }
+                },
+                onSort: function(data) {
+                    console.log('排序变化：', data);
+                },
+                onSelectChange:function(data){
+                    console.log('选中变更',data);
+                },
+                onDeleteRow: function(data) {
+                    console.log('删除行回调(onDeleteRow)：', data);
+                    var elResult = elResult;
+                    elResult.innerHTML = 'onDeleteRow 删除行：rowIndex=' + data.rowIndex + '\n' + JSON.stringify(data.rowData, null, 2);
+                }
+            }
+        });
+
+        
+
+
+        //————————————————————————————————————————————————
+        // 操作区域
+        function closeResult() {
+            document.getElementById('result1').style.display = 'none';
+        }
+        // 新增一行 test2
+        function addRow() {
+            table.addRow({
+                "xh_self": "B20" + Math.floor(Math.random() * 900 + 100),
+                "mj": "",
+                "area": "",
+                "scjj": "",
+                "zje": "",
+                "check_wc": "0",
+                "remark": ""
+            }, 'first'); // first 最前面, last 最后面
+            // console.log('新增行时，全局数据源：', table.getData());
+        }
+
+        // 新增行完成后触发。注意不要和 table.addRow() 写在一个函数里，并放在table.addRow() 之后，否则监听不到
+        // 也可以在 options 的 events 事件里使用 onRowAdd: function(data) {} 进行监听
+        table.on('rowAdd', function(e){
+            console.log('新增完了，新增新行后返回的数据为：', e);
+        });
+       
+
+
+        // 保存数据(只保存有修改过的数据)
+        function saveData() {
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+            var dirtyData = table.getDirtyData();
+            elResult.innerHTML =
+                '需要保存的数据（共' + dirtyData.length + '条）：\n' +
+                JSON.stringify(dirtyData, null, 2);
+            // 标记为已保存
+            table.markSaved('all');
+        }
+        // 保存数据(保存所有数据)
+        function saveAllData() {
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+            var allData = table.getData();
+            elResult.innerHTML =
+                '需要保存的数据（共' + allData.length + '条）：\n' +
+                JSON.stringify(allData, null, 2);
+            // 标记为已保存
+            table.markSaved('all');
+        }
+        // 全选：单选模式时静默忽略，不起作用
+        function selectAll() {
+            table.selectAll();
+        }
+        // 全不选：单选模式时静默忽略，不起作用
+        function selectNone() {
+            table.selectNone();
+        }
+        // 反选：单选模式时静默忽略，不起作用
+        function invertSelect() {
+            table.invertSelect();
+        }
+        // 
+        /**
+         * 导出Excel
+         * @param {String} ps_format 导出格式。xlsx, xls, csv
+         */
+        function exportData(ps_format) {
+            // console.log('table：', table)
+            table.getPlugin('Export').export(ps_format);
+        }
+
+        //===== 选中API测试按钮 =====
+        // 获取指定第[0,2,4]条数据
+        function testSetSelectedKeys(){
+            if(!table) return;
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            // setSelectedKeys 传入多条，单选只取第一条
+            table.setSelectedKeys([0,2,4]);
+            elResult.innerText = JSON.stringify(table.getSelectedData(),null,2);
+        }
+
+        // 清空选中
+        function testClearSelection(){
+            if(!table) return;
+            
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            table.clearSelection();
+            elResult.innerText = JSON.stringify(table.getSelectedData(),null,2);
+        }
+
+        // 获取选中数据
+        function testGetSelectedData(){
+            if(!table) return;
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            var res = table.getSelectedData();
+            elResult.innerText = JSON.stringify(res,null,2);
+        }
+
+        //===== 内置API演示 =====
+        // deleteRow：删除指定行(触发 onDeleteRow 回调)
+        function testDeleteRow() {
+            if (!table) return;
+
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            table.deleteRow(0);
+            elResult.innerHTML = 'deleteRow(0)：已删除第1行（触发onDeleteRow）';
+        }
+        // clearData：清空所有数据
+        function testClearData() {
+            if (!table) return;
+            table.clearData();
+            elResult.innerHTML = 'clearData()：已清空所有数据';
+        }
+        // getRowData：获取指定行数据
+        function testGetRowData() {
+            if (!table) return;
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            var row = table.getRowData(0);
+            elResult.innerHTML = 'getRowData(0)：\n' + JSON.stringify(row, null, 2);
+        }
+    
+
+        // setCellValue：设置某行某列的值并局部重绘该格
+        function testSetCellValue() {
+            if (!table) return;
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            table.setCellValue(0, 'remark', 'API改');
+            elResult.innerHTML = 'setCellValue(0, "remark", "API改")：已设置并重绘单元格';
+        }
+
+        // setCellReadonly：设置某格只读(演示设为只读)
+        function testSetCellReadonly() {
+            if (!table) return;
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            table.setCellReadonly(0, 'remark', true);
+            elResult.innerHTML = 'setCellReadonly(0, "remark", true)：该格已设为只读';
+        }
+        
+        // setRowData：批量设置某行多个列的值
+        function testSetRowData() {
+            if (!table) return;
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            table.setRowData(0, {remark: '批量改', zje: '12345.67'});
+            elResult.innerHTML = 'setRowData(0, {remark, zje})：已批量设置并重绘该行';
+        }
+
+
+        // validate：校验必填项 test3
+        function testValidate() {
+            if (!table) return;
+            var result = table.validate('all', true);
+            console.log('校验必填result：', result);
+            if(result.passed === false) { // 校验不通过时
+                alert(result.message); // 只弹出提示第1条不通过的信息
+
+                // 定位到指定单元格
+                var rowIndex = result.rowIndex, field = result.field;
+                table.focusCell(rowIndex, field, {
+                    highlight: true
+                });
+
+                // 所有不通过的行信息打印出来
+                setTimeout(function() {
+                    var elResult = document.getElementById('result1');
+                    elResult.style.display = 'block';
+                    var tmpHtml = '';
+                    for(var i = 0; i < result.errors.length; i++) {
+                        tmpHtml += result.errors[i].message + '\n';
+                    }
+                    elResult.innerHTML = 'validate(\'all\')：\n' + tmpHtml;
+                }, 1000);
+                return;
+            }
+            alert('全部通过');
+        }
+        // validateUnique：校验唯一值列 test3
+        function testValidateUnique() {
+            if (!table) return;
+            var result = table.validateUnique();
+            console.log('校验唯一性-result：', result);
+            if(result.passed == false) { // 校验不通过时
+                alert(result.message); // 只弹出提示第1条不通过的信息
+
+                // 定位到指定单元格
+                var rowIndex = result.rowIndex, field = result.field;
+                table.focusCell(rowIndex, field, {
+                    highlight: true
+                });
+
+
+                setTimeout(function() {
+                    var elResult = document.getElementById('result1');
+                    elResult.style.display = 'block';
+                    var tmpHtml = '';
+                    for(var i = 0; i < result.errors.length; i++) {
+                        tmpHtml += result.errors[i].message + '\n';
+                    }
+                    elResult.innerHTML = 'validateUnique()：\n' + tmpHtml;
+                }, 1000);
+
+                return;
+            }
+            alert('全部通过');
+        }
+
+
+        // renderCell / renderRow / render：手动重绘
+        function testRenderCell() {
+            if (!table) return;
+
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            table.renderCell(0, 'remark');
+            elResult.innerHTML = 'renderCell(0, "remark")：已重绘该格';
+        }
+        function testRenderRow() {
+            if (!table) return;
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            table.renderRow(0);
+            elResult.innerHTML = 'renderRow(0)：已重绘该行';
+        }
+        function testRender() {
+            if (!table) return;
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            table.render();
+            elResult.innerHTML = 'render()：已全量重绘';
+        }
+        // destroy：销毁表格
+        function testDestroy() {
+            if (!table) return;
+            var elResult = document.getElementById('result1');
+            elResult.style.display = 'block';
+
+            table.destroy();
+            elResult.innerHTML = 'destroy()：表格已销毁';
+        }
+
+        
+    </script>
+</body>
+</html>

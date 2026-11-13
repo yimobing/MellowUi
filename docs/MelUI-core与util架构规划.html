@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MelUI · core 与 util 架构规划</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2316191B'/%3E%3Cpath d='M8 22V10h4l4 7 4-7h4v12h-3v-7l-4 6h-2l-4-6v7z' fill='%234FD0B8'/%3E%3C/svg%3E">
+<style>
+:root{
+  --ink:#16191B;
+  --paper:#F3F4F1;
+  --surface:#FDFDFB;
+  --rule:#D7DAD3;
+  --muted:#6C736E;
+  --accent:#0B6B5F;
+  --accent-soft:#E2EDEA;
+  --warn:#9C3D1B;
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono","Courier New",monospace;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.78;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.92em;background:#ECEEE9;padding:.1em .34em;border-radius:3px}
+
+.wrap{display:grid;grid-template-columns:248px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.side{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;border-right:1px solid var(--rule);padding:34px 22px 40px}
+nav.side .brand{font-family:var(--mono);font-size:12px;color:var(--muted)}
+nav.side .brand b{display:block;font-family:var(--sans);font-size:19px;font-weight:700;color:var(--ink);margin-top:4px;letter-spacing:-.01em}
+nav.side ol{list-style:none;margin:26px 0 0;padding:0;font-size:13.5px}
+nav.side ol li{padding:7px 0;border-top:1px solid rgba(0,0,0,.05)}
+nav.side ol li a{display:flex;gap:10px;color:#3A403C;line-height:1.5}
+nav.side ol li a .n{font-family:var(--mono);font-size:11px;color:var(--accent);padding-top:2px}
+nav.side ol li a:hover{color:var(--accent);text-decoration:none}
+
+main{padding:0 48px 100px;min-width:0}
+header.hero{padding:56px 0 34px;border-bottom:2px solid var(--ink)}
+.kicker{font-family:var(--mono);font-size:12.5px;color:var(--accent);margin-bottom:14px}
+h1{margin:0;font-size:clamp(30px,4.4vw,46px);line-height:1.2;letter-spacing:-.018em;font-weight:800}
+.lede{margin:18px 0 0;max-width:44em;color:#3A403C;font-size:17px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:24px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+
+.fig{margin:30px 0 0;background:var(--surface);border:1px solid var(--rule);padding:14px 14px 6px}
+.fig svg{width:100%;height:auto;display:block}
+.fig figcaption{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding:8px 4px 6px;line-height:1.6}
+
+section{padding-top:52px;scroll-margin-top:20px}
+.sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--rule);padding-bottom:10px}
+.sec-num{font-family:var(--mono);font-size:12px;color:var(--accent);padding-bottom:3px}
+h2{margin:0;font-size:24px;letter-spacing:-.012em;font-weight:700}
+h3{margin:30px 0 10px;font-size:16.5px;font-weight:700}
+h3::before{content:"\203A";color:var(--accent);font-family:var(--mono);margin-right:8px}
+p{margin:14px 0 0;max-width:46em}
+ul,ol{margin:14px 0 0;padding-left:1.35em;max-width:46em}
+ul li,ol li{margin:6px 0}
+li::marker{color:var(--accent)}
+
+pre{margin:18px 0 0;background:#141715;color:#E6E9E3;border:1px solid #2A2F2B;padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.72;border-radius:2px}
+pre code{background:none;padding:0;font-size:inherit;color:inherit;border-radius:0}
+
+.tblwrap{margin:18px 0 0;overflow-x:auto;border-top:2px solid var(--ink)}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;min-width:520px}
+th,td{padding:11px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--rule);line-height:1.6}
+th{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--muted);background:#EAECE7}
+.yes{color:var(--accent);font-weight:700}
+.no{color:var(--warn);font-weight:700}
+
+.callout{margin:22px 0 0;border-left:3px solid var(--accent);background:var(--accent-soft);padding:14px 18px}
+.callout p{margin:0;max-width:none;font-size:15px}
+.warnbox{margin:22px 0 0;border-left:3px solid var(--warn);background:#F5E9E3;padding:14px 18px}
+.warnbox p{margin:0;max-width:none;font-size:15px}
+
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:22px;background:var(--rule);border:1px solid var(--rule)}
+.card{background:var(--surface);padding:20px 18px}
+.card .tag{font-family:var(--mono);font-size:11.5px;color:var(--accent)}
+.card h4{margin:8px 0 6px;font-size:17px;font-weight:700;letter-spacing:-.01em}
+.card p{margin:0;font-size:13.5px;color:#4B524D;line-height:1.7}
+
+.tree{font-family:var(--mono);font-size:12.5px;line-height:1.9;background:var(--surface);border:1px solid var(--rule);padding:16px 18px;overflow-x:auto;white-space:pre;color:#2C322E}
+.tree .d{color:var(--accent);font-weight:600}
+.tree .c{color:#8A918B}
+.tree .x{color:var(--warn)}
+
+footer{margin-top:70px;padding-top:18px;border-top:1px solid var(--rule);font-family:var(--mono);font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media (max-width:900px){
+  .wrap{grid-template-columns:1fr}
+  nav.side{position:static;height:auto;padding:18px 20px 8px;border-right:0;border-bottom:1px solid var(--rule);background:var(--surface)}
+  nav.side ol{display:flex;flex-wrap:wrap;gap:2px 16px}
+  nav.side ol li{padding:2px 0;border-top:0}
+  main{padding:0 20px 70px}
+  .cards{grid-template-columns:1fr}
+}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="side">
+  <div class="brand">melui / docs<b>core 与 util 规划</b></div>
+  <ol>
+    <li><a href="#s1"><span class="n">01</span>定位与原则</a></li>
+    <li><a href="#s2"><span class="n">02</span>分层与依赖</a></li>
+    <li><a href="#s3"><span class="n">03</span>源码目录结构</a></li>
+    <li><a href="#s4"><span class="n">04</span>依赖硬约束</a></li>
+    <li><a href="#s5"><span class="n">05</span>导出设计</a></li>
+    <li><a href="#s6"><span class="n">06</span>打包与产物</a></li>
+    <li><a href="#s7"><span class="n">07</span>使用方式</a></li>
+    <li><a href="#s8"><span class="n">08</span>对外暴露规则</a></li>
+    <li><a href="#s9"><span class="n">09</span>维护流程</a></li>
+    <li><a href="#s10"><span class="n">10</span>命名与风险</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="kicker">melui.core · melui.util · 架构决议稿</div>
+  <h1>core 与 util 怎么分、怎么导、怎么打包</h1>
+  <p class="lede">从 neatui 迁移到 MelUI 的一次彻底重构：源码按职责拆文件、内部保留分层、对外抹平层级。UI 能力与纯工具彻底解耦，工具库可以脱离框架单独使用。</p>
+  <div class="meta">
+    <span><b>框架</b> MellowUI（MelUi）</span>
+    <span><b>构建</b> Rollup · UMD · IE9+</span>
+    <span><b>产物</b> melui.js + melui-util.js</span>
+  </div>
+</header>
+
+<section id="s1">
+  <div class="sec-head"><span class="sec-num">01</span><h2>定位与三条原则</h2></div>
+  <p>先把最容易搅在一起的两件事分开：<strong>core 是 UI 底层运行时，util 是纯数据工具</strong>。边界不看&quot;谁依赖谁&quot;，而看&quot;会不会产生 DOM、依赖界面样式&quot;。</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="tag">melui.Core</div>
+      <h4>UI 内核</h4>
+      <p>loading 转圈、遮罩、全局提示、滚动穿透、全局实例管理。会创建 DOM，依赖 melui.css，和界面强绑定。</p>
+    </div>
+    <div class="card">
+      <div class="tag">melui.util</div>
+      <h4>工具库</h4>
+      <p>类型判断、对象合并、防抖节流、日期、金额、URL、文件。纯函数、无副作用、不碰 DOM，可脱离框架单独用。</p>
+    </div>
+    <div class="card">
+      <div class="tag">MelUi.*</div>
+      <h4>组件类</h4>
+      <p>Table / Dialog / Drawer。大驼峰命名空间下的构造类，用 new 实例化，源码内部依赖 core 与 internal-util。</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><strong>三条原则：</strong>① 源码内部分层，对外接口扁平；② 分层只服务框架维护，不强迫业务写 <code>.Core</code>；③ 代码只写一份，产物按需分开。</p>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="sec-head"><span class="sec-num">02</span><h2>分层与依赖关系</h2></div>
+  <p>对外只有一个根：全局单例 <code>melui</code>，高频 UI 方法直接挂顶层，完整内核留在 <code>melui.Core</code> 作高级后门；组件用大驼峰 <code>MelUi.*</code>。</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 760 380" role="img" aria-label="MelUI 分层依赖图">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#0B6B5F"/>
+        </marker>
+      </defs>
+
+      <rect x="20" y="14" width="720" height="60" rx="6" fill="#16191B"/>
+      <text x="380" y="40" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="15" fill="#4FD0B8">melui</text>
+      <text x="380" y="60" text-anchor="middle" font-size="12" fill="#B4BCB6">全局单例 · 业务入口 · 高频 API 扁平到这一层</text>
+
+      <rect x="20" y="132" width="222" height="104" rx="6" fill="#FDFDFB" stroke="#C9CEC7"/>
+      <text x="36" y="158" font-family="ui-monospace,Menlo,monospace" font-size="13" fill="#0B6B5F">melui.Core</text>
+      <text x="36" y="180" font-size="11.5" fill="#4B524D">完整 UI 内核</text>
+      <text x="36" y="199" font-size="11.5" fill="#6C736E">showLoading / openMask</text>
+      <text x="36" y="218" font-size="11.5" fill="#8A918B">+ 私有底层方法</text>
+
+      <rect x="269" y="132" width="222" height="104" rx="6" fill="#FDFDFB" stroke="#C9CEC7"/>
+      <text x="285" y="158" font-family="ui-monospace,Menlo,monospace" font-size="13" fill="#0B6B5F">MelUi.*</text>
+      <text x="285" y="180" font-size="11.5" fill="#4B524D">组件构造类</text>
+      <text x="285" y="199" font-size="11.5" fill="#6C736E">Table / Dialog / Drawer</text>
+      <text x="285" y="218" font-size="11.5" fill="#8A918B">new 实例化</text>
+
+      <rect x="518" y="132" width="222" height="104" rx="6" fill="#FDFDFB" stroke="#C9CEC7"/>
+      <text x="534" y="158" font-family="ui-monospace,Menlo,monospace" font-size="13" fill="#0B6B5F">melui.util</text>
+      <text x="534" y="180" font-size="11.5" fill="#4B524D">纯工具命名空间</text>
+      <text x="534" y="199" font-size="11.5" fill="#6C736E">mergeObj / formatDate</text>
+      <text x="534" y="218" font-size="11.5" fill="#8A918B">无 DOM · 无副作用</text>
+
+      <line x1="131" y1="74" x2="131" y2="126" stroke="#B9BFB8" stroke-width="1.4"/>
+      <line x1="380" y1="74" x2="380" y2="126" stroke="#B9BFB8" stroke-width="1.4"/>
+      <line x1="629" y1="74" x2="629" y2="126" stroke="#B9BFB8" stroke-width="1.4"/>
+
+      <rect x="518" y="272" width="222" height="64" rx="6" fill="#E2EDEA" stroke="#9FC3BC"/>
+      <text x="534" y="297" font-family="ui-monospace,Menlo,monospace" font-size="12.5" fill="#0B6B5F">util/internal-util</text>
+      <text x="534" y="318" font-size="11.5" fill="#4B524D">唯一一份基础工具源码</text>
+
+      <path d="M518 304 C 470 336, 200 336, 152 244" fill="none" stroke="#0B6B5F" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <text x="196" y="352" font-size="11.5" fill="#0B6B5F">按需 import，tree-shaking 只把用到的函数打进主包</text>
+
+      <text x="518" y="366" font-size="11" fill="#9C3D1B">date / money / url / file 不进主包</text>
+      <line x1="518" y1="356" x2="466" y2="356" stroke="#9C3D1B" stroke-width="1.2"/>
+      <line x1="466" y1="351" x2="474" y2="361" stroke="#9C3D1B" stroke-width="1.6"/>
+      <line x1="474" y1="351" x2="466" y2="361" stroke="#9C3D1B" stroke-width="1.6"/>
+    </svg>
+    <figcaption>实线：打包进主包。虚线：core 从 internal-util 按需取源码。红叉：业务工具不反向依赖 core，也不打包进主包。</figcaption>
+  </figure>
+</section>
+<section id="s3">
+  <div class="sec-head"><span class="sec-num">03</span><h2>源码目录结构</h2></div>
+  <p>原则：<strong>一个文件一类职责</strong>。loading 全部逻辑在 loading.js，遮罩在 mask.js；index.js 只做胶水，不堆实现代码。后续加全局 message、confirm，直接新建文件再挂进 index。</p>
+
+  <pre><code>src/
+├─ index.js                <span style="color:#7F8C82">框架主入口：组装 melui 单例、挂 MelUi 组件</span>
+├─ core/                   <span style="color:#7F8C82">UI 内核</span>
+│  ├─ index.js             <span style="color:#7F8C82">聚合层：导入各模块 + 定义 publicApi + 导出 Core</span>
+│  ├─ loading.js           showLoading / closeLoading
+│  ├─ mask.js              openMask / closeMask
+│  ├─ message.js           <span style="color:#7F8C82">预留：全局轻提示</span>
+│  ├─ confirm.js           <span style="color:#7F8C82">预留：全局确认框</span>
+│  └─ internal/            <span style="color:#9C3D1B">私有底层，仅 core 内部可 import</span>
+│     └─ buildMaskDom.js   构建遮罩 DOM 等底层方法
+├─ components/             <span style="color:#7F8C82">业务组件</span>
+│  ├─ table/
+│  ├─ dialog/
+│  └─ drawer/
+└─ util/                   <span style="color:#7F8C82">纯工具，禁止碰 DOM、禁止依赖 core</span>
+   ├─ internal-util/       <span style="color:#0B6B5F">基础共享工具（随主包）</span>
+   │  ├─ type.js           isObject / isArray / isString
+   │  ├─ object.js         mergeObj / 浅拷贝 / 简单深拷贝
+   │  ├─ func.js           debounce / throttle
+   │  └─ index.js          <span style="color:#0B6B5F">聚合导出，供主包 import</span>
+   ├─ date.js              日期格式化、时间加减
+   ├─ money.js             金额千分位、保留小数
+   ├─ string.js            脱敏、uuid、字符串处理
+   ├─ url.js               参数解析、query 拼接
+   ├─ file.js              blob、下载、base64
+   └─ index.js             <span style="color:#0B6B5F">工具包入口，产出 melui-util.js</span></code></pre>
+
+  <h3>为什么不用一个大文件</h3>
+  <ul>
+    <li>一个 js 塞几百上千行，后续加 message、confirm 会膨胀成灾难，就是&quot;又臭又长&quot;。</li>
+    <li>拆文件后 git 改动范围小，冲突少；改 loading 动画不碰 mask 代码。</li>
+    <li>internal 与 public 一眼可分：放在 <code>internal/</code> 下的就是私有实现，随时可重构。</li>
+  </ul>
+</section>
+
+<section id="s4">
+  <div class="sec-head"><span class="sec-num">04</span><h2>依赖硬约束</h2></div>
+  <p>这套目录能长期不烂，靠的是几条单向依赖。违反其中任何一条，后面必然出现循环引用或产物污染。</p>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:26%"><col style="width:32%"><col style="width:24%"><col style="width:18%"></colgroup>
+    <thead><tr><th>模块</th><th>允许依赖</th><th>禁止依赖</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>core</code></td><td><code>core/internal</code>、<code>util/internal-util</code></td><td><code>components</code>、util 业务工具</td><td><span class="yes">可</span> 取基础工具，<span class="no">不可</span> 反向拉业务工具进主包</td></tr>
+      <tr><td><code>components</code></td><td><code>melui.Core</code>、<code>util/internal-util</code></td><td><code>core/internal</code></td><td>组件只调公开 UI 能力与基础工具</td></tr>
+      <tr><td><code>util/*</code></td><td>仅原生 JS</td><td><code>core</code>、<code>components</code>、DOM</td><td>纯函数，保证可独立复用</td></tr>
+      <tr><td><code>core/internal</code></td><td>无</td><td>被 core 以外任何模块 import</td><td>私有实现，改名不算破坏性变更</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="warnbox">
+    <p><strong>最容易犯的错：</strong>core 为了省事写 <code>import '../util/index.js'</code>（引工具包入口），打包时会把 date、file 全部拖进主包，拆包等于白做。core 只能引 <code>util/internal-util/xxx.js</code> 的具体文件。</p>
+  </div>
+</section>
+
+<section id="s5">
+  <div class="sec-head"><span class="sec-num">05</span><h2>导出设计</h2></div>
+  <p>所有能力在各自文件里 export，由入口聚合。核心是 <code>publicApi</code> 白名单：只有登记过的 API 才会提升到 <code>melui</code> 顶层，私有方法留在 <code>melui.Core</code> 里。</p>
+
+  <h3>loading.js / mask.js：实现写在文件里</h3>
+  <pre><code><span style="color:#7F8C82">// src/core/loading.js</span>
+import { internalBuildMaskDom } from './internal/buildMaskDom.js';
+
+export function showLoading(options) {
+  internalBuildMaskDom();   <span style="color:#7F8C82">// 完整实现：建 DOM、锁滚动、记实例</span>
+}
+export function closeLoading() {
+  <span style="color:#7F8C82">// 移除节点、清状态</span>
+}</code></pre>
+
+  <h3>core/index.js：只做聚合，不写实现</h3>
+  <pre><code><span style="color:#7F8C82">// src/core/index.js</span>
+// 导入各个功能实现文件
+import { showLoading, closeLoading } from './loading.js';
+import { openMask, closeMask } from './mask.js';
+import { internalBuildMaskDom } from './internal/buildMaskDom.js';
+
+<span style="color:#7F8C82">// 对外白名单：会提升到 melui.xxx</span>
+export const publicApi = { showLoading, closeLoading, openMask, closeMask };
+<span style="color:#7F8C82">// default导出完整内核：公开 API + 私有底层，挂载到 melui.Core</span>
+export default { ...publicApi, internalBuildMaskDom };</code></pre>
+  <p>新增一个全局 UI 能力，只需新建文件、在 index 里 import、往 <code>publicApi</code> 加一行，已有文件完全不动。</p>
+
+  <h3>util 基础工具：单文件单职责</h3>
+  <pre><code><span style="color:#7F8C82">// src/util/internal-util/object.js</span>
+  // 每个文件单独 export 函数，示例 object.js
+export function mergeObj(target, ...sources) { <span style="color:#7F8C82">/* 合并实现 */</span> }
+export function isObject(val) { <span style="color:#7F8C82">/* 判断实现 */</span> }</code></pre>
+
+  <h3>util/index.js：工具包入口，产出 melui-util.js</h3>
+  <pre><code><span style="color:#7F8C82">// src/util/index.js</span>
+import * as type from './internal-util/type.js';
+import * as object from './internal-util/object.js';
+import * as func from './internal-util/func.js';
+import * as date from './date.js';
+import * as money from './money.js';
+import * as string from './string.js';
+import * as url from './url.js';
+import * as file from './file.js';
+
+// 全部工具集合
+const utilAll = { ...type, ...object, ...func, ...date, ...money, ...string, ...url, ...file };
+
+<span style="color:#7F8C82">// UMD全局挂载逻辑：追加到已有 melui.util，绝不覆盖主包内置的基础工具</span>
+if (typeof window !== 'undefined') {
+  window.melui = window.melui || {};
+  window.melui.util = Object.assign(window.melui.util || {}, utilAll);
+}
+
+export default utilAll;</code></pre>
+
+  <h3>src/index.js：框架主入口</h3>
+  <pre><code><span style="color:#7F8C82">// src/index.js</span>
+import Core, { publicApi } from './core/index.js';
+import Table from './components/table/index.js';
+import Dialog from './components/dialog/index.js';
+import * as UtilBase from './util/internal-util/index.js';
+
+const melui = {
+  Core,        <span style="color:#7F8C82">// 完整内核，高级入口</span>
+  ...publicApi <span style="color:#7F8C82">// 等价于逐行 melui.showLoading = Core.showLoading，但不用手写</span>
+};
+
+melui.util = UtilBase;         <span style="color:#7F8C82">// 主包内置基础工具</span>
+
+window.MelUi = { Table, Dialog }; <span style="color:#7F8C82">// 组件构造类，大驼峰</span>
+window.melui = melui;            <span style="color:#7F8C82">// 全局单例，小写</span></code></pre>
+
+  <div class="callout">
+    <p><strong>为什么用 <code>...publicApi</code> 而不是手写一堆赋值：</strong>函数仍是同一个引用（不是复制），Core 内部改了实现，顶层 melui 自动同步。新增顶层 API 不用回入口改代码，也避免 <code>Object.assign(melui, Core)</code> 那种把私有方法全部泄露的写法。</p>
+  </div>
+</section>
+<section id="s6">
+  <div class="sec-head"><span class="sec-num">06</span><h2>打包与产物</h2></div>
+  <p>两个独立入口，两套产物。主包负责 UI 与组件，扩展包负责完整的工具能力，互不牵连。</p>
+
+  <pre><code><span style="color:#7F8C82">// rollup 双入口（示意）</span>
+export default [
+  {   <span style="color:#7F8C82">// 主包</span>
+      input: 'src/index.js',
+      output: [
+        { file: 'dist/melui.js',      format: 'umd', name: 'melui' },
+        { file: 'dist/melui.min.js',  format: 'umd', name: 'melui', plugins: [terser()] }
+      ]
+  },
+  {   <span style="color:#7F8C82">// 工具扩展包</span>
+      input: 'src/util/index.js',
+      output: [
+        { file: 'dist/melui-util.js',     format: 'umd', name: 'meluiUtil' },
+        { file: 'dist/melui-util.min.js', format: 'umd', name: 'meluiUtil', plugins: [terser()] }
+      ]
+  }
+];</code></pre>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:20%"><col style="width:34%"><col style="width:46%"></colgroup>
+    <thead><tr><th>产物</th><th>内容</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>melui.js</code><br><code>melui.min.js</code></td><td>core 内核 + 全部组件 + internal-util 中被引用的函数</td><td>Tree-shaking 只带走 import 到的函数，date/money/file 视为死代码剔除</td></tr>
+      <tr><td><code>melui.css</code><br><code>melui.min.css</code></td><td>框架样式</td><td>core 的 loading / 遮罩依赖它，不能脱离</td></tr>
+      <tr><td><code>melui-util.js</code><br><code>melui-util.min.js</code></td><td>internal-util 全部 + date / money / string / url / file</td><td>可单独用于非 MelUI 项目；加载后向 <code>melui.util</code> 追加方法</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>源码是多个小模块，产物是单个文件。<strong>使用者感知不到源码的拆分</strong>，只认 <code>melui.xxx</code> 调用。</p>
+</section>
+
+<section id="s7">
+  <div class="sec-head"><span class="sec-num">07</span><h2>使用方式</h2></div>
+
+  <h3>只引主包：只需 UI 能力</h3>
+  <pre><code>&lt;link rel="stylesheet" href="melui.css"&gt;
+&lt;script src="melui.js"&gt;&lt;/script&gt;
+
+&lt;script&gt;
+  melui.showLoading();          <span style="color:#7F8C82">// 顶层扁平，不用写 .Core</span>
+  melui.closeLoading();
+  melui.openMask();
+
+  // 内置基础工具
+  var opts = melui.util.mergeObj({ a: 1 }, { b: 2 });
+  // 组件实例化
+  var table = new MelUi.Table('#demo', {});   <span style="color:#7F8C82">// 组件用 new</span>
+  // 高级底层内核API（普通业务不推荐，仅深度定制）
+  melui.Core.internalBuildMaskDom();          <span style="color:#7F8C82">// 底层后门，业务不推荐</span>
+&lt;/script&gt;</code></pre>
+
+  <h3>主包 + 工具扩展包：需要日期、金额等</h3>
+  <pre><code>&lt;link rel="stylesheet" href="melui.css"&gt;
+&lt;script src="melui.js"&gt;&lt;/script&gt;
+&lt;script src="melui-util.js"&gt;&lt;/script&gt;
+
+&lt;script&gt;
+  melui.showLoading();
+
+  <span style="color:#7F8C82">// 扩展包加载后，这些方法自动出现在 melui.util 上</span>
+  var d = melui.util.formatDate(new Date(), 'yyyy-MM-dd');
+  var p = melui.util.formatMoney(1234.56);
+&lt;/script&gt;</code></pre>
+
+  <div class="callout">
+    <p>引入顺序：<strong>css → melui.js → melui-util.js</strong>。扩展包内部用 <code>Object.assign</code> 追加，不会覆盖主包已有的基础工具。</p>
+  </div>
+</section>
+
+<section id="s8">
+  <div class="sec-head"><span class="sec-num">08</span><h2>对外暴露规则</h2></div>
+  <p>大厂的做法可以概括成一句：<strong>源码内部分 core，业务侧看不到 core</strong>。Element Plus、Ant Design、axios 都是把内核高频能力代理到顶层命名空间，内核对象本身只留给深度定制。</p>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:24%"><col style="width:40%"><col style="width:22%"><col style="width:14%"></colgroup>
+    <thead><tr><th>入口</th><th>调用示例</th><th>放什么</th><th>业务常用</th></tr></thead>
+    <tbody>
+      <tr><td><code>melui</code> 顶层</td><td><code>melui.showLoading()</code><br><code>melui.openMask()</code></td><td>publicApi 白名单里的高频 UI 方法</td><td><span class="yes">是</span></td></tr>
+      <tr><td><code>melui.util</code></td><td><code>melui.util.mergeObj()</code></td><td>全部纯工具函数，自成一组</td><td><span class="yes">是</span></td></tr>
+      <tr><td><code>melui.Core</code></td><td><code>melui.Core.internalXxx()</code></td><td>完整内核：公开 + 私有底层</td><td>否，深度定制</td></tr>
+      <tr><td><code>MelUi.*</code></td><td><code>new MelUi.Table()</code></td><td>组件构造类</td><td><span class="yes">是</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>工具不全部扁平到 <code>melui.</code> 根上：工具会持续增加，堆在根上迟早和 UI 方法撞名，比如以后 core 加 <code>melui.download()</code>、util 也加 <code>download</code>，就是隐性覆盖。放在 <code>.util</code> 下天然分组，文档也好归类。</p>
+</section>
+
+<section id="s9">
+  <div class="sec-head"><span class="sec-num">09</span><h2>维护流程</h2></div>
+
+  <h3>新增一个全局 UI 能力（如 message）</h3>
+  <ol>
+    <li>新建 <code>src/core/message.js</code>，写完整实现并 export。</li>
+    <li><code>src/core/index.js</code> 里 import 这些函数。</li>
+    <li>在 <code>publicApi</code> 对象中登记，决定是否提到 <code>melui</code> 顶层。</li>
+    <li>打包后即可 <code>melui.message()</code>；不登记的留在 <code>melui.Core</code>。</li>
+  </ol>
+
+  <h3>新增一个工具函数</h3>
+  <ol>
+    <li>组件或内核会用到的<strong>基础工具</strong> → 放 <code>util/internal-util/</code>，自动进主包，代码只有一份。</li>
+    <li>业务侧才用的<strong>格式化、下载类工具</strong> → 新建 <code>util/xxx.js</code>，在 <code>util/index.js</code> import 并合并，随扩展包输出。</li>
+    <li>不再需要的旧函数在重构期直接删，不做兼容层。</li>
+  </ol>
+</section>
+
+<section id="s10">
+  <div class="sec-head"><span class="sec-num">10</span><h2>命名规范与风险清单</h2></div>
+
+  <h3>命名约定</h3>
+  <ul>
+    <li>函数：小驼峰，动词开头，语义直白 —— <code>showLoading</code>、<code>closeLoading</code>、<code>mergeObj</code>、<code>formatDate</code>。</li>
+    <li>全局单例：小写 <code>melui</code>（对应 axios、dayjs 这类单例对象）。</li>
+    <li>组件构造类：大驼峰 <code>MelUi.Table</code>，用 new。</li>
+    <li>工具命名空间：小写 <code>melui.util</code>；内核命名空间：<code>melui.Core</code>（大写 C 作为底层标记）。</li>
+    <li>私有内部函数：<code>internalXxx</code> 前缀，只出现在 <code>core/internal/</code>。</li>
+  </ul>
+
+  <h3>风险清单</h3>
+  <ul>
+    <li><span class="no">✕</span> 直接 <code>Object.assign(melui, Core)</code>：私有方法全泄露，后续改名即破坏性变更。</li>
+    <li><span class="no">✕</span> core 引入 <code>util/index.js</code>：整包工具被打进主包，拆包失效。</li>
+    <li><span class="no">✕</span> 组件 import <code>core/internal/</code>：私有实现一旦重构，组件跟着崩。</li>
+    <li><span class="no">✕</span> <code>melui-util.js</code> 直接赋值 <code>melui.util = utilAll</code>：覆盖主包基础工具，<code>mergeObj</code> 直接消失。</li>
+    <li><span class="no">✕</span> 同一个工具在 core 与 util 各写一份：改 bug 要改两处，迟早不一致。</li>
+  </ul>
+
+  <footer>
+    <span>MelUI · core &amp; util 架构规划</span>
+    <span>MellowUI framework / internal spec</span>
+  </footer>
+</section>
+</main>
+</div>
+</body>
+</html>

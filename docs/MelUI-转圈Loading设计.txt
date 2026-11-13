@@ -1,0 +1,447 @@
+别一上来写动画，转圈特效要先定两个根问题：**它是 “全局 Loading 的转圈”，还是 “通用可复用的 Spinner”**。
+我建议按 **MelUI Core 的全局 Loading 转圈** 来设计，参数简单、够用，后面再抽成通用 Spinner。
+
+---
+
+# 一、设计思路
+
+## 1. 转圈的本质
+
+Loading 转圈本质上就是一个旋转动画，通常有几种实现方式：
+
+表格
+
+| 方案 | 实现 | 优点 | 缺点 |
+| --- | --- | --- | --- |
+| CSS `@keyframes rotate` | 用 CSS 让元素不断 `transform: rotate()` | 最简单、性能好、兼容 IE | 需要维护 CSS |
+| SVG 动画 | SVG 圆圈做 `stroke-dashoffset` 动画 | 更精致，可做进度感 | 实现复杂一点 |
+| JS 控制 `setInterval` | 手动改角度 | 灵活 | 性能不如 CSS，不推荐 |
+
+**MelUI 推荐方案：CSS 旋转 + 一个简单的 DOM 结构。**
+
+结构建议：
+
+```
+<div class="mel-loading">
+  <div class="mel-loading-spinner">
+    <i></i>
+  </div>
+  <div class="mel-loading-text">加载中...</div>
+</div>
+```
+
+---
+
+# 二、转圈特效的几种风格
+
+## 风格 1：经典旋转圆环（推荐第一版）
+
+- 一个圆环
+- 4 个点 / 8 个点 / 或 4 段短线
+- 整体不断旋转
+- 风格稳定、通用、适合后台系统
+
+适合：表格加载、页面加载、按钮加载、全局 Loading。
+
+## 风格 2：双圆环旋转
+
+- 两个圆环
+- 一个转得快，一个转得慢
+- 视觉更现代
+
+## 风格 3：跳动小点
+
+- 3 个或 4 个小圆点
+- 上下跳动
+- 不适合 “长时间加载” 的严肃感，更轻量
+
+## 风格 4：进度型圆环
+
+- 圆环有进度缺口
+- 类似 “加载进度 70%”
+- 适合有进度数据的场景
+
+---
+
+# 三、推荐第一版转圈方案
+
+## MelUI 第一版 Loading Spinner 建议采用：
+
+> 
+> **单圆环 + 4 个分段点 + 整体旋转**
+
+```
+<div class="mel-spinner">
+  <span class="mel-spinner-dot"></span>
+  <span class="mel-spinner-dot"></span>
+  <span class="mel-spinner-dot"></span>
+  <span class="mel-spinner-dot"></span>
+</div>
+```
+
+CSS 思路：
+
+```
+.mel-spinner {
+  width: 40px;
+  height: 40px;
+  position: relative;
+  animation: mel-spin 1s linear infinite;
+}
+
+.mel-spinner-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: #1677ff;
+  opacity: 0.3;
+}
+
+.mel-spinner-dot:nth-child(1) { transform: rotate(0deg) translateY(-14px); opacity: 0.9; }
+.mel-spinner-dot:nth-child(2) { transform: rotate(90deg) translateY(-14px); opacity: 0.7; }
+.mel-spinner-dot:nth-child(3) { transform: rotate(180deg) translateY(-14px); opacity: 0.5; }
+.mel-spinner-dot:nth-child(4) { transform: rotate(270deg) translateY(-14px); opacity: 0.3; }
+
+@keyframes mel-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+```
+
+这个方案的优点：
+
+- 简单
+- 兼容性好
+- 不需要 SVG
+- 大小、颜色、速度都容易通过参数控制
+
+---
+
+# 四、参数设计
+
+转圈本身不需要太多参数。
+真正要考虑的是：**Loading 容器参数** 和 **Spinner 参数** 要不要分开。
+
+我建议第一版不要做得太复杂，参数控制在 6 个左右就够了。
+
+## A. Spinner 转圈参数
+
+表格
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `size` | number | `40` | 转圈大小，单位 px |
+| `color` | string | `#1677ff` | 转圈主色 |
+| `borderColor` | string | 比主色浅一点 | 转圈的背景轨道色 |
+| `speed` | number | `1` | 旋转速度，数值越大越快 |
+| `strokeWidth` | number | `4` | 转圈线条粗细 |
+| `type` | string | `'ring'` | 转圈类型，第一版只做 `ring` |
+
+---
+
+## B. Loading 全局容器参数
+
+因为 `showLoading()` 是全局 Loading，所以参数还要包括容器、文字、遮罩。
+
+表格
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `text` | string | `'加载中...'` | 显示文字 |
+| `showText` | boolean | `true` | 是否显示文字 |
+| `mask` | boolean | `true` | 是否显示遮罩 |
+| `maskColor` | string | `'rgba(0,0,0,0.4)'` | 遮罩颜色 |
+| `target` | string / HTMLElement | `document.body` | 挂载目标 |
+| `zIndex` | number | 自动分配 | 层级 |
+| `escClose` | boolean | `false` | 是否支持 ESC 关闭 |
+| `destroyOnClose` | boolean | `true` | 关闭后是否移除 DOM |
+
+---
+
+## C. 我建议第一版参数
+
+不要全部上，先保留这些：
+
+```
+melui.showLoading({
+  text: '加载中...',
+  showText: true,
+  size: 40,
+  color: '#1677ff',
+  speed: 1,
+  mask: true,
+  maskColor: 'rgba(0,0,0,0.4)'
+});
+```
+
+对应参数对象：
+
+```
+{
+  text: '加载中...',
+  showText: true,
+  size: 40,
+  color: '#1677ff',
+  speed: 1,
+  mask: true,
+  maskColor: 'rgba(0,0,0,0.4)'
+}
+```
+
+---
+
+# 五、参数实现思路
+
+## 1. 默认参数合并
+
+所有参数都要有默认值，调用方不传就走默认。
+
+```
+const defaultOpts = {
+  text: '加载中...',
+  showText: true,
+  size: 40,
+  color: '#1677ff',
+  speed: 1,
+  mask: true,
+  maskColor: 'rgba(0,0,0,0.4)'
+};
+
+const opts = melui.util.mergeObj({}, defaultOpts, options);
+```
+
+---
+
+## 2. 转圈 DOM 生成
+
+`size` 控制宽高：
+
+```
+spinner.style.width = opts.size + 'px';
+spinner.style.height = opts.size + 'px';
+```
+
+`color` 控制主色：
+
+```
+dot.style.background = opts.color;
+```
+
+`speed` 控制动画时间：
+
+```
+spinner.style.animationDuration = (1 / opts.speed) + 's';
+```
+
+比如：
+
+- `speed: 1` → 1 秒一圈
+- `speed: 2` → 0.5 秒一圈
+- `speed: 0.5` → 2 秒一圈
+
+---
+
+## 3. 文字显示控制
+
+```
+if (opts.showText && opts.text) {
+  textEl.innerText = opts.text;
+  textEl.style.display = 'block';
+} else {
+  textEl.style.display = 'none';
+}
+```
+
+---
+
+# 六、接口设计建议
+
+## MelUI 调用方式
+
+```
+// 最简
+melui.showLoading();
+
+// 自定义
+melui.showLoading({
+  text: '数据加载中',
+  size: 48,
+  color: '#52c41a',
+  speed: 1.2,
+  maskColor: 'rgba(0,0,0,0.5)'
+});
+
+// 关闭
+melui.closeLoading();
+```
+
+---
+
+# 七、转圈参数 vs Loading 参数的边界
+
+这里要分清：
+
+表格
+
+| 层级 | 参数 |
+| --- | --- |
+| Spinner 转圈本身 | `size`、`color`、`speed`、`strokeWidth`、`type` |
+| Loading 容器 | `text`、`showText`、`mask`、`maskColor`、`target`、`zIndex` |
+
+第一版建议不要把 Spinner 单独抽出来，直接在 `showLoading()` 里实现。
+等后面稳定了，再拆成：
+
+```
+melui.createSpinner(container, { size, color, speed });
+```
+
+---
+
+# 八、我建议的最终参数方案
+
+```
+{
+  text: '加载中...',
+  showText: true,
+  size: 40,
+  color: '#1677ff',
+  speed: 1,
+  mask: true,
+  maskColor: 'rgba(0,0,0,0.4)'
+}
+```
+
+这组参数的好处：
+
+- 够第一版用
+- 不复杂
+- 能覆盖全局 Loading、局部 Loading、表格 Loading
+- 后续扩展空间还很大
+
+---
+
+# 九、建议第一版转圈特效结论
+
+**采用 CSS 旋转圆环方案。**
+
+参数就先做 7 个：
+
+- `text`
+- `showText`
+- `size`
+- `color`
+- `speed`
+- `mask`
+- `maskColor`
+
+先保证一个稳定、好看、兼容 IE 的基础转圈。
+后面再根据业务需要扩展：
+
+- `strokeWidth`
+- `type: 'ring' | 'dots' | 'double-ring'`
+- `icon`
+- `customClass`
+- `background`
+- `borderRadius`
+- `position`
+
+
+
+
+=-----------------------------------------
+通用可复用的 Spinner 是什么意思？
+=-----------------------------------------
+
+# 一句话解释
+
+**通用可复用 Spinner：独立的转圈组件（单纯转圈图形），脱离全局 Loading，哪里需要就渲染一个转圈 DOM 节点，只负责渲染动画，不自带遮罩、不管理全局状态。**
+
+> 
+> `showLoading()` = **全局 Loading**（属于 Core 全局浮层能力，带遮罩、全局单例计数、挂载 body、有文字，用来阻塞整个页面）
+> Spinner = **纯转圈图形控件**（基础视觉元件，无遮罩、无状态管理，放在任意 DOM 容器里：按钮内部、表格单元格、卡片内部、局部容器）
+
+## 两者核心区别
+
+表格
+
+| 项目 | Core 全局 Loading（`melui.showLoading`） | 通用 Spinner（`melui.createSpinner`） |
+| --- | --- | --- |
+| 定位 | 全局浮层弹窗类能力，属于 core | 纯 UI 图形元件，基础渲染组件 |
+| 是否带遮罩 | ✅ 自带 mask 遮罩，阻断页面交互 | ❌ **没有遮罩**，仅仅一个转圈 dom |
+| 挂载位置 | 默认挂载 body | 挂载到你指定的任意 dom 元素（卡片、按钮、表格） |
+| 状态管理 | Core 维护计数器，多次 show 必须对应次数 close | 无全局状态；实例独立，一个 Spinner 只管自己 |
+| 附带文字 | 支持加载提示文本 | 可选文字，也可以只有转圈 |
+| 使用场景 | 保存、查询时全屏阻塞等待 | 按钮 loading、表格单元格加载、卡片局部加载、下拉加载 |
+| 所属模块 | `core/loading.js` | 可以单独抽`components/spinner/`，或者 core 内部导出基础渲染函数 |
+
+## 调用示例对比
+
+### 1. 全局 Loading（Core 的，带遮罩，页面阻塞）
+
+```
+// 整个页面变黑，中间转圈+文字，阻塞页面操作
+melui.showLoading({
+  text: '加载数据',
+  mask: true
+})
+melui.closeLoading();
+```
+
+### 2. 通用 Spinner（纯转圈，局部嵌入）
+
+```
+// 在 #card 这个div里面渲染一个转圈，没有遮罩，不阻塞页面
+const spinnerIns = melui.createSpinner(document.querySelector('#card'), {
+  size:24,
+  color:'#1677ff'
+});
+// 销毁这个spinner
+spinnerIns.destroy();
+```
+
+场景例子：
+
+- 提交按钮内部：点击按钮，按钮里面放小转圈，按钮文字替换成 “提交中”
+- 表格：某一行单元格加载数据，单元格内放小 spinner
+- 卡片：卡片区域局部加载，卡片内部转圈，页面其他区域依然可以点击
+
+## 内部实现边界
+
+1. **全局 Loading 内部，可以直接复用通用 Spinner 渲染函数**
+
+> 
+> 好处：转圈的 CSS、DOM 生成逻辑只写一份，不要写两套转圈代码！
+> `showLoading` 的内部，直接调用 createSpinner 生成转圈图形，再套上遮罩、文字、全局状态、滚动锁。
+> 👉 **一套转圈渲染逻辑，两处复用，避免重复代码**
+
+```
+showLoading()【全局Loading，Core】
+ └── 内部调用 createSpinner()【生成纯转圈DOM】
+     再追加遮罩DOM、文本，注册全局计数状态
+```
+
+2. 参数分离
+
+- Spinner 底层参数：`size、color、speed、strokeWidth`（只控制图形本身）
+- Loading 额外叠加参数：`mask、maskColor、text、target`（浮层 / 遮罩 / 文字）
+
+## 大厂对应例子
+
+- `ElLoading.service()` 👉 就是你说的 `melui.showLoading`，全局带遮罩 loading
+- `<el-spinner size="24" />` 👉 通用可复用 Spinner，任意地方嵌入，不带遮罩
+- antd: `Spin`组件就是这个通用 Spinner，可以放在任意容器；`message.loading`是全局浮层 loading，底层复用 Spin 图形
+
+## 架构建议给你
+
+第一版优先完成：
+
+1. 先写**底层通用 Spinner 渲染函数**（只生成转圈 DOM，纯图形，无遮罩）
+2. 在 core/loading.js 里面，调用这个 Spinner 函数，再封装一层全局状态、遮罩、滚动锁，实现`showLoading`
+
+> 
+> 不要反过来，不要在全局 Loading 里面单独写一套转圈 DOM，后续要局部 Spinner 又要重写一遍动画代码。

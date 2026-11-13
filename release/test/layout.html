@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="">
+    <meta name="applicable-device" content="pc,mobile">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title> MelUi Layout v1.3.0 布局 </title>
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <!-- 页面布局样式统一引用（不内嵌） -->
+    <link rel="stylesheet" href="css/demo_docs.css">
+    
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/styles/stackoverflow-light.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+    <style>
+        .demo-grid-bg {
+            background-color: #ecf5ff;
+            border: 1px solid #d9ecff;
+            border-radius: 4px;
+            color: #409eff;
+            font-size: 13px;
+            text-align: center;
+            line-height: 40px;
+            min-height: 40px;
+        }
+        .demo-grid-bg-dark {
+            background-color: #e1f3d8;
+            border: 1px solid #c2e7b0;
+            color: #67c23a;
+        }
+        .demo-form-panel {
+            border: 1px solid #ebeef5;
+            border-radius: 4px;
+            padding: 20px;
+            background: #fff;
+        }
+        .demo-row-gap {
+            margin-bottom: 16px;
+        }
+        /* API表格样式，适配demo_docs.css */
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin:8px 0;
+        }
+        .api-table th,.api-table td {
+            border:1px solid #ebeef5;
+            padding:10px 12px;
+            text-align:left;
+        }
+        .api-table th {
+            background-color:#fafafa;
+        }
+        .box-dashed {
+            border:1px dashed #909399;
+            padding:10px;
+            margin:8px 0;
+        }
+        .inline-code {
+            font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
+            background-color: #f6f6f6;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        .demo-input-item{
+            margin:6px 0;
+        }
+        button[type="button"] {
+            padding: 5px 10px;
+            background-color: #1296db;
+            border: 0;
+            border-radius: 4px;
+            color: #fff;
+        }
+        button[type="button"]:hover {
+            opacity: .7;
+        }
+        .tip {
+            padding: 1px 5px;
+            background: #f1f4f8;
+            border: 1px solid #e1e6ed;
+            border-radius: 3px;
+            font-size: 13px;
+            color: #b42318;
+        }
+    </style>
+<link rel="stylesheet" href="../dist/melui.min.css">
+<script src="../dist/melui.min.js"></script>
+</head>
+<body>
+    <h1 class="page-title">MelUi Layout 布局</h1>
+    <div class="version-desc">
+        <p> 版本：v1.3.0 | 兼容：IE9~Edge | 24栅格 + 表单布局 </p>
+        <p> 说明：通过基础的 24 分栏栅格，迅速简便地创建布局。</p>
+    </div>
+    <h2>一、基础布局</h2>
+    <div class="block-group">
+        <div class="block-group__title">1、基础等分</div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">
+                    使用 mel-row 和 mel-col，mel-span-N 设置每列占比，N取值1~24。浏览全部效果，下方提供全部示例完整代码。
+                </div>
+                <div class="block-subtitle">示例1：整行24份</div>
+                <div class="mel-row demo-row-gap">
+                    <div class="mel-col mel-span-24"><div class="demo-grid-bg">mel-span-24</div></div>
+                </div>
+                <div class="block-subtitle">示例2：两列各12份（50%+50%）</div>
+                <div class="mel-row demo-row-gap">
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg">mel-span-12</div></div>
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-12</div></div>
+                </div>
+                <div class="block-subtitle">示例3：三列各8份（1/3均分）</div>
+                <div class="mel-row demo-row-gap">
+                    <div class="mel-col mel-span-8"><div class="demo-grid-bg">mel-span-8</div></div>
+                    <div class="mel-col mel-span-8"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-8</div></div>
+                    <div class="mel-col mel-span-8"><div class="demo-grid-bg">mel-span-8</div></div>
+                </div>
+                <div class="block-subtitle">示例4：四列各6份（1/4均分）</div>
+                <div class="mel-row demo-row-gap">
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                </div>
+<pre><code class="language-html">&lt;div class="mel-row"&gt;
+  &lt;div class="mel-col mel-span-24"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-24&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="mel-row"&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-12&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-12&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="mel-row"&gt;
+  &lt;div class="mel-col mel-span-8"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-8&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-8"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-8&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-8"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-8&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="mel-row"&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+            </div>
+        </div>
+    </div>
+    <h2>二、分栏间隔</h2>
+    <div class="block-group">
+        <div class="block-group__title">1、主推 type 全套间距</div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">
+                    使用 <span class="inline-code">mel-row--type-{name}</span>，一个类同时设置：列间距、col自动换行行距、mel-row之间垂直间距。每个示例包含两组mel-row，用于同时观察【row内部col换行间距】和【多个mel-row之间间距】。
+                </div>
+                <div class="block-subtitle">mel-row--type-default 默认(20px，普通后台表单)</div>
+                <div class="mel-row mel-row--type-default">
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6(第二行)</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6(第二行)</div></div>
+                </div>
+                <div class="mel-row mel-row--type-default">
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg">第二组mel-row</div></div>
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg demo-grid-bg-dark">第二组mel-row</div></div>
+                </div>
+<pre><code class="language-html">&lt;div class="mel-row mel-row--type-default"&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6(第二行)&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6(第二行)&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="mel-row mel-row--type-default"&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg"&gt;第二组mel-row&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;第二组mel-row&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                <div class="block-subtitle">mel-row--type-loose 宽松(15px，详情页、大卡片)</div>
+                <div class="mel-row mel-row--type-loose">
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                </div>
+                <div class="mel-row mel-row--type-loose">
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg">第二组mel-row</div></div>
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg demo-grid-bg-dark">第二组mel-row</div></div>
+                </div>
+<pre><code class="language-html">&lt;div class="mel-row mel-row--type-loose"&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="mel-row mel-row--type-loose"&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg"&gt;第二组mel-row&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;第二组mel-row&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                <div class="block-subtitle">mel-row--type-moderate 适中(10px，列表页中等密度)</div>
+                <div class="mel-row mel-row--type-moderate">
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                </div>
+                <div class="mel-row mel-row--type-moderate">
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg">第二组mel-row</div></div>
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg demo-grid-bg-dark">第二组mel-row</div></div>
+                </div>
+<pre><code class="language-html">&lt;div class="mel-row mel-row--type-moderate"&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="mel-row mel-row--type-moderate"&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg"&gt;第二组mel-row&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;第二组mel-row&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                <div class="block-subtitle">mel-row--type-compact 紧凑(5px，工作台、弹窗内部)</div>
+                <div class="mel-row mel-row--type-compact">
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                </div>
+                <div class="mel-row mel-row--type-compact">
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg">第二组mel-row</div></div>
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg demo-grid-bg-dark">第二组mel-row</div></div>
+                </div>
+<pre><code class="language-html">&lt;div class="mel-row mel-row--type-compact"&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="mel-row mel-row--type-compact"&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg"&gt;第二组mel-row&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;第二组mel-row&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                <div class="block-tip">
+                    <strong>注意：</strong>不要和下面独立间距修饰符混用，会造成间距叠加。需要1px/2px这种特殊尺寸，移除type，自行写style。
+                </div>
+            </div>
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">
+                    2、备选：独立间距修饰符（特殊场景使用，不推荐日常业务）。<strong>禁止与 <span class="inline-code">mel-row--type-*</span> 写在同一个mel-row上。</strong>
+                </div>
+                <div class="block-subtitle">mel-row--col-gap：仅开启列间距20px</div>
+                <div class="mel-row mel-row--col-gap">
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                </div>
+<pre><code class="language-html">&lt;div class="mel-row mel-row--col-gap"&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                <div class="block-subtitle">mel-row--row-gap：仅row内部col换行垂直间距20px</div>
+                <div class="mel-row mel-row--row-gap">
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6(第二行)</div></div>
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6(第二行)</div></div>
+                </div>
+<pre><code class="language-html">
+&lt;div class="mel-row mel-row--row-gap"&gt;
+    &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+    &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+    &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+    &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+    &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6(第二行)&lt;/div&gt;&lt;/div&gt;
+    &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6(第二行)&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+                <div class="block-subtitle">mel-row--space：仅设置mel-row自身margin-bottom:20px</div>
+                <div class="mel-row mel-row--space">
+                    <div class="mel-col mel-span-12"><div class="demo-grid-bg">带space的row</div></div>
+                </div>
+                <div class="mel-row">
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg demo-grid-bg-dark">普通row，紧贴上方</div></div>
+                </div>
+<pre><code class="language-html">&lt;div class="mel-row mel-row--space"&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg"&gt;带space的row&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="mel-row"&gt;
+  &lt;div class="mel-col mel-span-12"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;普通row，紧贴上方&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                <div class="block-tip">
+                    <strong>适用场景：</strong>当你只想要列间距，不想要垂直间距，才使用这套；绝大多数业务优先使用type全套。
+                </div>
+            </div>
+        </div>
+    </div>
+    <h2>三、分栏偏移</h2>
+    <div class="block-group">
+        <div class="block-group__title">1、mel-offset-N 列偏移</div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">mel-offset-N 向右偏移N个栅格，N取值0~23。浏览全部效果，下方提供全部示例完整代码。</div>
+                <div class="block-subtitle">
+                    示例：第1行：6份 + 偏移6份 + 6份；第2行：偏移6份 + 4份 + 偏移8份 + 4份
+                </div>
+                <div class="mel-row demo-row-gap">
+                    <div class="mel-col mel-span-6"><div class="demo-grid-bg">mel-span-6</div></div>
+                    <div class="mel-col mel-span-6 mel-offset-6"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-6 mel-offset-6</div></div>
+                </div>
+                <div class="mel-row demo-row-gap">
+                    <div class="mel-col mel-span-4 mel-offset-6"><div class="demo-grid-bg">mel-span-4 mel-offset-4</div></div>
+                    <div class="mel-col mel-span-4 mel-offset-8"><div class="demo-grid-bg demo-grid-bg-dark">mel-span-4 mel-offset-8</div></div>
+                </div>
+<pre>
+    <code class="language-html">
+    &lt;div class="mel-row demo-row-gap"&gt;
+        &lt;div class="mel-col mel-span-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-6&lt;/div&gt;&lt;/div&gt;
+        &lt;div class="mel-col mel-span-6 mel-offset-6"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-6 mel-offset-6&lt;/div&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="mel-row demo-row-gap"&gt;
+        &lt;div class="mel-col mel-span-4 mel-offset-6"&gt;&lt;div class="demo-grid-bg"&gt;mel-span-4 mel-offset-4&lt;/div&gt;&lt;/div&gt;
+        &lt;div class="mel-col mel-span-4 mel-offset-8"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;mel-span-4 mel-offset-8&lt;/div&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    </code>
+</pre>
+                <div class="block-tip">
+                    <strong>注意：</strong>offset不要和 <span class="inline-code">mel-row--type-*</span> / <span class="inline-code">mel-row--col-gap</span> 一起使用，padding会造成偏移错位。
+                </div>
+            </div>
+        </div>
+    </div>
+    <h2>四、混合布局（栅格嵌套）</h2>
+    <div class="block-group">
+        <div class="block-group__title">1、mel-col内部嵌套mel-row</div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">在mel-col内部继续使用mel-row/mel-col，实现复杂布局。</div>
+                <div class="mel-row mel-row--col-gap">
+                    <div class="mel-col mel-span-16">
+                        <div class="demo-grid-bg" style="padding:10px;">
+                            <div class="mel-row" style="margin:0;">
+                                <div class="mel-col mel-span-12" style="padding:0 5px;"><div class="demo-grid-bg demo-grid-bg-dark">嵌套 mel-span-12</div></div>
+                                <div class="mel-col mel-span-12" style="padding:0 5px;"><div class="demo-grid-bg demo-grid-bg-dark">嵌套 mel-span-12</div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mel-col mel-span-8">
+                        <div class="demo-grid-bg" style="line-height:80px;min-height:80px;">mel-span-8</div>
+                    </div>
+                </div>
+<pre><code class="language-html">&lt;div class="mel-row mel-row--col-gap"&gt;
+  &lt;div class="mel-col mel-span-16"&gt;
+    &lt;div class="demo-grid-bg" style="padding:10px;"&gt;
+      &lt;div class="mel-row" style="margin:0;"&gt;
+        &lt;div class="mel-col mel-span-12" style="padding:0 5px;"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;嵌套 mel-span-12&lt;/div&gt;&lt;/div&gt;
+        &lt;div class="mel-col mel-span-12" style="padding:0 5px;"&gt;&lt;div class="demo-grid-bg demo-grid-bg-dark"&gt;嵌套 mel-span-12&lt;/div&gt;&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="mel-col mel-span-8"&gt;
+    &lt;div class="demo-grid-bg" style="line-height:80px;min-height:80px;"&gt;mel-span-8&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+            </div>
+        </div>
+    </div>
+    <h2>五、表单布局‑edit编辑模式</h2>
+    <div class="block-group">
+        <div class="block-group__title">1、mel-form-item--edit</div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">弹窗/抽屉编辑表单，标签固定110px右对齐。</div>
+                <div class="demo-form-panel">
+                    <div class="mel-row mel-row--type-default">
+                        <div class="mel-col mel-span-12">
+                            <div class="mel-form-item mel-form-item--edit">
+                                <div class="mel-form-item__hd"><span class="mel-form-item__required">*</span>供应商名称</div>
+                                <div class="mel-form-item__bd">
+                                    <input type="text" class="mel-form-ctrl" placeholder="请输入供应商名称">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mel-col mel-span-12">
+                            <div class="mel-form-item mel-form-item--edit">
+                                <div class="mel-form-item__hd">联系人</div>
+                                <div class="mel-form-item__bd">
+                                    <input type="text" class="mel-form-ctrl" placeholder="请输入联系人">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+<pre><code class="language-html">&lt;div class="demo-form-panel"&gt;
+  &lt;div class="mel-row mel-row--type-default"&gt;
+    &lt;div class="mel-col mel-span-12"&gt;
+      &lt;div class="mel-form-item mel-form-item--edit"&gt;
+        &lt;div class="mel-form-item__hd"&gt;&lt;span class="mel-form-item__required"&gt;*&lt;/span&gt;供应商名称&lt;/div&gt;
+        &lt;div class="mel-form-item__bd"&gt;
+          &lt;input type="text" class="mel-form-ctrl" placeholder="请输入供应商名称"&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="mel-col mel-span-12"&gt;
+      &lt;div class="mel-form-item mel-form-item--edit"&gt;
+        &lt;div class="mel-form-item__hd"&gt;联系人&lt;/div&gt;
+        &lt;div class="mel-form-item__bd"&gt;
+          &lt;input type="text" class="mel-form-ctrl" placeholder="请输入联系人"&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                <div class="block-subtitle">表单校验提示演示：mel-form-ctrl 控件基类、mel-form-item--error 错误态、mel-form-item__tip 校验提示文字</div>
+                <div class="demo-form-panel">
+                    <div class="mel-row mel-row--type-default">
+                        <div class="mel-col mel-span-12">
+                            <div class="mel-form-item mel-form-item--edit mel-form-item--error">
+                                <div class="mel-form-item__hd">账号</div>
+                                <div class="mel-form-item__bd">
+                                    <input class="mel-form-ctrl" value="非法账号">
+                                    <span class="mel-form-item__tip">账号格式不正确，请重新输入</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mel-col mel-span-12">
+                            <div class="mel-form-item mel-form-item--edit">
+                                <div class="mel-form-item__hd">备注</div>
+                                <div class="mel-form-item__bd">
+                                    <textarea class="mel-form-ctrl" placeholder="文本域同样使用 mel-form-ctrl"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+<pre><code class="language-html">&lt;div class="demo-form-panel"&gt;
+  &lt;div class="mel-row mel-row--type-default"&gt;
+    &lt;div class="mel-col mel-span-12"&gt;
+      &lt;div class="mel-form-item mel-form-item--edit mel-form-item--error"&gt;
+        &lt;div class="mel-form-item__hd"&gt;账号&lt;/div&gt;
+        &lt;div class="mel-form-item__bd"&gt;
+          &lt;input class="mel-form-ctrl" value="非法账号"&gt;
+          &lt;span class="mel-form-item__tip"&gt;账号格式不正确，请重新输入&lt;/span&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="mel-col mel-span-12"&gt;
+      &lt;div class="mel-form-item mel-form-item--edit"&gt;
+        &lt;div class="mel-form-item__hd"&gt;备注&lt;/div&gt;
+        &lt;div class="mel-form-item__bd"&gt;
+          &lt;textarea class="mel-form-ctrl" placeholder="文本域同样使用 mel-form-ctrl"&gt;&lt;/textarea&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+            </div>
+        </div>
+    </div>
+    <h2>六、表单布局‑search查询模式</h2>
+    <div class="block-group">
+        <div class="block-group__title">1、mel-form-item--search 查询条件区</div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">页面顶部查询条件；大屏标签与输入框同一行；<strong>拖动浏览器窗口缩放，观察布局变化</strong>；视口小于768px自动上下堆叠（纯CSS，不依赖JS）。</div>
+                <div class="demo-form-panel">
+                    <div class="mel-row mel-row--type-default">
+                        <div class="mel-col mel-span-6">
+                            <div class="mel-form-item mel-form-item--search">
+                                <div class="mel-form-item__hd">供应商名称</div>
+                                <div class="mel-form-item__bd">
+                                    <input class="mel-form-ctrl" placeholder="请输入">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mel-col mel-span-6">
+                            <div class="mel-form-item mel-form-item--search">
+                                <div class="mel-form-item__hd">联系人</div>
+                                <div class="mel-form-item__bd">
+                                    <input class="mel-form-ctrl" placeholder="请输入">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+<pre><code class="language-html">&lt;div class="demo-form-panel"&gt;
+  &lt;div class="mel-row mel-row--type-default"&gt;
+    &lt;div class="mel-col mel-span-6"&gt;
+      &lt;div class="mel-form-item mel-form-item--search"&gt;
+        &lt;div class="mel-form-item__hd"&gt;供应商名称&lt;/div&gt;
+        &lt;div class="mel-form-item__bd"&gt;
+          &lt;input class="mel-form-ctrl" placeholder="请输入"&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="mel-col mel-span-6"&gt;
+      &lt;div class="mel-form-item mel-form-item--search"&gt;
+        &lt;div class="mel-form-item__hd"&gt;联系人&lt;/div&gt;
+        &lt;div class="mel-form-item__bd"&gt;
+          &lt;input class="mel-form-ctrl" placeholder="请输入"&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+                <div class="block-subtitle">手动强制上下堆叠 mel-form-item--stack（静态，不依赖脚本）</div>
+                <div class="demo-form-panel">
+                    <div class="mel-form-item mel-form-item--search mel-form-item--stack">
+                        <div class="mel-form-item__hd">窄容器场景手动强制堆叠</div>
+                        <div class="mel-form-item__bd">
+                            <input class="mel-form-ctrl" placeholder="hd、bd上下两行">
+                        </div>
+                    </div>
+                </div>
+<pre><code class="language-html">&lt;div class="demo-form-panel"&gt;
+  &lt;div class="mel-form-item mel-form-item--search mel-form-item--stack"&gt;
+    &lt;div class="mel-form-item__hd"&gt;窄容器场景手动强制堆叠&lt;/div&gt;
+    &lt;div class="mel-form-item__bd"&gt;
+      &lt;input class="mel-form-ctrl" placeholder="hd、bd上下两行"&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+                <div class="block-subtitle">JS‑容器宽度驱动自动堆叠 melui.formItemAutoStack</div>
+                <div class="block-tip">
+                    <strong>用途：</strong>解决窄容器（弹窗 / 抽屉 / 小卡片）里面表单项被挤变形，容器空间不足时，自动将标签hd与输入框bd切换为上下两行展示。
+                    <br><strong>说明：</strong>该能力不会脚本加载自动执行；必须JS手动调用；支持限定根容器、自定义阈值；实例务必调用destroy销毁，防止内存泄漏；IE9使用resize+节流降级。
+                </div>
+                <div class="demo-form-panel">
+                    <div class="demo-input-item">
+                        <label>根容器宽度(px)：</label>
+                        <input id="inpWrapWidth" type="number" value="320">
+                        <span class="tip"> （输入完成后，光标失焦，下面的容器大小会自动变化）
+                    </div>
+                    <div class="demo-input-item">
+                        <label>threshold阈值(px)：</label>
+                        <input id="inpThreshold" type="number" value="220">
+                        <span class="tip"> （点【启动容器自动堆叠】按钮，本行输入数值，当“根容器”内部元素宽度小于threshold阈值时，本行光标失去焦点后，“根容器”内部元素的显示名称和输入框会分2行显示）</span>
+                    </div>
+                    <div style="margin:8px 0;">
+                        <button type="button" id="btnStartStack">启动容器自动堆叠</button>
+                        <button type="button" id="btnStopStack">停止销毁实例</button>
+                    </div>
+                    <div> 根容器如下 </div>
+                    <div id="demo-auto-stack-wrap" class="box-dashed" style="width:320px;">
+                        <div class="mel-form-item mel-form-item--search" style="border: 1px solid purple">
+                            <div class="mel-form-item__hd">供应商简称</div>
+                            <div class="mel-form-item__bd">
+                                <input class="mel-form-ctrl" placeholder="改变容器宽度自动切换">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+<pre><code class="language-html">&lt;div class="demo-form-panel"&gt;
+    &lt;div&gt;
+        &lt;label&gt;容器宽度(px)：&lt;/label&gt;
+        &lt;input id="inpWrapWidth" type="number" value="320"&gt;
+    &lt;/div&gt;
+    &lt;div&gt;
+        &lt;label&gt;threshold阈值(px)：&lt;/label&gt;
+        &lt;input id="inpThreshold" type="number" value="220"&gt;
+    &lt;/div&gt;
+    &lt;div&gt;
+        &lt;button id="btnStartStack"&gt;启动容器自动堆叠&lt;/button&gt;
+        &lt;button id="btnStopStack"&gt;停止销毁实例&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;div id="demo-auto-stack-wrap" class="box-dashed" style="width:320px;"&gt;
+        &lt;div class="mel-form-item mel-form-item--search"&gt;
+            &lt;div class="mel-form-item__hd"&gt;供应商简称&lt;/div&gt;
+            &lt;div class="mel-form-item__bd"&gt;
+                &lt;input class="mel-form-ctrl" placeholder="改变容器宽度自动切换"&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+var autoStackIns = null;
+// 修改容器宽度
+document.getElementById('inpWrapWidth').onchange = function(){
+    var val = Number(this.value);
+    if(isNaN(val) || val &lt;=0){
+        val = 320;
+        this.value = val;
+    }
+    document.getElementById('demo-auto-stack-wrap').style.width = val + 'px';
+};
+// 修改阈值
+document.getElementById('inpThreshold').onchange = function(){
+    var val = Number(this.value);
+    if(isNaN(val) || val &lt;=0){
+        val = 220;
+        this.value = val;
+    }
+    if(autoStackIns){
+        autoStackIns.setThreshold(val);
+    }
+};
+document.getElementById('btnStartStack').addEventListener('click',function(){
+    var rootDom = document.getElementById('demo-auto-stack-wrap');
+    var thrVal = Number(document.getElementById('inpThreshold').value) || 220;
+    if(autoStackIns){
+        alert('实例已启动，请勿重复创建');
+        return;
+    }
+    autoStackIns = melui.formItemAutoStack({
+        root: rootDom,
+        threshold: thrVal
+    });
+    alert('已启动容器自动堆叠监听，当前阈值：'+ thrVal +' px');
+});
+document.getElementById('btnStopStack').addEventListener('click',function(){
+    if(!autoStackIns){
+        alert('当前没有运行中的实例');
+        return;
+    }
+    autoStackIns.destroy();
+    autoStackIns = null;
+    alert('已销毁自动堆叠实例，表单项布局已还原');
+});
+&lt;/script&gt;</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <h2>七、必填星号位置</h2>
+    <div class="block-group">
+        <div class="block-group__title">1、三种摆放位置</div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">mel-form-item__required 星号位置由HTML书写顺序决定，CSS只统一颜色样式。</div>
+                <div class="demo-form-panel">
+                    <div class="mel-row mel-row--type-default">
+                        <div class="mel-col mel-span-8">
+                            <div class="mel-form-item mel-form-item--edit">
+                                <div class="mel-form-item__hd"><span class="mel-form-item__required">*</span>星号在文字前</div>
+                                <div class="mel-form-item__bd"><input class="mel-form-ctrl"></div>
+                            </div>
+                        </div>
+                        <div class="mel-col mel-span-8">
+                            <div class="mel-form-item mel-form-item--edit">
+                                <div class="mel-form-item__hd">星号在文字后<span class="mel-form-item__required">*</span></div>
+                                <div class="mel-form-item__bd"><input class="mel-form-ctrl"></div>
+                            </div>
+                        </div>
+                        <div class="mel-col mel-span-8">
+                            <div class="mel-form-item mel-form-item--edit">
+                                <div class="mel-form-item__hd">星号输入框后</div>
+                                <div class="mel-form-item__bd">
+                                    <input class="mel-form-ctrl" style="width:calc(100% - 22px);display:inline-block;">
+                                    <span class="mel-form-item__required" style="margin-left:4px;">*</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+<pre><code class="language-html">&lt;div class="demo-form-panel"&gt;
+  &lt;div class="mel-row mel-row--type-default"&gt;
+    &lt;div class="mel-col mel-span-8"&gt;
+      &lt;div class="mel-form-item mel-form-item--edit"&gt;
+        &lt;div class="mel-form-item__hd"&gt;&lt;span class="mel-form-item__required"&gt;*&lt;/span&gt;星号在文字前&lt;/div&gt;
+        &lt;div class="mel-form-item__bd"&gt;&lt;input class="mel-form-ctrl"&gt;&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="mel-col mel-span-8"&gt;
+      &lt;div class="mel-form-item mel-form-item--edit"&gt;
+        &lt;div class="mel-form-item__hd"&gt;星号在文字后&lt;span class="mel-form-item__required"&gt;*&lt;/span&gt;&lt;/div&gt;
+        &lt;div class="mel-form-item__bd"&gt;&lt;input class="mel-form-ctrl"&gt;&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <h2>八、类名速查表（API）</h2>
+    <div class="block-group">
+        <div class="block-group__title"> 1、栅格系统类名</div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>类名</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><span class="inline-code">mel-row</span></td><td>栅格行容器</td></tr>
+                        <tr><td><span class="inline-code">mel-col</span></td><td>栅格列容器</td></tr>
+                        <tr><td><span class="inline-code">mel-span-1~24</span></td><td>列占比，1~24</td></tr>
+                        <tr><td><span class="inline-code">mel-offset-0~23</span></td><td>列向左偏移栅格数，0~23</td></tr>
+                    </tbody>
+                </table>
+                <p><strong> 主推：全套间距 type 修饰符</strong></p>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>类名</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><span class="inline-code">mel-row--type-default</span></td><td>默认全套间距20px（普通后台表单）</td></tr>
+                        <tr><td><span class="inline-code">mel-row--type-loose</span></td><td>宽松全套间距15px（详情页、大卡片）</td></tr>
+                        <tr><td><span class="inline-code">mel-row--type-moderate</span></td><td>适中全套间距10px（列表页中等密度）</td></tr>
+                        <tr><td><span class="inline-code">mel-row--type-compact</span></td><td>紧凑全套间距5px（工作台、弹窗内部）</td></tr>
+                    </tbody>
+                </table>
+                <p><strong>备选独立间距修饰符（慎用，不要和type混用）</strong></p>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>类名</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><span class="inline-code">mel-row--col-gap</span></td><td>仅开启列间距20px</td></tr>
+                        <tr><td><span class="inline-code">mel-row--row-gap</span></td><td>仅row内部col换行垂直间距20px</td></tr>
+                        <tr><td><span class="inline-code">mel-row--space</span></td><td>仅mel-row增加margin‑bottom:20px</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="block-group__title"> 2、表单布局类名</div>
+        <div class="block-group__content">
+            <div class="block-group__content_box">
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>类名</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><span class="inline-code">mel-form-item</span></td><td>表单单元外层容器（一个单元=标签+控件，已移除自带margin‑bottom）</td></tr>
+                        <tr><td><span class="inline-code">mel-form-item__hd</span></td><td>表单标签头部</td></tr>
+                        <tr><td><span class="inline-code">mel-form-item__bd</span></td><td>表单控件主体区域</td></tr>
+                        <tr><td><span class="inline-code">mel-form-item--edit</span></td><td>编辑模式：标签固定110px右对齐</td></tr>
+                        <tr><td><span class="inline-code">mel-form-item--search</span></td><td>查询模式：标签自适应，大屏同行；CSS视口768px断点自动堆叠</td></tr>
+                        <tr><td><span class="inline-code">mel-form-item--stack</span></td><td>强制hd/bd上下堆叠；formItemAutoStack脚本动态增删该类</td></tr>
+                        <tr><td><span class="inline-code">mel-form-item--error</span></td><td>错误校验态，控件边框变红</td></tr>
+                        <tr><td><span class="inline-code">mel-form-ctrl</span></td><td>表单控件基类：input/textarea/select统一加此类</td></tr>
+                        <tr><td><span class="inline-code">mel-form-item__required</span></td><td>必填红色星号，位置由HTML书写顺序控制</td></tr>
+                        <tr><td><span class="inline-code">mel-form-item__tip</span></td><td>校验错误提示文字，放在bd内部</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="block-group__title"> 3、工具API</div>
+        <div class="block-group__content">
+<pre>
+<code class="language-text">
+melui.formItemAutoStack(options)
+功能：监听容器宽度，对 mel‑form‑item‑‑search 自动增删 mel‑form‑item‑‑stack
+用途：解决窄容器（弹窗 / 抽屉 / 小卡片）里面表单项被挤变形，容器空间不足时，自动将标签hd与输入框bd切换为上下两行展示。
+参数 options：
+‑ root：限定监听根DOM节点；不传默认 document
+‑ threshold：堆叠判定阈值px，默认220
+返回实例对象：{ destroy:function(), setThreshold:function(val) }
+destroy()：组件销毁务必调用destroy，释放监听，并且清除stack类还原布局，防止内存泄漏
+setThreshold(val)：运行时动态修改阈值
+兼容：现代浏览器 ResizeObserver；IE9‑IE11降级 resize+节流定时器
+注意：脚本加载不会自动执行，业务必须手动调用；支持同一个root防重复调用。
+</code>
+</pre>
+        </div>
+    </div>
+
+    <!-- 【重要】 layout.js 用来设置表单自动堆叠功能：即显示名称和文本框分2行显示 -->
+    
+
+    <!-- demo演示脚本 -->
+    <script>
+    var autoStackIns = null;
+    // 修改容器宽度
+    document.getElementById('inpWrapWidth').onchange = function(){
+        var val = Number(this.value);
+        if(isNaN(val) || val <=0){
+            val = 320;
+            this.value = val;
+        }
+        document.getElementById('demo-auto-stack-wrap').style.width = val + 'px';
+    };
+    // 修改阈值
+    document.getElementById('inpThreshold').onchange = function(){
+        var val = Number(this.value);
+        if(isNaN(val) || val <=0){
+            val = 220;
+            this.value = val;
+        }
+        if(autoStackIns){
+            autoStackIns.setThreshold(val);
+        }
+    };
+    document.getElementById('btnStartStack').addEventListener('click',function(){
+        var rootDom = document.getElementById('demo-auto-stack-wrap');
+        var thrVal = Number(document.getElementById('inpThreshold').value) || 220;
+        if(autoStackIns){
+            alert('实例已启动，请勿重复创建');
+            return;
+        }
+        autoStackIns = melui.formItemAutoStack({
+            root: rootDom,
+            threshold: thrVal
+        });
+        alert('已启动容器自动堆叠监听，当前阈值：'+ thrVal +' px');
+    });
+    document.getElementById('btnStopStack').addEventListener('click',function(){
+        if(!autoStackIns){
+            alert('当前没有运行中的实例');
+            return;
+        }
+        autoStackIns.destroy();
+        autoStackIns = null;
+        alert('已销毁自动堆叠实例，表单项布局已还原');
+    });
+
+        if(window.hljs){
+            hljs.highlightAll();
+        }
+    </script>
+</body>
+</html>

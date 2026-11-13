@@ -1,7 +1,7 @@
 
 //----------------------------------------
 // CSS打包处理：打包各个组件的CSS + 公用CSS
-// 将以下css会被`独立 node 脚本`build‑css.js`处理并生成“开发版 + 版本min版”两个版本的CSS文件到指定目录dist
+// 将以下css会被`独立 node 脚本`build‑css.js`处理并生成“开发版 + 版本min版”两个版本的CSS文件到指定目录release/dist
 //----------------------------------------
 
 
@@ -14,19 +14,19 @@ const cssnano = require('cssnano');
 // 公共基础样式数组，可以多个，后续扩展直接往数组追加
 // --------------------------
 const baseStyles = [
-  { name: 'layout', src: 'src/styles/layout.css', outDir: 'dist/common' },
-  { name: 'button', src: 'src/styles/button.css', outDir: 'dist/common' }
+  { name: 'layout', src: 'src/components/layout/index.css', outDir: 'release/dist/layout' },
+  { name: 'button', src: 'src/components/button/index.css', outDir: 'release/dist/button' }
 ];
 
 // --------------------------
 // 业务组件数组
 // --------------------------
 const components = [
-  { name: 'dialog', src: 'src/components/dialog/index.css', outDir: 'dist/dialog' },
-  { name: 'datePicker', src: 'src/components/datePicker/index.css', outDir: 'dist/datePicker' },
-  { name: 'drawer', src: 'src/components/drawer/index.css', outDir: 'dist/drawer' },
-  { name: 'pagination', src: 'src/components/pagination/index.css', outDir: 'dist/pagination' },
-  { name: 'table', src: 'src/components/table/index.css', outDir: 'dist/table' }
+  { name: 'dialog', src: 'src/components/dialog/index.css', outDir: 'release/dist/dialog' },
+  { name: 'datePicker', src: 'src/components/datePicker/index.css', outDir: 'release/dist/datePicker' },
+  { name: 'drawer', src: 'src/components/drawer/index.css', outDir: 'release/dist/drawer' },
+  { name: 'pagination', src: 'src/components/pagination/index.css', outDir: 'release/dist/pagination' },
+  { name: 'table', src: 'src/components/table/index.css', outDir: 'release/dist/table' }
 ];
 
 /**

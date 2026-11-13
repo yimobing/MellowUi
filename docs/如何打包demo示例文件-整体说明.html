@@ -1,0 +1,198 @@
+------------------------------------------
+## 两种主流打包策略
+------------------------------------------
+### 策略 A：分开打包（推荐，大厂常用，适合你）
+
+1. Rollup 打包**库代码（src/**） → 输出到 `dist/` 根，js/css，这是**给业务开发者使用**的
+2. 单独打包 / 复制**示例页面 examples/** → 输出到 `dist/demo/`，仅预览，业务项目**不会引入这里的 js**
+
+> 
+> 源码侧，示例 html 不要写在 src 下面，单独新建 `examples/` 文件夹，和 src 同级。
+
+```
+源码根目录
+├─ src/                  # 源码（core/components/util/styles）
+├─ examples/             # 所有demo页面，写在这里，和src平级
+│  ├─ loading.html
+│  ├─ spinner.html
+│  ├─ button.html
+│  ├─ table.html
+│  └─ grid.html
+├─ rollup.config.js
+└─ package.json
+```
+
+------------------------------------------
+  具体怎么打包Html示例文件的
+### 策略 A 里面，一般大厂本地测试时肯定是组件一个个引入，比如我们的table引用很多个js，但是打包后的示例肯定只引入一个table.js table.css或 melui.js, melui.css，它们打包时这些示例文件难道要一个个修改？还是说本地测试时就引入打包后的文件进行测试的
+------------------------------------------
+# 核心一句话
+
+**两套环境，两套引用写法，不是手动一个个改html！靠脚本自动替换路径。**
+
+> 
+> 本地开发（examples/*.html）：直接引入 src 源码，分组件逐个加载，改代码浏览器立刻刷新调试。
+> 打包发布（dist/demo/*.html）：脚本批量替换html里面script/link路径，统一改成引用 `../melui.min.js` / `../melui.min.css`。
+
+大厂不会人工逐个修改demo页面，人工改会漏、容易出错。
+
+## 1. 本地开发阶段（examples目录，写组件、调试）
+
+examples下面每一个demo html，**直接引用src源码**，拆分引入各个组件js/css。
+examples/table.html：
+
+```
+<!-- 本地开发，直接加载src源码，方便调试 -->
+<link rel="stylesheet" href="../src/styles/reset.css">
+<link rel="stylesheet" href="../src/components/table/index.css">
+<link rel="stylesheet" href="../src/components/button/index.css">
+
+<script src="../src/util/index.js"></script>
+<script src="../src/core/index.js"></script>
+<script src="../src/components/table/index.js"></script>
+<script src="../src/components/button/index.js"></script>
+```
+
+✅ 好处：
+
+1. 改src下面任意js/css，刷新页面立刻看到效果，**不需要每次都执行rollup打包**，开发效率极高
+2. 调试可以直接断点进table、spinner源码，看原始代码，不是压缩后的产物
+3. 开发阶段哪里报错，直接定位到对应组件源码
+
+> 
+> 这就是你说的：本地测试组件一个个引入。
+
+## 2. 打包构建阶段（npm run build）
+
+打包脚本做两件独立任务：
+
+1. Rollup编译src，输出 `dist/melui.js、melui.min.js、melui.css`
+2. **遍历examples目录全部html，文本替换**，把所有 `../src/xxx` 批量替换成 `../melui.min.*`，复制输出到dist/demo/
+
+替换后 dist/demo/table.html 自动变成：
+
+```
+<!-- 打包后的demo，引用打包后的整包产物 -->
+<link rel="stylesheet" href="../melui.min.css">
+<script src="../melui.min.js"></script>
+```
+
+> 
+> 全部html一次性批量替换，**不需要手动改任何一个html文件**。
+
+### 实现方式（rollup-plugin-copy + transform文本替换，适合你的项目）
+
+rollup-plugin-copy 可以在复制文件的时候，对html内容做正则替换：
+
+- 正则匹配：`\.\.\/src\/.+?\.js`
+- 全部替换为 `../melui.min.js`
+- css同理替换为 `../melui.min.css`
+
+## 3. 备选方案（小库简单方案，不推荐长期维护，仅做了解）
+
+开发环境直接引用打包后的dist文件：每次修改src，都要重新rollup打包一遍，再刷新demo页面。
+❌ 缺点：每次改一行代码，都要等打包，开发调试非常慢，IE9调试本来就卡，这个方案体验很差。大厂组件库基本不用这个作为主开发模式。
+
+## 4. 边界问题澄清（你最关心的）
+
+> 
+> 疑问：打包后的示例全部只引入melui.min.js，那示例页面的逻辑是否和真实用户使用完全一致？
+> ✅ 是的。
+> 业务使用者，就是 `<script src="melui.min.js">`。dist/demo里面的html就是模拟真实业务项目的引入方式，用来给别人预览，验证打包后的最终产物有没有bug。
+
+> 
+> 两套环境的职责划分
+
+- `examples/*.html`：**开发调试专用**，引用src源码，开发写组件、调样式、IE调试。
+- `dist/demo/*.html`：**发布预览专用**，自动替换路径，引用打包后的完整melui包，对外展示效果。源码examples保留不变，不会被修改。
+
+## 5. 特殊情况：如果后面做「单组件独立打包产物」
+
+当你后续需要支持按需引入（dist/button/index.js这种单独组件文件）：
+打包脚本会有两套替换规则：
+
+- 完整版demo：引用melui.min.js
+- 按需引入demo：单独引入dist/button/index.js、dist/table/index.js> 
+> 你第一版不用做这个，先只做整包。
+
+## 6. 给melui的工程建议
+
+1. examples文件夹和src同级，所有demo html写在这里，本地调试引用src源码。**examples文件永久保留，不提交dist**。
+2. rollup打包脚本，使用rollup-plugin-copy，复制examples到dist/demo，同时执行正则替换html资源路径。
+3. 开发命令 `npm run dev`：启动静态服务器直接打开examples下html，不用打包。
+4. 打包命令 `npm run build`：rollup编译src + 复制+替换examples输出dist/demo。
+
+## 7. 潜在坑（重点）
+
+1. 正则替换一定要谨慎，不要误替换html内其他文本，只替换 `<link>` 和 `<script>`标签内的资源路径。
+2. 路径相对关系：examples里是`../src`，dist/demo里是`../melui.min.js`，层级不一样，写正则的时候要留意相对路径。
+3. 替换只发生在打包复制阶段，**原始examples的html文件不会被改动**。
+
+
+
+-------------------------------------------
+## rollup-plugin-copy 是什么？
+------------------------------------------
+# 一句话重点
+**不是 VSCode 插件！是 Node.js / Rollup 的打包插件（npm包），运行在命令行 `npm run build` 打包阶段，和编辑器无关。**
+
+## 简单解释
+- VSCode插件：在编辑器里面运行（侧边栏、右键菜单、代码提示），编辑器界面操作。
+- `rollup-plugin-copy`：**rollup构建插件**，属于项目开发依赖，写在 `rollup.config.js`，执行打包脚本的时候才会执行。
+- `transform` 是这个插件的其中一个配置项：复制文件的时候，可以读取文件内容、替换文本，正好用来改html里面script、link路径。
+
+## 安装方式（你的项目node v13.14 / npm6）
+```bash
+npm install rollup-plugin-copy --save-dev
+```
+
+## rollup.config.js 示例（适配你的examples复制+html路径替换）
+```js
+const copy = require('rollup-plugin-copy');
+
+module.exports = {
+  input: 'src/index.js',
+  output: [
+    // 打包melui主包配置...
+  ],
+  plugins: [
+    copy({
+      targets: [
+        {
+          src: 'examples/**/*.html',
+          dest: 'dist/demo',
+          transform: function (contents, filename) {
+            var html = contents.toString();
+            // 正则：把所有 ../src/xxx.js 替换成 ../melui.min.js
+            html = html.replace(/\.\.\/src\/.+?\.js/g, '../melui.min.js');
+            html = html.replace(/\.\.\/src\/.+?\.css/g, '../melui.min.css');
+            return html;
+          }
+        }
+      ]
+    })
+  ]
+}
+```
+> 执行 `npm run build` 的一瞬间，才会：
+> 1. 读取 examples/ 全部html
+> 2. transform回调执行正则替换内容
+> 3. 输出修改后的html到 `dist/demo`
+> 原始examples目录html**不会改动**
+
+## 备选简易方案（如果rollup-plugin-copy版本兼容踩坑，IE老node环境）
+不想用这个插件，也可以单独写一个小node脚本 `build-copy.js`，用`fs`+`fs-extra`遍历examples，读取html、正则替换，写入dist/demo。
+> 好处：逻辑独立，不依赖rollup插件，老node环境兼容性更好；缺点需要自己手写遍历文件代码。
+
+## 区分两条工作流，别混淆
+1. **开发阶段 npm run dev**：直接打开examples/*.html，读取src源码，**完全不走rollup-plugin-copy**。
+2. **打包发布 npm run build**：触发rollup，执行rollup-plugin-copy，复制+替换html，生成dist产物。
+
+## 潜在坑提醒（你的node v13）
+`rollup-plugin-copy` 新版本对node版本要求比较高，**建议锁定较低版本**，避免报错：
+```bash
+npm install rollup-plugin-copy@3.4.0 --save-dev
+```
+3.4.0 可以兼容node12+，适配你v13.14环境。
+
+如果你想，我可以写独立的node脚本版本（不依赖rollup-plugin-copy），方便备选。

@@ -10,6 +10,7 @@ import { terser } from 'rollup-plugin-terser';
 import postcss from 'rollup-plugin-postcss';
 import cssnano from 'cssnano';
 import autoprefixer from 'autoprefixer';
+import copy from 'rollup-plugin-copy';
 
 
 
@@ -138,10 +139,84 @@ function createCssProd() {
 
 
 
+// =====================【新增】copyDemoPlugin：复制&处理demo示例文件 =====================
+const copyDemoPlugin = copy({
+  verbose: true,
+  targets: [
+    {
+      src: 'demo/**/*.html',
+      dest: 'release/test',
+      transform(contents) {
+        let html = contents.toString('utf8');
+
+        // 删除所有含有 src="../src/components/*.js 的script标签，兼容带type/id等任意属性
+        html = html.replace(/<script\b[^>]*src="\.\.\/src\/components[^"]+\.js"[^>]*><\/script>/gi, '');
+        // 删除所有含有 href="../src/components/*.css 的link标签，兼容任意属性、兼容自闭合 <link ... />
+        html = html.replace(/<link\b[^>]*href="\.\.\/src\/components[^"]+\.css"[^>]*\/?>/gi, '');
+
+        // polyfill 脚本路径替换
+        html = html.replace(
+          /<script\b[^>]*src="\.\.\/src\/polyfill\/([^"]+\.js)"[^>]*><\/script>/gi,
+          '<script src="./polyfill/$1"></script>'
+        );
+
+        // 在 </head> 之前注入打包后的css、js
+        const injectCss = '<link rel="stylesheet" href="../dist/melui.min.css">';
+        const injectJs = '<script src="../dist/melui.min.js"><\/script>';
+        html = html.replace(/<\/head>/i, `${injectCss}\n${injectJs}\n</head>`);
+
+        return html;
+      }
+    },
+    {
+      // demo 目录自身静态资源原样复制：css
+      src: ['demo/**/*.css'],
+      dest: 'release/test/css'
+    },
+    {
+      // demo 目录自身静态资源原样复制：图片
+      src: ['demo/**/*.png', 'demo/**/*.jpg', 'demo/**/*.gif'],
+      dest: 'release/test/img'
+    },
+    {
+      // polyfill 目录自身静态资源原样复制
+      src: ['demo/**/*.js'],
+      dest: 'release/test/polyfill'
+    }
+  ]
+});
+
+
+
 
 export default [
 
-    //======================== 一. 独立组件打包 ======================== 
+    //======================== 一. 独立组件打包 ========================
+    //--------------------------------
+    //    · layout 布局组件
+    //--------------------------------
+    // layout 开发版
+    {
+      input: 'src/components/layout/index.js',
+        output: {
+            file: 'release/dist/layout/layout.js',
+            format: 'umd',
+            name: 'MelUi'
+        },
+        plugins: [createCssDev()]
+    },
+    // layout 压缩版
+    {
+        input: 'src/components/layout/index.js',
+        output: {
+            file: 'release/dist/layout/layout.min.js',
+            format: 'umd',
+            name: 'MelUi'
+        },
+        plugins: [createCssProd(), terser(terserConfig)]
+    },
+
+
     //--------------------------------
     //    · dialog 组件
     //--------------------------------
@@ -149,7 +224,7 @@ export default [
     {
         input: 'src/components/dialog/index.js',
         output: {
-            file: 'dist/dialog/dialog.js',
+            file: 'release/dist/dialog/dialog.js',
             format: 'umd',
             name: 'MelUi'
         },
@@ -159,7 +234,7 @@ export default [
     {
         input: 'src/components/dialog/index.js',
         output: {
-            file: 'dist/dialog/dialog.min.js',
+            file: 'release/dist/dialog/dialog.min.js',
             format: 'umd',
             name: 'MelUi'
         },
@@ -174,7 +249,7 @@ export default [
     {
         input: 'src/components/datePicker/index.js',
         output: {
-            file: 'dist/datePicker/datePicker.js',
+            file: 'release/dist/datePicker/datePicker.js',
             format: 'umd',
             name: 'MelUi'
         },
@@ -184,7 +259,7 @@ export default [
     {
         input: 'src/components/datePicker/index.js',
         output: {
-            file: 'dist/datePicker/datePicker.min.js',
+            file: 'release/dist/datePicker/datePicker.min.js',
             format: 'umd',
             name: 'MelUi'
         },
@@ -199,7 +274,7 @@ export default [
     {
       input: 'src/components/drawer/index.js',
         output: {
-            file: 'dist/drawer/drawer.js',
+            file: 'release/dist/drawer/drawer.js',
             format: 'umd',
             name: 'MelUi'
         },
@@ -209,7 +284,7 @@ export default [
     {
         input: 'src/components/drawer/index.js',
         output: {
-            file: 'dist/drawer/drawer.min.js',
+            file: 'release/dist/drawer/drawer.min.js',
             format: 'umd',
             name: 'MelUi'
         },
@@ -224,7 +299,7 @@ export default [
     {
       input: 'src/components/pagination/index.js',
         output: {
-            file: 'dist/pagination/pagination.js',
+            file: 'release/dist/pagination/pagination.js',
             format: 'umd',
             name: 'MelUi'
         },
@@ -234,7 +309,7 @@ export default [
     {
         input: 'src/components/pagination/index.js',
         output: {
-            file: 'dist/pagination/pagination.min.js',
+            file: 'release/dist/pagination/pagination.min.js',
             format: 'umd',
             name: 'MelUi'
         },
@@ -250,7 +325,7 @@ export default [
     {
       input: 'src/components/table/build-entry.js',
         output: {
-            file: 'dist/table/table.js',
+            file: 'release/dist/table/table.js',
             format: 'umd',
             name: 'MelUi'
         },
@@ -260,7 +335,7 @@ export default [
     {
         input: 'src/components/table/build-entry.js',
         output: {
-            file: 'dist/table/table.min.js',
+            file: 'release/dist/table/table.min.js',
             format: 'umd',
             name: 'MelUi'
         },
@@ -273,20 +348,24 @@ export default [
     {
         input: 'src/index.js',
         output: {
-            file: 'dist/melui.js',
+            file: 'release/dist/melui.js',
             format: 'umd',
             name: 'MelUi'
         },
         plugins: [createCssDev()]
     },
-    // 全量压缩版
+    // 全量压缩版【❗唯一在这里加入 copyDemoPlugin，其他bundle不要加】
     {
         input: 'src/index.js',
         output: {
-            file: 'dist/melui.min.js',
+            file: 'release/dist/melui.min.js',
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssProd(), terser(terserConfig)]
+        plugins: [
+          createCssProd(), 
+          terser(terserConfig),
+          copyDemoPlugin
+        ]
     }
 ];

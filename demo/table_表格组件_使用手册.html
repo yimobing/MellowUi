@@ -494,13 +494,13 @@
 &lt;head&gt;
     &lt;meta charset="UTF-8"&gt;
     &lt;link rel="stylesheet" href="./table/index.css"&gt;
-    &lt;script src="./table/index.js"&gt;&lt;/script&gt;
-    &lt;script src="./table/core/data-store.js"&gt;&lt;/script&gt;
-    &lt;script src="./table/core/event-bus.js"&gt;&lt;/script&gt;
-    &lt;script src="./table/core/renderer.js"&gt;&lt;/script&gt;
-    &lt;script src="./table/core/table.js"&gt;&lt;/script&gt;
-    &lt;script src="./table/plugins/plugin-base.js"&gt;&lt;/script&gt;
-    &lt;script src="./table/plugins/serial-no.js"&gt;&lt;/script&gt;
+    &lt;script src="../dist/table/index.js"&gt;&lt;/script&gt;
+    &lt;script src="../dist/table/core/data-store.js"&gt;&lt;/script&gt;
+    &lt;script src="../dist/table/core/event-bus.js"&gt;&lt;/script&gt;
+    &lt;script src="../dist/table/core/renderer.js"&gt;&lt;/script&gt;
+    &lt;script src="../dist/table/core/table.js"&gt;&lt;/script&gt;
+    &lt;script src="../dist/table/plugins/plugin-base.js"&gt;&lt;/script&gt;
+    &lt;script src="../dist/table/plugins/serial-no.js"&gt;&lt;/script&gt;
 &lt;/head&gt;
 &lt;body&gt;
 &lt;div id="table-box"&gt;&lt;/div&gt;
@@ -540,8 +540,8 @@
 
     <h3>发布版引入</h3>
     <p>打包发布后只需要一个 js + 一个 css，不用按模块逐个引入：</p>
-<pre><code>&lt;link rel="stylesheet" href="./dist/table.min.css"&gt;
-&lt;script src="./dist/table.min.js"&gt;&lt;/script&gt;
+<pre><code>&lt;link rel="stylesheet" href="../dist/table.min.css"&gt;
+&lt;script src="../dist/table.min.js"&gt;&lt;/script&gt;
 
 &lt;!-- 或者整包 --&gt;
 &lt;link rel="stylesheet" href="./dist/melui.min.css"&gt;
@@ -551,34 +551,34 @@
     <p>未打包时按「渲染器 → 核心 → 插件」的顺序引入，入口 <span class="inline-code">index.js</span> 负责把各模块挂到 <span class="inline-code">MelUi.Table</span> 命名空间。</p>
 <pre><code>&lt;!-- 入口 --&gt;
 &lt;link rel="stylesheet" href="./table/index.css"&gt;
-&lt;script src="./table/index.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/index.js"&gt;&lt;/script&gt;
 
 &lt;!-- 单元格渲染器 --&gt;
-&lt;script src="./table/cell-renderers/text.js"&gt;&lt;/script&gt;
-&lt;script src="./table/cell-renderers/input.js"&gt;&lt;/script&gt;
-&lt;script src="./table/cell-renderers/textarea.js"&gt;&lt;/script&gt;
-&lt;script src="./table/cell-renderers/radio.js"&gt;&lt;/script&gt;
-&lt;script src="./table/cell-renderers/checkbox-cell.js"&gt;&lt;/script&gt;
-&lt;script src="./table/cell-renderers/button.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/cell-renderers/text.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/cell-renderers/input.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/cell-renderers/textarea.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/cell-renderers/radio.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/cell-renderers/checkbox-cell.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/cell-renderers/button.js"&gt;&lt;/script&gt;
 
 &lt;!-- 核心 --&gt;
-&lt;script src="./table/core/data-store.js"&gt;&lt;/script&gt;
-&lt;script src="./table/core/event-bus.js"&gt;&lt;/script&gt;
-&lt;script src="./table/core/renderer.js"&gt;&lt;/script&gt;
-&lt;script src="./table/core/layout.js"&gt;&lt;/script&gt;
-&lt;script src="./table/core/table.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/core/data-store.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/core/event-bus.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/core/renderer.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/core/layout.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/core/table.js"&gt;&lt;/script&gt;
 
 &lt;!-- 插件（按需引入，不用就不要引） --&gt;
-&lt;script src="./table/plugins/plugin-base.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/serial-no.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/checkbox.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/state-column.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/sort.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/pagination.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/summary.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/header-merge.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/row-expand.js"&gt;&lt;/script&gt;
-&lt;script src="./table/plugins/export.js"&gt;&lt;/script&gt;</code></pre>
+&lt;script src="../dist/table/plugins/plugin-base.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/plugins/serial-no.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/plugins/checkbox.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/plugins/state-column.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/plugins/sort.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/plugins/pagination.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/plugins/summary.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/plugins/header-merge.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/plugins/row-expand.js"&gt;&lt;/script&gt;
+&lt;script src="../dist/table/plugins/export.js"&gt;&lt;/script&gt;</code></pre>
 
     <div class="tip">
         <b>初始化两种写法等价：</b>
