@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="">
+    <meta name="applicable-device" content="pc,mobile">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <title> MelUi Loading 加载转圈组件演示 </title>
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <!-- 源码调试：core 相关样式只需 core.css，顺序与 src/index.js 的 css 块一致 -->
+    
+    <link rel="stylesheet" href="css/demo_docs.css">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/styles/stackoverflow-light.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+    <style>
+        /* 本页 demo 专用样式，不写进 core.css */
+        .demo-warn {
+            margin: 12px 0 20px;
+            padding: 10px 14px;
+            border: 1px solid #ffccc7;
+            background: #fff1f0;
+            color: #a8071a;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        .demo-warn strong { font-weight: 700; }
+        .demo-box {
+            margin: 12px 0 0;
+            padding: 12px;
+            border: 1px solid #d9d9d9;
+            background: #fafafa;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #6b6b6b;
+        }
+        .demo-box--row {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
+            justify-content: center;
+            min-height: 88px;
+            gap: 0;
+        }
+        .demo-box--row > div { margin: 0 18px; }
+    </style>
+    <!--[if lte IE 11]>
+        <script src="./polyfill/es5-shim.min.js"></script>
+        <script src="./polyfill/es5-sham.min.js"></script>
+        <script src="./polyfill/es6-promise.auto.min.js"></script>
+    <![endif]-->
+<link rel="stylesheet" href="../dist/melui.min.css">
+<script src="../dist/melui.min.js"></script>
+</head>
+<body>
+    <h1 class="page-title">MelUi Loading 加载转圈组件</h1>
+    <div class="version-desc">
+        版本：v0.1.4 | 兼容IE9~11、移动端自适应 | melui.showLoading() 与 MelUi.showLoading() 等价（小写只是别名）
+    </div>
+
+    <div class="demo-warn">
+        <p><strong>说明：</strong>不能直接双击打开本页面（file://），浏览器会拦截模块加载，必须使用本地 HTTP 服务打开。</p>
+        <p><strong>原因：</strong>本页用 type="module" 直接加载 ../src/index.js，浏览器对 file:// 协议下的模块脚本做了安全拦截，必须起一个本地 http 服务，访问 <strong>http://localhost:8099/demo/loading.html</strong>。</p>
+        <p><strong>发布后的业务项目：</strong>只引下面「一、标准引入方式」里的两行 dist 产物，Loading 与 Spinner 已经打包进 melui 主包，不需要单独引 core，也不需要引任何 ../src 下的源码文件。</p>
+        <p><strong>IE9 验收：</strong>IE9 不支持 ES Module，请用打包产物验证，必须用 release/dist/melui.min.js 在 IE9 真机验证，源码的 type="module" 写法 IE9 不认。</p>
+    </div>
+
+    <h2>一、标准引入方式</h2>
+<pre><code class="language-html">
+&lt;link rel="stylesheet" href="../dist/melui.min.css"&gt;
+&lt;script src="../dist/melui.min.js"&gt;&lt;/script&gt;
+</code></pre>
+
+    <h2>二、对外 API 与默认配置参数</h2>
+<pre><code class="language-js">
+// ===== 对外公开的 3 个 API（业务唯一调用入口）=====
+melui.showLoading(options);              // 打开全局/局部 Loading 浮层，返回 undefined
+melui.showLoading("加载中...");           // 字符串简写，等价于 { text: "加载中..." }
+melui.closeLoading();                    // 关闭一层 Loading（必须与 showLoading 一一配对）
+melui.createSpinner(container, options); // 底层：在指定容器生成转圈 DOM，返回 { el, destroy }
+melui.isLoading();                       // 查询当前是否有 Loading 未关闭，返回 true / false
+</code></pre>
+<pre><code class="language-js">
+// ---- Spinner 转圈图形参数（showLoading 与 createSpinner 共用）----
+var spinnerDefaults = {
+    size: 40, // 转圈整体尺寸(可选)。数字即px，支持 数字 / "40px"。
+    color: "#1677ff", // 圆点颜色(可选)。支持任意合法css颜色值。
+    speed: 1, // 旋转一圈的秒数(可选)。数字越大转得越慢；IE9下无动画，本参数不生效。
+    strokeWidth: 4, // 圆点直径的一半(可选)。圆点直径 = strokeWidth * 2，最大不超过 size 的一半。
+    type: "ring", // 转圈类型(可选)。当前只有 ring（四点环形），预留扩展。
+    customClass: "" // 追加的class(可选)。用于自定义皮肤。
+};
+
+// ---- Loading 全局浮层参数（在 spinner 参数基础上扩展）----
+var loadingDefaults = {
+    text: "加载中...", // 提示文字(可选)。空字符串则不渲染文字节点。
+    showText: true, // 是否显示提示文字(可选)。值：true显示,false隐藏。
+    mask: true, // 是否显示遮罩层(可选)。值：true显示遮罩,false只显示转圈。
+    maskColor: "rgba(0,0,0,0.4)", // 遮罩背景色(可选)。mask=false时无效。
+    textColor: "", // 文字颜色(可选)。留空时按有无遮罩自动取：有遮罩用白色，无遮罩用深色。
+    target: null, // 挂载容器(可选)。null表示全屏(body)；可传DOM元素或选择器字符串，局部loading用。
+    zIndex: 0, // 层级(可选)。0表示自动分配，从2000开始，每开一次加10。
+    destroyOnClose: true // 关闭后是否销毁DOM(可选)。false时只隐藏，下次复用同一节点。
+};
+</code></pre>
+    <div class="tips">
+        <p>count 计数：连续调用 showLoading 不会重建 DOM，只会更新文字并累加计数；必须调用同样次数的 closeLoading，计数归零后才销毁/隐藏并释放滚动锁。多调 closeLoading 只 warn 不抛错。</p>
+        <p>滚动锁：全屏 Loading 会锁住 html/body 滚动并补偿滚动条宽度，关闭时恢复原滚动位置；target 局部 Loading 用 absolute 定位，不锁页面滚动。</p>
+        <p>IE9 降级：IE9 不支持 @keyframes，转圈只显示静态四点环，遮罩、文字、滚动锁全部正常。</p>
+        <p>createSpinner 是底层 API：第一个参数必须是容器（DOM 元素或选择器），找不到容器返回 null；它不负责遮罩、文字与计数，用完必须自己 destroy。</p>
+        <p>isLoading() 只看全局计数器，不看 DOM：showLoading 后为 true，计数归零后为 false；createSpinner 生成的局部转圈不计入这个计数器，需要自己保存实例判断。</p>
+    </div>
+
+    <h2>三、调用示例</h2>
+
+    <div class="block-group">
+        <div class="block-group__title">1、纯 Spinner（createSpinner）</div>
+        <div class="block-group__content">
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">渲染 3 个 Spinner，再一起销毁</div>
+                <div class="block-group__content_box_describe">最底层的用法：往同一个容器里塞 3 个不同颜色、不同转速的转圈，2.5 秒后逐个 destroy 释放 DOM</div>
+                <div id="spinner-demo" class="demo-box demo-box--row"></div>
+                <button type="button">点击运行</button>
+<pre><code class="language-js">
+var box = document.getElementById("spinner-demo");
+var colors = ["#1677ff", "#52c41a", "#e8532b"];
+var list = [];
+var i;
+
+for (i = 0; i < 3; i++) {
+    list.push(melui.createSpinner(box, {
+        size: 28,
+        color: colors[i],
+        speed: 1 + i * 0.3
+    }));
+}
+
+setTimeout(function () {
+    for (var j = 0; j < list.length; j++) {
+        list[j].destroy();
+    }
+    list = [];
+}, 2500);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">单个 Spinner 改尺寸与颜色</div>
+                <div class="block-group__content_box_describe">createSpinner 的第一个参数是容器，第二个才是参数；容器可以传选择器字符串</div>
+                <div id="spinner-demo-2" class="demo-box demo-box--row"></div>
+                <button type="button">点击运行</button>
+<pre><code class="language-js">
+var sp = melui.createSpinner("#spinner-demo-2", {
+    size: 56,
+    color: "#0b6b5f",
+    strokeWidth: 6
+});
+
+setTimeout(function () {
+    sp.destroy();
+}, 2500);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">容器不存在时返回 null</div>
+                <div class="block-group__content_box_describe">传了找不到的容器不会抛错，而是返回 null；业务侧可以先判断再使用，避免空指针</div>
+                <button type="button">点击运行</button>
+<pre><code class="language-js">
+var sp = melui.createSpinner("#not-exist-box", { size: 32 });
+
+alert(sp === null ? "容器不存在，返回 null" : "拿到了实例");
+</code></pre>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title">2、基础 Loading</div>
+        <div class="block-group__content">
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">最简调用</div>
+                <div class="block-group__content_box_describe">不传参数，默认全屏遮罩 + 转圈 + "加载中..."，3 秒后自动关闭</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading();
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">自定义提示文字 - 对象写法</div>
+                <div class="block-group__content_box_describe">text 可以是任意文案，长文案会自动换行，不会撑破浮层</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    text: "正在校验订单数据，请稍候"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">自定义提示文字 - 字符串简写</div>
+                <div class="block-group__content_box_describe">直接传字符串，等价于 { text: "xxx" }，最省事的写法</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading("正在保存配置");
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">连续调用计数</div>
+                <div class="block-group__content_box_describe">连开 3 次，界面只有一个浮层；关 2 次仍然存在，第 3 次才真正消失并释放滚动锁</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading("第 1 层任务");
+melui.showLoading("第 2 层任务");
+melui.showLoading("第 3 层任务");
+
+setTimeout(function () {
+    melui.closeLoading(); // 计数 3 -> 2，浮层还在
+    melui.closeLoading(); // 计数 2 -> 1，浮层还在
+    setTimeout(function () {
+        melui.closeLoading(); // 计数 1 -> 0，浮层消失
+    }, 1500);
+}, 1500);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">查询加载状态 isLoading()</div>
+                <div class="block-group__content_box_describe">打开前是 false，打开后是 true，关闭归零后再变回 false；若上面示例的 Loading 还没结束，打开前会是 true，这正是计数器在起作用</div>
+                <button type="button">点击运行</button>
+<pre><code class="language-js">
+var before = melui.isLoading(); // 打开前：false
+
+melui.showLoading("正在提交订单");
+var during = melui.isLoading(); // 打开中：true
+
+melui.closeLoading();
+var after = melui.isLoading();  // 关闭后：false
+
+alert("打开前：" + before + "，打开中：" + during + "，关闭后：" + after);
+</code></pre>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title">3、开启遮罩</div>
+        <div class="block-group__content">
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">默认遮罩（mask: true）</div>
+                <div class="block-group__content_box_describe">mask 默认为 true，遮罩覆盖全屏、拦截点击，文字自动用白色，这是最常用的加载态</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    mask: true,
+    text: "遮罩已开启，页面点击被拦截"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">自定义遮罩颜色</div>
+                <div class="block-group__content_box_describe">maskColor 支持 rgba，浅色遮罩下文字自动改深色，避免看不清；想反向对比可试 mask: false</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    maskColor: "rgba(255,255,255,0.88)",
+    text: "浅色遮罩，文字自动转深色"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">遮罩开启 + 指定文字颜色</div>
+                <div class="block-group__content_box_describe">textColor 一旦传入就覆盖自动判断，转圈颜色也跟着走；适合品牌色统一</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    maskColor: "rgba(255,255,255,0.9)",
+    textColor: "#0b6b5f",
+    color: "#0b6b5f",
+    text: "品牌色文字与转圈"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">关闭遮罩（mask: false）</div>
+                <div class="block-group__content_box_describe">和上面三项对照：不显示遮罩时只有转圈和文字，页面仍可操作</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    mask: false,
+    text: "无遮罩加载，页面可继续点击"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title">4、转圈图形参数</div>
+        <div class="block-group__content">
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">调整尺寸 size</div>
+                <div class="block-group__content_box_describe">size 控制整体直径，圆点直径与半径同步换算，默认 40</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    size: 64,
+    text: "size: 64"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">调整颜色 color</div>
+                <div class="block-group__content_box_describe">color 同时作用于四个圆点；遮罩上的文字默认跟随该颜色</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    color: "#e8532b",
+    text: "color: #e8532b"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">调整转速 speed</div>
+                <div class="block-group__content_box_describe">speed 是转一圈的秒数，数字越小越快；IE9 无动画，该参数不生效</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    speed: 0.5,
+    text: "speed: 0.5 快速"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">调整圆点粗细 strokeWidth</div>
+                <div class="block-group__content_box_describe">圆点直径 = strokeWidth * 2，超过 size 一半会被自动收敛，不会画出边界</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    strokeWidth: 8,
+    text: "strokeWidth: 8"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">隐藏文字 showText: false</div>
+                <div class="block-group__content_box_describe">只留转圈不显示文字，适合空间很小或文案无意义的场景</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    showText: false
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title">5、局部 Loading</div>
+        <div class="block-group__content">
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">target 传选择器</div>
+                <div class="block-group__content_box_describe">转圈只覆盖该容器、改用 absolute 定位，宿主 position 会被临时改成 relative，关闭后还原，且不锁页面滚动</div>
+                <div id="loading-box" class="demo-box">这里是 #loading-box 容器，局部 Loading 只盖住这块区域</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    target: "#loading-box",
+    text: "容器内加载中..."
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">target 传 DOM 元素</div>
+                <div class="block-group__content_box_describe">直接传元素对象，效果与选择器一致；组件内部调用时用这种写法更稳，不受 id 变化影响</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    target: document.getElementById("loading-box"),
+    text: "传 DOM 元素"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 3000);
+</code></pre>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="block-group">
+        <div class="block-group__title">6、销毁策略</div>
+        <div class="block-group__content">
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">destroyOnClose: false 复用 DOM</div>
+                <div class="block-group__content_box_describe">关闭只隐藏节点，不销毁 DOM；连续开关时不会重建，适合列表页高频调用</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    destroyOnClose: false,
+    text: "关闭后只隐藏，节点保留复用"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 2000);
+</code></pre>
+            </div>
+
+            <div class="block-group__content_box">
+                <div class="block-group__content_box_title">destroyOnClose: true（默认）</div>
+                <div class="block-group__content_box_describe">关闭即销毁 DOM、清空引用，不会留下隐藏节点；单次加载场景用默认值最省内存</div>
+                <button type="button">点击打开</button>
+<pre><code class="language-js">
+melui.showLoading({
+    destroyOnClose: true,
+    text: "关闭即销毁，节点不保留"
+});
+setTimeout(function () {
+    melui.closeLoading();
+}, 2000);
+</code></pre>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 源码调试仅本页使用：发布后由 copyDemoPlugin 移除，改为注入 melui.min.js -->
+    
+    <script>
+        if(window.hljs){
+            hljs.highlightAll();
+        }
+        var demoList = document.querySelectorAll(".block-group__content_box");
+        for(var i = 0; i < demoList.length; i++){
+            (function(wrap){
+                var btn = wrap.querySelector("button");
+                var codeDom = wrap.querySelector("code");
+                if(!btn || !codeDom) return;
+                var codeText = codeDom.textContent.replace(/^\s+|\s+$/g, "");
+                btn.onclick = function(){
+                    try{
+                        eval(codeText);
+                    }catch(err){
+                        alert("代码执行错误：" + err.message);
+                    }
+                };
+            })(demoList[i]);
+        }
+    </script>
+</body>
+</html>

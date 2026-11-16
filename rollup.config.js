@@ -6,12 +6,66 @@
 //----------------------------------------
 
 // rollup.config.js
+import fs from 'fs';
+import path from 'path';
 import { terser } from 'rollup-plugin-terser';
 import postcss from 'rollup-plugin-postcss';
 import cssnano from 'cssnano';
 import autoprefixer from 'autoprefixer';
 import copy from 'rollup-plugin-copy';
 
+
+// ===================== 标记解封插件（每个 bundle 都必须放第一位） ======================
+/**
+ * activateRollupOnly()
+ *
+ * 解决什么问题：
+ * 源码里 CSS 通过 import './xxx.css' 引入，postcss 插件能处理，但浏览器原生 ESM 不能处理，
+ * 直接用 type="module" 跑源码会请求 css 并报 MIME 错误。
+ *
+ * 做法：
+ * 源码把 css import 包进 __ROLLUP_ONLY__ 块注释，
+ * 浏览器看到的是纯注释（不请求 css），构建时本插件把注释解开成真正的 import，
+ * 再交给 postcss 收集合并。
+ *
+ * ⚠️ 顺序要求：必须排在 createCssDev() / createCssProd() 之前，
+ *    否则 postcss 看不到 css import，css 不会被抽取，melui.css 会是空的。
+ */
+function activateRollupOnly() {
+  return {
+    name: 'melui-activate-rollup-only',
+    transform(code, id) {
+      // 第三方依赖不动，只处理项目源码
+      if (id.indexOf('node_modules') !== -1) return null;
+      return code.replace(/\/\*#__ROLLUP_ONLY__([\s\S]*?)\*\//g, '$1');
+    }
+  };
+}
+
+
+
+// ===================== 清理 UMD 临时全局（util 扩展包专用） =====================
+/**
+ * dropTempGlobal(name)
+ *
+ * 背景：UMD 包装的执行顺序是「先跑工厂函数，再把返回值赋给 global.xxx」。
+ * 所以想在模块代码里 delete 临时全局是无效的，赋值发生在它之后。
+ * 这里改为在产物末尾追加一段删除代码，执行时机在全局赋值之后。
+ *
+ * util 扩展包的真实入口是 melui.util，占位名只是 UMD 语法的妥协，不能让用户看到。
+ */
+function dropTempGlobal(name) {
+  return {
+    name: 'melui-drop-temp-global',
+    writeBundle: function (options) {
+      if (!options.file) return;
+      fs.appendFileSync(
+        options.file,
+        '\n;(function () { try { delete window.' + name + '; } catch (e) { window.' + name + ' = undefined; } }());\n'
+      );
+    }
+  };
+}
 
 
 // ===================== Terser JS压缩混淆配置（用于生产.min.js） =====================
@@ -154,6 +208,13 @@ const copyDemoPlugin = copy({
         // 删除所有含有 href="../src/components/*.css 的link标签，兼容任意属性、兼容自闭合 <link ... />
         html = html.replace(/<link\b[^>]*href="\.\.\/src\/components[^"]+\.css"[^>]*\/?>/gi, '');
 
+        // 删除源码调试用的 type="module" 脚本块（里面 import 的是 ../src/index.js，
+        // 发布产物里已由下面注入的 melui.min.js 代替，保留会导致 404）
+        html = html.replace(/<script\b[^>]*type="module"[^>]*>[\s\S]*?<\/script>/gi, '');
+
+        // 删除源码调试用的 core.css / util 等 ../src 下的样式 link（发布产物用 melui.min.css）
+        html = html.replace(/<link\b[^>]*href="\.\.\/src\/[^"]+\.css"[^>]*\/?>/gi, '');
+
         // polyfill 脚本路径替换
         html = html.replace(
           /<script\b[^>]*src="\.\.\/src\/polyfill\/([^"]+\.js)"[^>]*><\/script>/gi,
@@ -203,7 +264,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssDev()]
+        plugins: [activateRollupOnly(), createCssDev()]
     },
     // layout 压缩版
     {
@@ -213,7 +274,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssProd(), terser(terserConfig)]
+        plugins: [activateRollupOnly(), createCssProd(), terser(terserConfig)]
     },
 
 
@@ -228,7 +289,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssDev()]
+        plugins: [activateRollupOnly(), createCssDev()]
     },
     // dialog 压缩版
     {
@@ -238,7 +299,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssProd(), terser(terserConfig)]
+        plugins: [activateRollupOnly(), createCssProd(), terser(terserConfig)]
     },
 
 
@@ -253,7 +314,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssDev()]
+        plugins: [activateRollupOnly(), createCssDev()]
     },
     // datePicker 压缩版
     {
@@ -263,7 +324,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssProd(), terser(terserConfig)]
+        plugins: [activateRollupOnly(), createCssProd(), terser(terserConfig)]
     },
 
 
@@ -278,7 +339,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssDev()]
+        plugins: [activateRollupOnly(), createCssDev()]
     },
     // drawer 压缩版
     {
@@ -288,7 +349,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssProd(), terser(terserConfig)]
+        plugins: [activateRollupOnly(), createCssProd(), terser(terserConfig)]
     },  
 
 
@@ -303,7 +364,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssDev()]
+        plugins: [activateRollupOnly(), createCssDev()]
     },
     // pagination 压缩版
     {
@@ -313,7 +374,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssProd(), terser(terserConfig)]
+        plugins: [activateRollupOnly(), createCssProd(), terser(terserConfig)]
     },
 
 
@@ -329,7 +390,7 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssDev()]
+        plugins: [activateRollupOnly(), createCssDev()]
     },
     // table 压缩版
     {
@@ -339,10 +400,39 @@ export default [
             format: 'umd',
             name: 'MelUi'
         },
-        plugins: [createCssProd(), terser(terserConfig)]
+        plugins: [activateRollupOnly(), createCssProd(), terser(terserConfig)]
     },
 
-    //======================== 二. 全局完整库打包 ======================== 
+
+    //======================== 二. 工具扩展包打包 ========================
+    // 全量工具（可单独使用，不依赖 melui 主包）
+    // ⚠️ name 只写临时占位 _MelUiUtilTemp：UMD 的 name 不支持 melui.util 这种点语法，
+    //    真正的挂载在 src/util/util.js 里完成，产物末尾由 dropTempGlobal 删掉占位名
+    // 开发版
+    {
+        input: 'src/util/util.js',
+        output: {
+            file: 'release/dist/melui-util.js',
+            format: 'umd',
+            name: '_MelUiUtilTemp',
+            exports: 'default'
+        },
+        plugins: [activateRollupOnly(), createCssDev(), dropTempGlobal('_MelUiUtilTemp')]
+    },
+    // 压缩版
+    {
+        input: 'src/util/util.js',
+        output: {
+            file: 'release/dist/melui-util.min.js',
+            format: 'umd',
+            name: '_MelUiUtilTemp',
+            exports: 'default'
+        },
+        plugins: [activateRollupOnly(), createCssProd(), terser(terserConfig), dropTempGlobal('_MelUiUtilTemp')]
+    },
+
+
+    //======================== 三. 全局完整库打包 ======================== 
     // 即：将各个组件的JS合并打包成一个JS
     // 全量开发版
     {
@@ -350,9 +440,10 @@ export default [
         output: {
             file: 'release/dist/melui.js',
             format: 'umd',
-            name: 'MelUi'
+            name: 'MelUi',
+            exports: 'default'
         },
-        plugins: [createCssDev()]
+        plugins: [activateRollupOnly(), createCssDev()]
     },
     // 全量压缩版【❗唯一在这里加入 copyDemoPlugin，其他bundle不要加】
     {
@@ -360,9 +451,11 @@ export default [
         output: {
             file: 'release/dist/melui.min.js',
             format: 'umd',
-            name: 'MelUi'
+            name: 'MelUi',
+            exports: 'default'
         },
         plugins: [
+          activateRollupOnly(),
           createCssProd(), 
           terser(terserConfig),
           copyDemoPlugin

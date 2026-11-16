@@ -28,4 +28,4 @@ import './cell-renderers/checkbox-cell.js';
 import './cell-renderers/button.js';
 
 // 5.table组件样式
-import './index.css';
+// import './index.css';

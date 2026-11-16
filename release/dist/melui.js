@@ -10478,7 +10478,931 @@
 
     })(window.MelUi = window.MelUi || {});
 
-    // 
+    /**
+     * @File    type.js
+     * @Desc    MelUI Util 基础层：类型判断（纯函数，无 DOM）
+     * @Version 0.1.1
+     * @Date    2026-11-13
+     * @PubDate 2026-11-16 10:15:14
+     * @Author  ChenMufeng
+     *
+     * ── 层级定位：共享基础层（base）──────────────────────────
+     * 与 core/internal 的私有层不是一回事，看名字就能分辨：
+     *   base    = 允许多方 import 的底层公共函数
+     *   internal= 只允许本模块内部 import 的私有实现
+     *
+     * 【可见性】可共享：core、components、util 其它模块都可以 import 本文件。
+     * 【打包归属】随主包 melui.js 打包，被引用到才进包，不会整目录塞进去。
+     * 【对外形态】业务方通过 melui.util.xxx 调用，不直接 import 源码文件。
+     * 【硬约束】纯函数、无副作用；禁止任何 DOM 操作；禁止 import core / components。
+     * ──────────────────────────────────────────────────────
+     */
+
+    /**
+     * 通用类型串
+     * @param {*} val
+     * @return {String} 例如 '[object Object]'
+     */
+     function internalTag(val) {
+      return Object.prototype.toString.call(val);
+    }
+
+    /**
+     * 是否普通对象（排除 null、数组、DOM 节点、日期、正则）
+     * @param {*} val
+     * @return {Boolean}
+     */
+    function isPlainObject(val) {
+      if (val === null || typeof val !== 'object') {
+        return false;
+      }
+      if (internalTag(val) !== '[object Object]') {
+        return false;
+      }
+      // DOM 节点 / window 等宿主对象不算普通对象
+      if (typeof val.nodeType === 'number' || val === val.window) {
+        return false;
+      }
+      return true;
+    }
+
+    /**
+     * 是否数组
+     * @param {*} val
+     * @return {Boolean}
+     */
+    function isArray(val) {
+      return internalTag(val) === '[object Array]';
+    }
+
+    /**
+     * 是否函数
+     * @param {*} val
+     * @return {Boolean}
+     */
+    function isFunction(val) {
+      return typeof val === 'function';
+    }
+
+    /**
+     * 是否数字（NaN 不算）
+     * @param {*} val
+     * @return {Boolean}
+     */
+    function isNumber(val) {
+      return typeof val === 'number' && !isNaN(val);
+    }
+
+    /**
+     * 是否字符串
+     * @param {*} val
+     * @return {Boolean}
+     */
+    function isString(val) {
+      return typeof val === 'string';
+    }
+
+    /**
+     * 是否 DOM 元素节点
+     * @param {*} val
+     * @return {Boolean}
+     */
+    function isElement$1(val) {
+      return !!(val && val.nodeType === 1);
+    }
+
+    /**
+     * @File    object.js
+     * @Desc    MelUI Util 基础层：对象工具（深合并 / 浅拷贝，不污染入参）
+     * @Version 0.1.1
+     * @Date    2026-11-13
+     * @PubDate 2026-11-16 10:15:14
+     * @Author  ChenMufeng
+     *
+     * ── 层级定位：共享基础层（base）──────────────────────────
+     * 与 core/internal 的私有层不是一回事，看名字就能分辨：
+     *   base    = 允许多方 import 的底层公共函数
+     *   internal= 只允许本模块内部 import 的私有实现
+     *
+     * 【可见性】可共享：core、components、util 其它模块都可以 import 本文件。
+     * 【打包归属】随主包 melui.js 打包，被引用到才进包，不会整目录塞进去。
+     * 【对外形态】业务方通过 melui.util.xxx 调用，不直接 import 源码文件。
+     * 【硬约束】纯函数、无副作用；禁止任何 DOM 操作；禁止 import core / components。
+     * ──────────────────────────────────────────────────────
+     */
+
+     /**
+      * 克隆一个值：
+      * 普通对象递归克隆，数组浅拷贝，其它（函数 / DOM / 基本类型）原样返回
+      * @param {*} val
+      * @return {*}
+      */
+     function internalClone(val) {
+       var result;
+       var i;
+       var key;
+       if (isPlainObject(val)) {
+         result = {};
+         for (key in val) {
+           if (Object.prototype.hasOwnProperty.call(val, key)) {
+             result[key] = internalClone(val[key]);
+           }
+         }
+         return result;
+       }
+       if (isArray(val)) {
+         result = [];
+         for (i = 0; i < val.length; i++) {
+           result.push(internalClone(val[i]));
+         }
+         return result;
+       }
+       return val;
+     }
+     
+     /**
+      * 深合并多个对象，返回全新对象
+      * - 不做 Object.assign（IE9 不支持）
+      * - 不修改任何入参对象，避免污染调用方 options
+      * - 同名属性：都为普通对象时递归合并，否则后者覆盖前者
+      *
+      * @param {...Object} 任意个对象，后面的覆盖前面的
+      * @return {Object}
+      */
+     function mergeObj() {
+       var result = {};
+       var i;
+       var source;
+       var key;
+       for (i = 0; i < arguments.length; i++) {
+         source = arguments[i];
+         if (!isPlainObject(source)) {
+           continue;
+         }
+         for (key in source) {
+           if (!Object.prototype.hasOwnProperty.call(source, key)) {
+             continue;
+           }
+           if (isPlainObject(source[key]) && isPlainObject(result[key])) {
+             result[key] = mergeObj(result[key], source[key]);
+           } else {
+             result[key] = internalClone(source[key]);
+           }
+         }
+       }
+       return result;
+     }
+     
+     /**
+      * 浅拷贝对象
+      * @param {Object} val
+      * @return {Object}
+      */
+     function shallowCopy(val) {
+       var result = {};
+       var key;
+       if (!isPlainObject(val)) {
+         return result;
+       }
+       for (key in val) {
+         if (Object.prototype.hasOwnProperty.call(val, key)) {
+           result[key] = val[key];
+         }
+       }
+       return result;
+     }
+
+    /**
+     * @File    dom.js
+     * @Desc    MelUI Core 私有 DOM 辅助（仅 core 内部使用，不对外暴露），兼容 IE9
+     * @Version 0.1.0
+     * @Date    2026-11-13
+     * @PubDate 2026-11-13 18:09:21
+     * @Author  ChenMufeng
+     */
+
+    /**
+     * 是否 IE9（IE9 不支持 @keyframes，转圈需静态降级）
+     * IE10 / IE11 的 UA 里是 Trident，不走这里，按现代浏览器处理
+     * @return {Boolean}
+     */
+     function isIE9() {
+        var ua = window.navigator.userAgent;
+        var match = ua.match(/MSIE\s+(\d+)/);
+        return !!(match && parseInt(match[1], 10) === 9);
+      }
+      
+      /**
+       * 控制台告警
+       * @param {String} msg
+       */
+      function warn(msg) {
+        if (window.console && window.console.warn) {
+          window.console.warn('[MelUI] ' + msg);
+        }
+      }
+      
+      /**
+       * 创建元素
+       * @param {String} tag
+       * @param {String} className 可选
+       * @return {HTMLElement}
+       */
+      function createEl(tag, className) {
+        var el = document.createElement(tag);
+        if (className) {
+          el.className = className;
+        }
+        return el;
+      }
+      
+      /**
+       * 是否 DOM 元素
+       * @param {*} val
+       * @return {Boolean}
+       */
+      function isElement(val) {
+        return !!(val && val.nodeType === 1);
+      }
+      
+      /**
+       * 解析挂载目标：支持选择器字符串 / DOM 元素 / 空（默认 body）
+       * @param {String|HTMLElement|null} target
+       * @return {HTMLElement|null}
+       */
+      function resolveElement(target) {
+        var el;
+        if (!target) {
+          return document.body;
+        }
+        if (typeof target === 'string') {
+          el = document.querySelector(target);
+          if (!el) {
+            warn('挂载目标不存在：' + target);
+            return null;
+          }
+          return el;
+        }
+        if (isElement(target)) {
+          return target;
+        }
+        warn('挂载目标类型不支持，已忽略本次渲染');
+        return null;
+      }
+      
+      /**
+       * 添加 class（IE9 的 classList 不可靠，统一用 className 处理）
+       * @param {HTMLElement} el
+       * @param {String} cls
+       */
+      function addClass(el, cls) {
+        var current;
+        if (!el || !cls) {
+          return;
+        }
+        current = ' ' + el.className + ' ';
+        if (current.indexOf(' ' + cls + ' ') === -1) {
+          el.className = (el.className ? el.className + ' ' : '') + cls;
+        }
+      }
+      
+      /**
+       * 设置 transform，同时写 -ms- 前缀（IE9 只认 -ms-transform）
+       * @param {HTMLElement} el
+       * @param {String} value 例如 'rotate(90deg) translate(0, -14px)'
+       */
+      function setTransform(el, value) {
+        if (!el) {
+          return;
+        }
+        if ('transform' in el.style) {
+          el.style.transform = value;
+        }
+        if ('msTransform' in el.style) {
+          el.style.msTransform = value;
+        }
+        if ('webkitTransform' in el.style) {
+          el.style.webkitTransform = value;
+        }
+      }
+      
+      /**
+       * 设置文本（IE9 无 textContent，回退 innerText）
+       * @param {HTMLElement} el
+       * @param {String} text
+       */
+      function setText(el, text) {
+        if (!el) {
+          return;
+        }
+        if ('textContent' in el) {
+          el.textContent = text;
+        } else {
+          el.innerText = text;
+        }
+      }
+      
+      /**
+       * 读取计算样式（IE9 有 getComputedStyle，老 IE 回退 currentStyle）
+       * @param {HTMLElement} el
+       * @param {String} prop 例如 'position'
+       * @return {String}
+       */
+      function getStyle(el, prop) {
+        if (!el) {
+          return '';
+        }
+        if (window.getComputedStyle) {
+          return window.getComputedStyle(el, null)[prop] || '';
+        }
+        if (el.currentStyle) {
+          return el.currentStyle[prop] || '';
+        }
+        return '';
+      }
+      
+      /**
+       * 移除节点（同时断开引用，避免内存泄漏）
+       * @param {HTMLElement} el
+       */
+      function removeEl(el) {
+        if (el && el.parentNode) {
+          el.parentNode.removeChild(el);
+        }
+      }
+
+    /**
+     * @File    zIndex.js
+     * @Desc    MelUI Core 私有 zIndex 管理器：全局自增，避免浮层互相压盖
+     * @Version 0.1.2
+     * @Date    2026-11-13
+     * @PubDate 2026-11-16 16:42:00
+     * @Author  ChenMufeng
+     *
+     * ── 层级定位：core 私有实现层（internal）──────────────────
+     * 这里的 internal 表达的是"私有"，不是"基础/共享"：
+     *   internal = 只允许 src/core/ 目录内部 import
+     *   base     = 允许多方 import 的公共基础函数（在 util/base）
+     *
+     * 【可见性】私有：仅 core 目录内的文件可 import。
+     *           components、util、业务代码一律禁止引用。
+     * 【重构风险】本文件不属于对外 API，函数签名与文件名随时可调整；
+     *           一旦被外部引用，后续任何改名都会变成破坏性变更。
+     * ──────────────────────────────────────────────────────
+     */
+
+    // 起始层级：业务页面通常不会超过 2000
+    var currentZIndex = 2000;
+
+    /**
+     * 取下一个 zIndex（每次调用自增 10，给同一层浮层的内部元素留空间）
+     * @param {Number} base 可选，传了则把基数抬到该值
+     * @return {Number}
+     */
+    function nextZIndex(base) {
+      if (typeof base === 'number' && base > currentZIndex) {
+        currentZIndex = base;
+      }
+      currentZIndex += 10;
+      return currentZIndex;
+    }
+
+    /**
+     * @File    loading.js
+     * @Desc    MelUI Core：通用 Spinner 渲染 + 全局 Loading（遮罩 / 计数 / 滚动锁）
+     * @Version 0.1.3
+     * @Date    2026-11-13
+     * @PubDate 2026-11-16 16:42:00
+     * @Author  ChenMufeng
+     *
+     * ── 层级定位：core 公开能力层 ────────────────────────────
+     * 本文件实现对外 API（showLoading / closeLoading / createSpinner），
+     * 由 core/core.js 的 publicApi 白名单提升为 melui.xxx，业务不直接 import 本文件。
+     *
+     * 【依赖方向】只能依赖 util/base（共享基础函数）与 core/internal（私有实现）。
+     * 【禁止】反向被 core/internal 依赖；不得引入 util 扩展工具（date/money 等）。
+     * 【IE9】本文件不写 const / 箭头函数 / 对象展开，动画走 CSS class，IE9 静态降级。
+     * ──────────────────────────────────────────────────────
+     */
+     
+     /* ==================== 默认参数 ==================== */
+     
+     // Spinner 图形参数（只控制转圈本身）
+     var spinnerDefaults = {
+       size: 40,          // 尺寸，px
+       color: '#1677ff',  // 圆点颜色
+       speed: 1,          // 1 = 1 秒一圈
+       strokeWidth: 4,    // 线宽，圆点直径 = strokeWidth * 2
+       type: 'ring',      // 第一版只实现 ring
+       customClass: ''
+     };
+     
+     // Loading 浮层扩展参数（在 Spinner 参数之上）
+     var loadingDefaults = {
+       text: '加载中...',
+       showText: true,
+       mask: true,
+       maskColor: 'rgba(0,0,0,0.4)',
+       textColor: '',            // 留空则按是否有遮罩自动取白色/深色
+       target: null,             // null = document.body（全局）
+       zIndex: 0,                // 0 = 由 Core 的 zIndex 管理器自动分配
+       destroyOnClose: true      // false 时关闭只隐藏，下次复用 DOM
+     };
+     
+     /* ==================== 模块私有状态 ==================== */
+     
+     var loadingCount = 0;        // 计数：show / close 必须配对
+     var loadingInstance = null;  // 当前 Loading 实例（单例）
+     var scrollState = null;      // 滚动锁快照，null 表示未锁定
+     
+     /* ==================== 私有工具 ==================== */
+     
+     /**
+      * 转数字，非法值回退默认
+      * @param {*} val
+      * @param {Number} def
+      * @return {Number}
+      */
+     function toNumber(val, def) {
+       var num = parseFloat(val);
+       if (isNaN(num)) {
+         return def;
+       }
+       return num;
+     }
+     
+     /**
+      * 锁滚动：同时处理 html / body（不同浏览器滚动源不同），并补偿滚动条宽度
+      */
+     function internalLockScroll() {
+       var html = document.documentElement;
+       var body = document.body;
+       var scrollBarWidth;
+     
+       if (scrollState) {
+         return;
+       }
+     
+       scrollState = {
+         top: html.scrollTop || body.scrollTop || 0,
+         left: html.scrollLeft || body.scrollLeft || 0,
+         htmlOverflow: html.style.overflow,
+         bodyOverflow: body.style.overflow,
+         bodyPaddingRight: body.style.paddingRight
+       };
+     
+       // 隐藏滚动条会让页面宽度变化，补上右侧 padding 防抖动
+       scrollBarWidth = window.innerWidth - html.clientWidth;
+       if (scrollBarWidth > 0) {
+         body.style.paddingRight = scrollBarWidth + 'px';
+       }
+     
+       html.style.overflow = 'hidden';
+       body.style.overflow = 'hidden';
+     }
+     
+     /**
+      * 解锁滚动并还原滚动位置
+      */
+     function internalUnlockScroll() {
+       var html = document.documentElement;
+       var body = document.body;
+     
+       if (!scrollState) {
+         return;
+       }
+     
+       html.style.overflow = scrollState.htmlOverflow || '';
+       body.style.overflow = scrollState.bodyOverflow || '';
+       body.style.paddingRight = scrollState.bodyPaddingRight || '';
+     
+       // 先恢复 overflow 再还原位置，否则部分浏览器会跳回顶部
+       window.scrollTo(scrollState.left, scrollState.top);
+     
+       scrollState = null;
+     }
+     
+     /**
+      * 销毁 Loading 实例：移除 DOM、清理引用
+      */
+     function internalDestroy() {
+       var ins = loadingInstance;
+     
+       if (!ins) {
+         return;
+       }
+     
+       if (ins.spinner && ins.spinner.destroy) {
+         ins.spinner.destroy();
+       }
+     
+       removeEl(ins.root);
+     
+       if (ins.locked) {
+         internalUnlockScroll();
+         ins.locked = false;
+       }
+     
+       if (ins.hostForcedRelative && ins.host) {
+         ins.host.style.position = ins.hostOriginalPosition || '';
+       }
+     
+       ins.root = null;
+       ins.maskEl = null;
+       ins.panelEl = null;
+       ins.innerEl = null;
+       ins.spinner = null;
+       ins.textEl = null;
+       ins.host = null;
+       ins.opts = null;
+     
+       loadingInstance = null;
+       loadingCount = 0;
+     }
+     
+     /* ==================== 对外 API：Spinner ==================== */
+     
+     /**
+      * 渲染一个纯转圈图形（无遮罩、无全局状态），可嵌在任意容器里
+      * @param {HTMLElement|String} container 挂载容器，支持选择器
+      * @param {Object} options spinner 参数
+      * @return {Object|null} { el, options, destroy }
+      */
+     function createSpinner(container, options) {
+       var opts = mergeObj(spinnerDefaults, options);
+       var host = resolveElement(container);
+       var size;
+       var dotSize;
+       var radius;
+       var root;
+       var dot;
+       var angle;
+       var i;
+       var duration;
+     
+       if (!host) {
+         return null;
+       }
+     
+       size = toNumber(opts.size, spinnerDefaults.size);
+       if (size < 12) {
+         size = 12;
+       }
+     
+       dotSize = Math.round(toNumber(opts.strokeWidth, spinnerDefaults.strokeWidth) * 2);
+       if (dotSize < 4) {
+         dotSize = 4;
+       }
+       if (dotSize > size / 2) {
+         dotSize = Math.floor(size / 2);
+       }
+     
+       radius = (size - dotSize) / 2;
+     
+       root = createEl('div', 'mel-spinner mel-spinner-' + (opts.type || 'ring'));
+       if (opts.customClass) {
+         addClass(root, opts.customClass);
+       }
+       root.style.width = size + 'px';
+       root.style.height = size + 'px';
+     
+       // 4 个圆点均匀分布，透明度递减形成旋转方向感
+       for (i = 0; i < 4; i++) {
+         dot = createEl('span', 'mel-spinner-dot');
+         dot.style.left = '50%';
+         dot.style.top = '50%';
+         dot.style.width = dotSize + 'px';
+         dot.style.height = dotSize + 'px';
+         dot.style.marginLeft = (-dotSize / 2) + 'px';
+         dot.style.marginTop = (-dotSize / 2) + 'px';
+         dot.style.background = opts.color;
+         dot.style.opacity = String(1 - i * 0.2);
+     
+         angle = i * 90;
+         setTransform(dot, 'rotate(' + angle + 'deg) translate(0, -' + radius + 'px)');
+         root.appendChild(dot);
+       }
+     
+       // IE9 不支持 @keyframes：不加动画 class，静态降级
+       if (!isIE9()) {
+         addClass(root, 'mel-spinner-anim');
+         duration = 1 / toNumber(opts.speed, spinnerDefaults.speed);
+         if (duration <= 0) {
+           duration = 1;
+         }
+         if ('animationDuration' in root.style) {
+           root.style.animationDuration = duration + 's';
+         }
+         if ('webkitAnimationDuration' in root.style) {
+           root.style.webkitAnimationDuration = duration + 's';
+         }
+       }
+     
+       host.appendChild(root);
+     
+       return {
+         el: root,
+         options: opts,
+         destroy: function () {
+           removeEl(root);
+         }
+       };
+     }
+     
+     /* ==================== 对外 API：全局 Loading ==================== */
+     
+     /**
+      * 打开全局 Loading
+      * - 支持字符串简写：showLoading('加载中')
+      * - 重复调用只加计数、复用 DOM，不会重建
+      * @param {Object|String} options
+      * @return {HTMLElement|null} Loading 根节点
+      */
+     function showLoading(options) {
+       var opts;
+       var ins = loadingInstance;
+       var host;
+       var root;
+       var isGlobal;
+       var maskEl;
+       var panelEl;
+       var innerEl;
+       var spinnerIns;
+       var textEl;
+       var forcedRelative;
+       var originalPosition;
+     
+       if (typeof options === 'string') {
+         options = { text: options };
+       }
+     
+       // 已有实例：只更新文案 + 计数，不重建 DOM
+       if (ins) {
+         if (options && typeof options.text === 'string' && ins.textEl) {
+           setText(ins.textEl, options.text);
+         }
+         if (ins.root.style.display === 'none') {
+           ins.root.style.display = '';
+           if (ins.isGlobal && ins.opts.mask) {
+             internalLockScroll();
+             ins.locked = true;
+           }
+         }
+         loadingCount++;
+         return ins.root;
+       }
+     
+       opts = mergeObj(spinnerDefaults, loadingDefaults, options);
+     
+       host = resolveElement(opts.target);
+       if (!host) {
+         return null;
+       }
+     
+       isGlobal = host === document.body;
+     
+       root = createEl('div', 'mel-loading');
+       addClass(root, isGlobal ? 'mel-loading-global' : 'mel-loading-absolute');
+       if (opts.customClass) {
+         addClass(root, opts.customClass);
+       }
+       root.style.zIndex = String(opts.zIndex > 0 ? opts.zIndex : nextZIndex());
+     
+       // 遮罩
+       maskEl = null;
+       if (opts.mask) {
+         maskEl = createEl('div', 'mel-loading-mask');
+         maskEl.style.background = opts.maskColor;
+         root.appendChild(maskEl);
+       }
+     
+       // 居中面板：用 table / table-cell 居中，避免 IE9 对 translate 百分比支持不稳
+       panelEl = createEl('div', 'mel-loading-panel');
+       innerEl = createEl('div', 'mel-loading-panel-inner');
+       panelEl.appendChild(innerEl);
+       root.appendChild(panelEl);
+     
+       // 转圈复用 createSpinner，不重复写转圈渲染
+       spinnerIns = createSpinner(innerEl, opts);
+       if (!spinnerIns) {
+         removeEl(root);
+         return null;
+       }
+     
+       // 文字
+       textEl = null;
+       if (opts.showText && opts.text) {
+         textEl = createEl('div', 'mel-loading-text');
+         setText(textEl, opts.text);
+         textEl.style.color = opts.textColor || (opts.mask ? '#FFFFFF' : '#333333');
+         innerEl.appendChild(textEl);
+       }
+     
+       // 非 body 宿主：绝对定位要求宿主是定位上下文，static 时临时改成 relative
+       forcedRelative = false;
+       originalPosition = '';
+       if (!isGlobal && getStyle(host, 'position') === 'static') {
+         originalPosition = host.style.position;
+         host.style.position = 'relative';
+         forcedRelative = true;
+       }
+     
+       host.appendChild(root);
+     
+       loadingInstance = {
+         root: root,
+         maskEl: maskEl,
+         panelEl: panelEl,
+         innerEl: innerEl,
+         spinner: spinnerIns,
+         textEl: textEl,
+         host: host,
+         hostForcedRelative: forcedRelative,
+         hostOriginalPosition: originalPosition,
+         isGlobal: isGlobal,
+         locked: false,
+         opts: opts
+       };
+     
+       // 只对全局 Loading 锁页面滚动；局部 Loading 不锁，避免影响其他区域
+       if (isGlobal && opts.mask) {
+         internalLockScroll();
+         loadingInstance.locked = true;
+       }
+     
+       loadingCount = 1;
+       return root;
+     }
+     
+     /**
+      * 关闭全局 Loading（计数归零才真正销毁 / 隐藏）
+      * @return {Boolean} 是否执行成功
+      */
+     function closeLoading() {
+       var ins = loadingInstance;
+     
+       if (loadingCount <= 0 || !ins) {
+         warn('closeLoading 的调用次数多于 showLoading');
+         return false;
+       }
+     
+       loadingCount--;
+     
+       if (loadingCount > 0) {
+         return true;
+       }
+     
+       if (ins.locked) {
+         internalUnlockScroll();
+         ins.locked = false;
+       }
+     
+       if (ins.opts.destroyOnClose) {
+         internalDestroy();
+       } else {
+         ins.root.style.display = 'none';
+       }
+     
+       return true;
+     }
+     
+     /**
+      * 当前是否有 Loading 在显示
+      * @return {Boolean}
+      */
+     function isLoading() {
+       return loadingCount > 0;
+     }
+
+    /**
+     * @File    core.js
+     * @Desc    MelUI Core 对外出口：只登记 publicApi 白名单，不导出、不暴露 Core 对象
+     * @Version 0.1.4
+     * @Date    2026-11-13
+     * @PubDate 2026-11-16 17:10:00
+     * @Author  ChenMufeng
+     *
+     * ── 文件职责：core 的对外出口（与 core.css 同目录同名，一眼对应）────
+     * 只做两件事：import 各模块、登记 publicApi。本文件不写任何函数实现。
+     *
+     * 【命名规则】本项目入口文件与目录同名（core/core.js、util/util.js、
+     *            util/base/base.js），不再使用 index.js，
+     *            让文件名自带语义，避免一堆同名 index.js 分不清。
+     *
+     * 【对外形态】只导出 publicApi 白名单，由 src/index.js 挂到 melui 顶层。
+     *            不导出 Core 对象 —— 业务侧不存在 melui.Core，
+     *            内部实现不构成对外契约，将来重构不受限制。
+     * 【内部复用】组件若需要 loading/遮罩，直接 import './loading.js' 的函数，
+     *            不要绕到全局 melui 上取，避免被业务覆盖或受加载顺序影响。
+     * ──────────────────────────────────────────────────────
+     */
+
+     /**
+      * 唯一白名单：登记要提升到 melui.xxx 顶层的 API。
+      * 只填真的在 loading.js 里实现过、且允许业务直接用的函数。
+      */
+     var publicApi = {
+       showLoading: showLoading,
+       closeLoading: closeLoading,
+       createSpinner: createSpinner,
+       isLoading: isLoading
+     };
+
+    /**
+     * @File    base.js
+     * @Desc    MelUI Util 基础层出口：汇总类型判断与对象工具，供 core 与 components 共用
+     * @Version 0.1.2
+     * @Date    2026-11-13
+     * @PubDate 2026-11-16 16:42:00
+     * @Author  ChenMufeng
+     *
+     * ── 层级定位：共享基础层（base）──────────────────────────
+     * 与 core/internal 的私有层不是一回事，看名字就能分辨：
+     *   base    = 允许多方 import 的底层公共函数
+     *   internal= 只允许本模块内部 import 的私有实现
+     *
+     * 【可见性】可共享：core、components、util 其它模块都可以 import 本文件。
+     * 【打包归属】随主包 melui.js 打包，被引用到才进包，不会整目录塞进去。
+     * 【对外形态】业务方通过 melui.util.xxx 调用，不直接 import 源码文件。
+     * 【硬约束】纯函数、无副作用；禁止任何 DOM 操作；禁止 import core / components。
+     *
+     * 【命名规则】入口文件与目录同名（base/base.js），不用 index.js。
+     * 【导入写法】本项目一律写完整文件名 + .js 后缀，不做目录简写：
+     *            import * as UtilBase from './util/base/base.js';
+     * ──────────────────────────────────────────────────────
+     */
+
+    var UtilBase = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        isPlainObject: isPlainObject,
+        isArray: isArray,
+        isFunction: isFunction,
+        isNumber: isNumber,
+        isString: isString,
+        isElement: isElement$1,
+        mergeObj: mergeObj,
+        shallowCopy: shallowCopy
+    });
+
+    /**
+     * @File    index.js
+     * @Desc    MelUI 全量入口：CSS 集中导入 + 组件 JS 引入 + core/util 装配
+     * @Version 0.1.4
+     * @Date    2026-11-13
+     * @PubDate 2026-11-16 18:20:00
+     * @Author  ChenMufeng
+     *
+     * ── 文件职责：全量打包入口 ───────────────────────────────
+     * 1. 顶部集中导入全部 CSS，决定 melui.css 的输出顺序；
+     * 2. 下方引入全部组件 JS（组件执行时自己挂到 window.MelUi）；
+     * 3. 最后装配 core 白名单与 util/base，并把 window.melui 指向同一对象。
+     *
+     * 【CSS 标记】CSS 导入包在 __ROLLUP_ONLY__ 块注释里：
+     *  - 浏览器 ESM 调试时整块是注释，不会请求 css，不报 MIME 错；
+     *  - rollup 构建时由 activateRollupOnly 插件解开，交给 postcss 收集合并。
+     *  该块内只允许写 css import，JS import 一律放块外。
+     * 【导入写法】一律写完整文件名 + .js 后缀，不做目录简写。
+     * ──────────────────────────────────────────────────────
+     */
+
+    // 复用组件已经建好的命名空间，不要新建
+    var MelUiNS = window.MelUi || (window.MelUi = {});
+    var key;
+
+    // 若页面先加载了 melui-util.js，melui.util 里已经有全套扩展工具，
+    // 这里要把它们保留下来，不能被主包的 util/base 覆盖掉
+    var existedUtil = (window.melui && window.melui.util) || null;
+
+    // 白名单里的高频 API 扁平到顶层：melui.showLoading()，不用写 .Core
+    // 注意：core/core.js 不再导出 Core 对象，对外不存在 melui.Core
+    for (key in publicApi) {
+      if (Object.prototype.hasOwnProperty.call(publicApi, key)) {
+        MelUiNS[key] = publicApi[key];
+      }
+    }
+
+    // 主包内置基础工具：来自 util/base（共享层，不是私有层）
+    if (existedUtil) {
+      // 把 base 合并进已存在的 util，扩展工具保持不动
+      for (key in UtilBase) {
+        if (Object.prototype.hasOwnProperty.call(UtilBase, key)) {
+          existedUtil[key] = UtilBase[key];
+        }
+      }
+      MelUiNS.util = existedUtil;
+    } else {
+      MelUiNS.util = UtilBase;
+    }
+
+    // 小写 melui 只是别名，指向同一个对象，不产生第二份状态
+    window.melui = MelUiNS;
+
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~
+    // · 导出
+    //~~~~~~~~~~~~~~~~~~~~~~~~
+    // 写到 export default 这一行入口就结束了。里面看不到任何 window.MelUi.Table = Table，
+    // 因为组件自己挂好了，入口再挂一遍就是重复。
     var index = window.MelUi;
 
     return index;

@@ -821,6 +821,102 @@ select.mel-form-ctrl {
    
 
 /**
+ * @File    core.css
+ * @Desc    MelUI Core 基础样式：Spinner 与全局 Loading（含 IE9 静态降级）
+ * @Version 0.1.0
+ * @Date    2026-11-13
+ * @PubDate 2026-11-13 18:09:21
+ * @Author  ChenMufeng
+ */
+
+/* ==================== Spinner ==================== */
+
+.mel-spinner {
+    display: inline-block;
+    position: relative;
+    vertical-align: middle;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+}
+
+.mel-spinner-dot {
+    display: block;
+    position: absolute;
+    border-radius: 50%;
+    /* IE9 不支持 transform 动画，圆点保持静态，由 JS 用 -ms-transform 摆位 */
+}
+
+/* 仅在非 IE9 下由 JS 添加该类；IE9 无此 class → 静态降级 */
+.mel-spinner-anim {
+    -webkit-animation: mel-spin 1s linear infinite;
+    animation: mel-spin 1s linear infinite;
+}
+
+@-webkit-keyframes mel-spin {
+    0%   { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes mel-spin {
+    0%   { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+/* ==================== Loading 浮层 ==================== */
+
+.mel-loading {
+    overflow: hidden;
+}
+
+.mel-loading-global {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.mel-loading-absolute {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.mel-loading-mask {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* 用 table-cell 垂直居中，避免 IE9 对 translate 百分比支持不稳定 */
+.mel-loading-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: table;
+}
+
+.mel-loading-panel-inner {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.mel-loading-text {
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    /* 不继承父级大字号，避免被业务页面样式污染 */
+    font-family: inherit;
+}
+
+/**
  * MelUi 弹窗对话框组件
  * 版本：v1.2.3 beta 1.0.9
  * 创建日期：2026-08-10
