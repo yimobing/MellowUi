@@ -221,10 +221,23 @@ const copyDemoPlugin = copy({
           '<script src="./polyfill/$1"></script>'
         );
 
+        // 页面自己写了 ../release/dist/xxx 的引入：复制到 release/test 后改指 ../dist/xxx
+        html = html.replace(
+          /<script\b[^>]*src="\.\.\/release\/dist\/([^"]+\.js)"[^>]*><\/script>/gi,
+          '<script src="../dist/$1"><\/script>'
+        );
+        html = html.replace(
+          /<link\b[^>]*href="\.\.\/release\/dist\/([^"]+\.css)"[^>]*\/?>/gi,
+          '<link rel="stylesheet" href="../dist/$1" />'
+        );
+
         // 在 </head> 之前注入打包后的css、js
-        const injectCss = '<link rel="stylesheet" href="../dist/melui.min.css">';
-        const injectJs = '<script src="../dist/melui.min.js"><\/script>';
-        html = html.replace(/<\/head>/i, `${injectCss}\n${injectJs}\n</head>`);
+        // 说明：页面 head 里写了 <!-- @skipAutoInject --> 的，说明它自己已经引入了产物（比如 util 手册），则不再自动注入 melui.min.css / melui.min.js，避免重复加载
+        if (html.indexOf('@skipAutoInject') === -1) {
+          const injectCss = '<link rel="stylesheet" href="../dist/melui.min.css">';
+          const injectJs = '<script src="../dist/melui.min.js"><\/script>';
+          html = html.replace(/<\/head>/i, `${injectCss}\n${injectJs}\n</head>`);
+        }
 
         return html;
       }

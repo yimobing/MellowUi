@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <!-- @skipAutoInject 本页自己引入了主包与扩展包，复制到 release/test 时不要再自动注入 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title> MelUi Util 工具库使用手册 </title>
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/styles/stackoverflow-light.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+    <!-- 引入主包 -->
+    <link rel="stylesheet" href="../release/dist/melui.min.css">
+    <script src="../release/dist/melui.min.js"></script>
+    <!-- 引入扩展包 -->
+    <script src="../release/dist/melui-util.min.js"></script>
+    <style>
+        /* ── 本页样式自包含，不再依赖 demo_docs.css，避免样式互相打架 ── */
+        html, body { margin: 0; padding: 0; }
+        body {
+            background: #f1f1ec;
+            color: #16191b;
+            font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
+            font-size: 15px;
+            line-height: 1.85;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: #0b6b5f; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ===== 顶栏 ===== */
+        .topbar {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            height: 56px;
+            background: #16191b;
+            border-bottom: 1px solid #000;
+        }
+        .topbar-inner {
+            width: 92%;
+            max-width: 1680px;
+            height: 56px;
+            margin: 0 auto;
+            padding: 0;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
+            justify-content: space-between;
+        }
+        .topbar-brand {
+            color: #f1f1ec;
+            font-size: 15px;
+            letter-spacing: .05em;
+            white-space: nowrap;
+        }
+        .topbar-brand span { color: #6fd2c0; }
+        .topbar-ver {
+            color: #868c88;
+            font-size: 12px;
+            letter-spacing: .04em;
+            white-space: nowrap;
+        }
+        .topbar-menu {
+            display: none;
+            border: 1px solid #3a3f3c;
+            background: transparent;
+            color: #f1f1ec;
+            font-size: 13px;
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+
+        /* ===== 两列骨架 ===== */
+        .layout {
+            width: 92%;
+            max-width: 1680px;
+            margin: 0 auto;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: start;
+            -ms-flex-align: start;
+            align-items: flex-start;
+        }
+
+        /* 左侧树 */
+        .sidebar {
+            width: 400px;
+            -ms-flex-negative: 0;
+            flex-shrink: 0;
+            padding: 28px 0 60px;
+            position: -webkit-sticky;
+            position: sticky;
+            top: 56px;
+            max-height: calc(100vh - 56px);
+            overflow-y: auto;
+            border-right: 1px solid #e3e4de;
+            background: #f1f1ec;
+        }
+        .sidebar-title {
+            padding: 0 24px 10px;
+            font-size: 12px;
+            letter-spacing: .14em;
+            color: #8a8f8a;
+        }
+        #docTree { list-style: none; margin: 0; padding: 0 12px 0 0; }
+
+        .tree-chapter {
+            display: block;
+            padding: 9px 0 9px 28px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #16191b;
+            border-left: 3px solid transparent;
+        }
+        .tree-chapter:hover { background: #e9e9e3; text-decoration: none; }
+        .tree-chapter.is-active {
+            color: #0b6b5f;
+            border-left-color: #0b6b5f;
+            background: #e6efe9;
+        }
+
+        .tree-sub {
+            display: block;
+            padding: 7px 0 7px 46px;
+            font-size: 14px;
+            color: #4a4f52;
+            border-left: 3px solid transparent;
+        }
+        .tree-sub:hover { background: #e9e9e3; text-decoration: none; }
+        .tree-sub.is-active { color: #0b6b5f; border-left-color: #b7d8cb; background: #ecf4ef; }
+
+        .tree-api {
+            display: block;
+            padding: 6px 0 6px 64px;
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 13px;
+            color: #4a4f52;
+            border-left: 3px solid transparent;
+        }
+        .tree-api:hover { color: #16191b; background: #e9e9e3; text-decoration: none; }
+        .tree-api.is-active { color: #0b6b5f; border-left-color: #b7d8cb; background: #ecf4ef; }
+
+        /* 右侧内容纸张 */
+        .paper {
+            -webkit-box-flex: 1;
+            -ms-flex: 1 1 auto;
+            flex: 1 1 auto;
+            min-width: 0;
+            background: #ffffff;
+            min-height: calc(100vh - 56px);
+            padding: 44px 62px 120px;
+            box-sizing: border-box;
+        }
+        .paper-inner { max-width: 1080px; }
+
+        /* ===== 标题层级 ===== */
+        .doc-title {
+            margin: 0 0 8px;
+            font-size: 30px;
+            line-height: 1.28;
+            font-weight: 700;
+            letter-spacing: -.015em;
+        }
+        .doc-sub {
+            margin: 0 0 26px;
+            font-size: 13px;
+            color: #6b706c;
+            line-height: 1.9;
+            padding-bottom: 18px;
+            border-bottom: 1px solid #e3e4de;
+        }
+
+        h2 {
+            margin: 54px 0 6px;
+            padding-top: 22px;
+            border-top: 2px solid #16191b;
+            font-size: 21px;
+            line-height: 1.4;
+            font-weight: 700;
+            scroll-margin-top: 76px;
+        }
+        h2 .h2-num {
+            display: inline-block;
+            margin-right: 10px;
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 13px;
+            font-weight: 400;
+            color: #0b6b5f;
+            vertical-align: 2px;
+        }
+        h2 .h2-desc {
+            display: block;
+            margin-top: 4px;
+            font-size: 13px;
+            font-weight: 400;
+            color: #6b706c;
+            letter-spacing: 0;
+        }
+
+        h3 {
+            margin: 34px 0 10px;
+            padding-left: 12px;
+            border-left: 3px solid #6fd2c0;
+            font-size: 16px;
+            line-height: 1.5;
+            font-weight: 700;
+            scroll-margin-top: 76px;
+        }
+
+        p { margin: 0 0 12px; max-width: 72ch; }
+
+        /* ===== 说明块（浅色底，与纸区分） ===== */
+        .note {
+            margin: 18px 0;
+            padding: 14px 18px;
+            background: #f6f6f2;
+            border: 1px solid #e3e4de;
+            border-radius: 0;
+            font-size: 13px;
+            line-height: 1.9;
+            color: #3c4145;
+        }
+        .note p { margin: 0 0 6px; }
+        .note p:last-child { margin-bottom: 0; }
+        .note b { color: #16191b; }
+        .note--warn { background: #fdf4f1; border-color: #e6c9c1; color: #7b2f20; }
+        .note--warn b { color: #7b2f20; }
+
+        /* ===== 调用方式强调 ===== */
+        .callout {
+            margin: 0 0 8px;
+            padding: 16px 20px 18px;
+            background: #16191b;
+            color: #f1f1ec;
+        }
+        .callout-label {
+            font-size: 11px;
+            letter-spacing: .16em;
+            color: #8a8f8a;
+            margin-bottom: 6px;
+        }
+        .callout-code {
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 20px;
+            line-height: 1.5;
+            color: #ffffff;
+        }
+        .callout-code em { color: #6fd2c0; font-style: normal; }
+        .callout-note { margin-top: 8px; font-size: 12px; color: #b1b6b2; }
+
+        /* ===== 代码块 ===== */
+        .code-label {
+            margin: 12px 0 6px;
+            font-size: 11px;
+            letter-spacing: .14em;
+            color: #9a9f9a;
+        }
+        pre {
+            margin: 0 0 16px;
+            padding: 14px 16px;
+            background: #f6f6f2;
+            border: 1px solid #e3e4de;
+            border-radius: 0;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.72;
+            tab-size: 4;
+        }
+        pre code { font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace; }
+
+        /* ===== API 条目 ===== */
+        .api {
+            margin: 30px 0 0;
+            padding-top: 20px;
+            border-top: 1px solid #e3e4de;
+        }
+        .api-name {
+            margin: 0 0 6px;
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 17px;
+            line-height: 1.5;
+            font-weight: 700;
+            color: #0b6b5f;
+            scroll-margin-top: 76px;
+        }
+        .api-meta {
+            margin: 0;
+            padding-left: 12px;
+            border-left: 2px solid #ecece6;
+            font-size: 13px;
+            line-height: 1.9;
+            color: #4a4f52;
+        }
+        .api-meta b { color: #16191b; font-weight: 700; }
+
+        /* ===== F12 控制台提示条 ===== */
+        .hotnote {
+            margin: 0 0 26px;
+            padding: 14px 18px;
+            background: #fdf2f0;
+            border-left: 4px solid #d93025;
+            font-size: 13px;
+            line-height: 1.9;
+            color: #8c2b1e;
+        }
+        .hotnote b { color: #b3261e; }
+        .hotnote code {
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            background: #ffffff;
+            border: 1px solid #e6c9c1;
+            padding: 1px 5px;
+            color: #8c2b1e;
+        }
+
+        /* ===== 返回顶部 ===== */
+        .to-top {
+            position: fixed;
+            right: 26px;
+            bottom: 26px;
+            z-index: 30;
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border: 1px solid #16191b;
+            background: #16191b;
+            color: #f1f1ec;
+            cursor: pointer;
+            display: none;
+            text-align: center;
+        }
+        .to-top:hover { background: #0b6b5f; border-color: #0b6b5f; }
+        .to-top.is-show { display: block; }
+        .to-top svg { width: 18px; height: 18px; margin-top: 12px; }
+
+        /* ===== 窄屏：侧栏改抽屉 ===== */
+        @media (max-width: 900px) {
+            .topbar-inner { padding: 0 16px; }
+            .topbar-menu { display: inline-block; }
+            .layout { display: block; }
+            .sidebar {
+                position: fixed;
+                top: 56px;
+                left: 0;
+                z-index: 35;
+                width: 258px;
+                height: calc(100vh - 56px);
+                max-height: none;
+                padding-bottom: 40px;
+                border-right: 1px solid #d8d9d2;
+                box-shadow: 2px 0 10px rgba(0,0,0,.08);
+                -webkit-transform: translateX(-105%);
+                -ms-transform: translateX(-105%);
+                transform: translateX(-105%);
+                -webkit-transition: transform .22s ease;
+                transition: transform .22s ease;
+            }
+            .sidebar.is-open {
+                -webkit-transform: translateX(0);
+                -ms-transform: translateX(0);
+                transform: translateX(0);
+            }
+            .paper { padding: 28px 18px 96px; }
+            .doc-title { font-size: 24px; }
+            .callout-code { font-size: 17px; }
+            pre { font-size: 12px; padding: 12px; }
+            h2 { font-size: 19px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="topbar-brand">MelUi <span>Util</span></div>
+        <div class="topbar-ver">v1.0.0 &nbsp;·&nbsp; IE9+ &nbsp;·&nbsp; ES5</div>
+        <button type="button" class="topbar-menu" id="menuBtn">目录</button>
+    </div>
+</header>
+
+<div class="layout">
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-title">文档目录</div>
+        <ul id="docTree"></ul>
+    </aside>
+
+    <main class="paper">
+        <div class="paper-inner">
+
+            <h1 class="doc-title">MelUi Util 工具库</h1>
+            <div class="doc-sub">版本 v1.0.0 &nbsp;·&nbsp; 兼容 IE9~11 &nbsp;·&nbsp; 纯 ES5、无 DOM 操作 &nbsp;·&nbsp; 调用方式 melui.util.函数名()</div>
+
+            <div class="hotnote">
+                <b>本示例文件已引入主包和扩展包</b>，在浏览器打开后可按 F12 打开控制台，在控制台输入代码 <code>melui.util.函数名()</code> 直接测试。
+            </div>
+
+            <div class="callout">
+                <div class="callout-label">统一调用入口</div>
+                <div class="callout-code">melui.util.<em>函数名</em>()</div>
+                <div class="callout-note">melui 全小写，util 全小写。例：melui.util.mergeObj({ a: 1 }, { b: 2 })</div>
+            </div>
+
+            <!-- ============ 一、库整体说明 ============ -->
+            <h2 id="sec-1">一、库整体说明<span class="h2-desc">纯函数工具层：不创建 DOM、不读全局状态、不依赖组件</span></h2>
+            <p>Util 只做数据判断与对象处理，因此可以脱离 UI 框架单独使用；它不参与任何渲染，也不持有什么运行状态。</p>
+            <p>代码分两层，看文件位置就能分辨职责：</p>
+<pre><code class="language-plaintext">
+src/util/base/    共享基础层，core、components、util 都可以引用
+src/util/util.js  util 扩展包入口，单独打包成 melui-util.js
+</code></pre>
+            <div class="note">
+                <p>本页列出的函数全部是已实现、已随产物发布的函数，代码里没有的函数不会出现在本页。</p>
+                <p>所有函数均为纯 ES5 实现，不依赖 Object.assign、Object.keys、Array.prototype.forEach 等 IE9 可能缺失或行为不一致的能力。</p>
+            </div>
+
+            <!-- ============ 二、使用方式 ============ -->
+            <h2 id="sec-2">二、使用方式<span class="h2-desc">四种引入组合，以及合并规则</span></h2>
+
+            <h3 id="sub-2-1">1、引入主包后使用</h3>
+            <p>引入全量 melui.js，主包内置的基础工具已经挂在 melui.util 上，直接调用即可。</p>
+<pre><code class="language-html">
+&lt;link rel="stylesheet" href="./dist/melui.min.css"&gt;
+&lt;script src="./dist/melui.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+    var opts = melui.util.mergeObj({ a: 1 }, { b: 2 });
+&lt;/script&gt;
+</code></pre>
+
+            <h3 id="sub-2-2">2、单独引入 util 扩展包</h3>
+            <p>只想要工具、不需要 UI 组件时，可以只引 melui-util.js。此时 melui.util 可用，但没有 showLoading、没有 Dialog 等组件 API。</p>
+<pre><code class="language-html">
+&lt;script src="./dist/melui-util.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+    melui.util.isArray([]);            // true
+    melui.util.mergeObj({ a: 1 }, { b: 2 });
+&lt;/script&gt;
+</code></pre>
+
+            <h3 id="sub-2-3">3、主包与扩展包同时引入</h3>
+            <p>两者都在时，工具会合并到同一个 melui.util 上，先加载哪个都不影响调用。</p>
+<pre><code class="language-html">
+&lt;link rel="stylesheet" href="./dist/melui.min.css"&gt;
+&lt;script src="./dist/melui.min.js"&gt;&lt;/script&gt;
+&lt;script src="./dist/melui-util.min.js"&gt;&lt;/script&gt;
+</code></pre>
+
+            <h3 id="sub-2-4">4、ES Module 导入</h3>
+<pre><code class="language-js">
+import MelUi from './dist/melui.js';
+import util from './dist/melui-util.js';
+
+util.mergeObj({ a: 1 }, { b: 2 });
+MelUi.util.mergeObj({ a: 1 }, { b: 2 });
+</code></pre>
+
+            <div class="note">
+                <p><b>合并规则：</b>工具按属性名合并进已有的 melui.util，同名的以后加载的为准，先加载的其它工具不会被清空。</p>
+                <p><b>加载顺序：</b>如果扩展包先于主包加载，在主包执行完成之前，melui.showLoading 等 UI API 还不存在，此时只能使用 melui.util。</p>
+                <p><b>浏览器导入：</b>melui-util.js 是 UMD 产物，在浏览器里被 import 或 require 时同样会挂载 window.melui.util；在 Node/SSR 环境没有 window，会自动跳过挂载，不报错。</p>
+            </div>
+
+            <!-- ============ 三、主包内置工具 ============ -->
+            <h2 id="sec-3">三、主包内置工具<span class="h2-desc">引入 melui.js 即可使用，共 8 个函数</span></h2>
+            <p>分两组：类型判断与对象工具。调用统一写作 <code>melui.util.函数名(...)</code>。</p>
+
+            <h3 id="sub-3-1">3.1 类型判断</h3>
+
+            <div class="api">
+                <h4 class="api-name" id="api-isPlainObject">isPlainObject(val)</h4>
+                <div class="api-meta"><b>功能：</b>判断是否为普通对象。数组、null、Date、RegExp、DOM 节点、window 都返回 false。&nbsp;<b>兼容：</b>IE9+</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">
+melui.util.isPlainObject(
+    val   // {*} 任意值
+);
+// return {Boolean} 是普通对象返回 true
+</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">
+melui.util.isPlainObject({ a: 1 });        // true
+melui.util.isPlainObject([]);              // false
+melui.util.isPlainObject(null);            // false
+melui.util.isPlainObject(new Date());      // false
+melui.util.isPlainObject(document.body);   // false
+</code></pre>
+            </div>
+
+            <div class="api">
+                <h4 class="api-name" id="api-isArray">isArray(val)</h4>
+                <div class="api-meta"><b>功能：</b>判断是否为数组。用 Object.prototype.toString 判定，跨 iframe 传进来的数组同样能识别。&nbsp;<b>兼容：</b>IE9+</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">
+melui.util.isArray(
+    val   // {*} 任意值
+);
+// return {Boolean} 是数组返回 true
+</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">
+melui.util.isArray([]);            // true
+melui.util.isArray({ length: 0 }); // false  类数组对象不算数组
+melui.util.isArray('abc');         // false
+</code></pre>
+            </div>
+
+            <div class="api">
+                <h4 class="api-name" id="api-isFunction">isFunction(val)</h4>
+                <div class="api-meta"><b>功能：</b>判断是否为函数，等价于 typeof val === 'function'。&nbsp;<b>兼容：</b>IE9+</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">
+melui.util.isFunction(
+    val   // {*} 任意值
+);
+// return {Boolean} 是函数返回 true
+</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">
+melui.util.isFunction(function () {});   // true
+melui.util.isFunction(Function);         // true
+melui.util.isFunction({});               // false
+</code></pre>
+            </div>
+
+            <div class="api">
+                <h4 class="api-name" id="api-isNumber">isNumber(val)</h4>
+                <div class="api-meta"><b>功能：</b>判断是否为数字类型且不是 NaN。字符串形式的数字不算；Infinity 属于数字类型，返回 true。&nbsp;<b>兼容：</b>IE9+</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">
+melui.util.isNumber(
+    val   // {*} 任意值
+);
+// return {Boolean} 是数字返回 true
+</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">
+melui.util.isNumber(12);        // true
+melui.util.isNumber(0);         // true
+melui.util.isNumber(NaN);       // false   NaN 不算数字
+melui.util.isNumber(Infinity);  // true    Infinity 仍是 number 类型
+melui.util.isNumber('12');      // false   字符串不算数字
+</code></pre>
+            </div>
+
+            <div class="api">
+                <h4 class="api-name" id="api-isString">isString(val)</h4>
+                <div class="api-meta"><b>功能：</b>判断是否为字符串，等价于 typeof val === 'string'；包装对象 new String() 不算。&nbsp;<b>兼容：</b>IE9+</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">
+melui.util.isString(
+    val   // {*} 任意值
+);
+// return {Boolean} 是字符串返回 true
+</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">
+melui.util.isString('');                // true
+melui.util.isString('abc');             // true
+melui.util.isString(new String('abc')); // false  包装对象不算
+</code></pre>
+            </div>
+
+            <div class="api">
+                <h4 class="api-name" id="api-isElement">isElement(val)</h4>
+                <div class="api-meta"><b>功能：</b>判断是否为 DOM 元素节点（nodeType === 1）。文本节点、注释节点、document、null 都返回 false。&nbsp;<b>兼容：</b>IE9+</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">
+melui.util.isElement(
+    val   // {*} 任意值
+);
+// return {Boolean} 是元素节点返回 true
+</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">
+melui.util.isElement(document.body);                // true
+melui.util.isElement(document.createTextNode('x')); // false  文本节点
+melui.util.isElement(document);                     // false  document 节点
+</code></pre>
+            </div>
+
+            <h3 id="sub-3-2">3.2 对象工具</h3>
+
+            <div class="api">
+                <h4 class="api-name" id="api-mergeObj">mergeObj(...objects)</h4>
+                <div class="api-meta"><b>功能：</b>深合并多个对象，返回一个全新对象。同名属性后传的覆盖先传的；双方都是普通对象时递归合并。&nbsp;<b>兼容：</b>IE9+</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">
+melui.util.mergeObj(
+    obj1,      // {Object} 基础对象
+    obj2,      // {Object} 可传任意个，后面的覆盖前面的
+    objN       // {Object} 非普通对象（数组、null、字符串等）会被整段跳过
+);
+// return {Object} 全新对象
+
+// 行为约定：
+// 1. 不修改任何入参对象，用户传进来的 options 不会被污染
+// 2. 数组不递归合并，整体替换成一个克隆后的新数组
+// 3. 返回值里的普通对象与数组都是新引用，改结果不会影响入参
+</code></pre>
+                <div class="code-label">示例（参数较多，给一个合并场景）</div>
+<pre><code class="language-js">
+var userOpts = { text: '原对象', size: 33 };
+var result = melui.util.mergeObj(
+    { text: '默认', size: 40, nested: { a: 1 } },
+    userOpts,
+    { nested: { b: 2 } }
+);
+
+// result: { text: '原对象', size: 33, nested: { a: 1, b: 2 } }
+// userOpts 仍然是 { text: '原对象', size: 33 }，没有被改动
+</code></pre>
+            </div>
+
+            <div class="api">
+                <h4 class="api-name" id="api-shallowCopy">shallowCopy(val)</h4>
+                <div class="api-meta"><b>功能：</b>浅拷贝一个普通对象，只复制第一层属性，值为引用类型的属性仍然是同一个引用。&nbsp;<b>兼容：</b>IE9+</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">
+melui.util.shallowCopy(
+    val   // {Object} 需为普通对象；传其它类型返回空对象 {}
+);
+// return {Object} 新的第一层对象
+</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">
+var source = { name: 'melui', options: { size: 40 } };
+var copy = melui.util.shallowCopy(source);
+
+// copy: { name: 'melui', options: { size: 40 } }
+// copy.options 与 source.options 是同一个对象：改 copy.options.size 会连带影响 source
+melui.util.shallowCopy(null);    // {}
+melui.util.shallowCopy([1, 2]);  // {}
+</code></pre>
+            </div>
+
+            <div class="note note--warn">
+                <p><b>选哪一个：</b>需要保留默认参数、又不污染调用方传入的 options，用 mergeObj；只想复制一层键值、明确知道嵌套对象要共享引用，用 shallowCopy。</p>
+                <p><b>比较方式：</b>mergeObj 每次都返回新对象，不要用 === 判断两次调用结果是否相等，需要比较内容请逐个属性判断。</p>
+            </div>
+
+            <!-- ============ 四、util 扩展包 ============ -->
+            <h2 id="sec-4">四、util 扩展包<span class="h2-desc">单独引入 melui-util.js 后可用</span></h2>
+            <p>melui-util.js 是独立产物，不随主包发布；它的作用是把工具单独分发，让不需要 UI 组件的项目也能用这套函数。</p>
+            <p>当前扩展包的入口只聚合 src/util/base 的这 8 个函数，与主包内置的是同一套实现，调用方式同样是 <code>melui.util.函数名(...)</code>。</p>
+            <div class="note">
+                <p>扩展包不含 UI 能力：只引 melui-util.js 时，melui.showLoading、melui.Dialog 等都不存在。</p>
+                <p>扩展包与主包共用同一个 melui.util 命名空间，合并规则见第二节。</p>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<button type="button" class="to-top" id="toTop" aria-label="返回顶部">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+        <path d="M12 19V5M5 12l7-7 7 7"></path>
+    </svg>
+</button>
+
+<script>
+    (function () {
+        var headerH = 56;       // 顶栏高度
+        var offsetGap = 20;     // 锚点上方留白
+        var treeBox = document.getElementById('docTree');
+        var sidebar = document.getElementById('sidebar');
+        var menuBtn = document.getElementById('menuBtn');
+        var toTop = document.getElementById('toTop');
+
+        // 1. 收集标题：h2 章节 / h3 小节 / h4 API
+        var nodes = document.querySelectorAll('.paper-inner h2, .paper-inner h3, .paper-inner h4');
+        var i;
+        var id;
+        var level;
+        var text;
+        var target;
+
+        for (i = 0; i < nodes.length; i++) {
+            if (!nodes[i].id) {
+                nodes[i].id = 'doc-anchor-' + i;
+            }
+        }
+
+        // 2. 按层级生成左侧树（h2 一级、h3 二级、h4 三级）
+        var frag = document.createDocumentFragment();
+        for (i = 0; i < nodes.length; i++) {
+            target = nodes[i];
+            level = target.tagName.toLowerCase();
+            text = target.firstChild && target.firstChild.nodeType === 3
+                ? target.firstChild.nodeValue
+                : target.textContent;
+            text = (text || '').replace(/^\s+|\s+$/g, '');
+            if (!text) {
+                continue;
+            }
+
+            var li = document.createElement('li');
+            var a = document.createElement('a');
+            a.href = '#' + target.id;
+            a.innerHTML = '';
+            a.appendChild(document.createTextNode(text));
+            a.className = level === 'h2' ? 'tree-chapter' : (level === 'h3' ? 'tree-sub' : 'tree-api');
+            a.setAttribute('data-target', target.id);
+            li.appendChild(a);
+            frag.appendChild(li);
+        }
+        treeBox.appendChild(frag);
+
+        // 3. 锚点跳转：扣掉顶栏高度，避免标题被遮住
+        var links = treeBox.getElementsByTagName('a');
+
+        function jumpTo(el) {
+            var rect = el.getBoundingClientRect();
+            var top = (window.pageYOffset || document.documentElement.scrollTop || 0);
+            var y = rect.top + top - headerH - offsetGap;
+            window.scrollTo(0, y < 0 ? 0 : y);
+        }
+
+        function bindJump(a) {
+            a.onclick = function (e) {
+                var evt = e || window.event;
+                if (evt.preventDefault) {
+                    evt.preventDefault();
+                } else {
+                    evt.returnValue = false;
+                }
+                var el = document.getElementById(a.getAttribute('data-target'));
+                if (!el) {
+                    return false;
+                }
+                jumpTo(el);
+                if (sidebar.className.indexOf('is-open') !== -1) {
+                    sidebar.className = 'sidebar';
+                }
+                return false;
+            };
+        }
+        for (i = 0; i < links.length; i++) {
+            bindJump(links[i]);
+        }
+
+        // 4. 滚动时高亮当前章节，并控制返回顶部按钮
+        function currentTop() {
+            return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        }
+
+        function onScroll() {
+            var top = currentTop();
+            var cur = -1;
+            var j;
+
+            for (j = 0; j < nodes.length; j++) {
+                if (nodes[j].getBoundingClientRect().top + top - headerH - 30 <= top) {
+                    cur = j;
+                }
+            }
+            for (j = 0; j < links.length; j++) {
+                var base = links[j].className.replace(/\s*is-active/g, '');
+                links[j].className = (j === cur) ? base + ' is-active' : base;
+            }
+            if (toTop) {
+                toTop.className = top > 320 ? 'to-top is-show' : 'to-top';
+            }
+        }
+
+        var ticking = false;
+        window.onscroll = function () {
+            if (ticking) {
+                return;
+            }
+            ticking = true;
+            setTimeout(function () {
+                onScroll();
+                ticking = false;
+            }, 16);
+        };
+
+        if (toTop) {
+            toTop.onclick = function () {
+                window.scrollTo(0, 0);
+            };
+        }
+
+        // 5. 窄屏目录按钮
+        if (menuBtn) {
+            menuBtn.onclick = function () {
+                sidebar.className = sidebar.className.indexOf('is-open') === -1
+                    ? 'sidebar is-open'
+                    : 'sidebar';
+            };
+        }
+
+        // 6. 带 hash 打开页面时，也按偏移量定位
+        if (location.hash) {
+            var hashEl = document.getElementById(location.hash.replace('#', ''));
+            if (hashEl) {
+                setTimeout(function () {
+                    jumpTo(hashEl);
+                }, 80);
+            }
+        }
+
+        if (window.hljs) {
+            hljs.highlightAll();
+        }
+        onScroll();
+    }());
+</script>
+
+</body>
+</html>

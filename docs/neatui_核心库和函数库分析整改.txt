@@ -1,0 +1,246 @@
+# NeatUI → MelUI：core核心库 / util扩展库 拆分分析（只分析，不写代码）
+> 前提回顾：
+> 1. neatui.min.js：UI组件库（弹窗、侧栏、loading、iframe窗口、水印、回到顶部、导出excel、导出图片、房贷计算器等，强依赖jQuery）
+> 2. neatui‑functions.js：纯工具函数集合，一大把校验、格式化、转换、数组处理、日期日历、DOM工具、原型polyfill；**大量内部耦合，很多函数互相调用，没有模块化隔离**。
+> 3. MelUI定位：`melui.min.js(core)` = UI组件核心；`melutil.min.js(util扩展包)` = 工具函数；目标IE9‑11，ES5；core尽量不掺杂纯业务工具；util放通用工具。
+> 重要现状：`neatui‑functions.js`耦合问题非常突出，先把耦合点梳理清楚，再划分归属。
+
+## 一、先梳理 neatui‑functions.js 的耦合现状（风险点，改造前必须认清）
+1. **函数互相调用，网状依赖**
+- 示例：
+  - `merge.extend` 被大量组件代码、restrict、filter里面多处调用；
+  - `utilities.getRandomColor`内部用到`hex2Rgb`、`hsl2Hex`、对比度计算内部子逻辑；
+  - `checker.checkIsMobile` 被`utilities`、`neatui.min.js组件`多处引用；
+  - `calendar`大量日期函数之间互相复用；
+  - `convert`里面部分方法依赖`format`；
+  - 很多函数没有内部私有子函数，全部挂在顶层对象，没有隔离；
+  - polyfill（bind、filter、classList、closest等）被几乎所有模块隐性依赖。
+
+2. **依赖jQuery**
+- `neatui‑functions.js` 不少API内部直接使用`$`：`$.extend`、`$.getUrlParam`；部分DOM工具依赖JQ对象判断；如果melui core想要做到**无jQuery原生JS**，这一批函数不能直接搬迁，要么重写，要么归到util，并且明确util依赖jQuery。
+
+3. **混杂三类东西，没有边界**
+① IE polyfill兼容补丁；② DOM操作工具；③ 业务工具（房贷计算、省市区分组、手机号提取等业务向工具）。
+
+4. **错误处理、入参容错参差不齐**
+部分函数做了完整入参校验，部分没有；很多函数直接alert弹窗抛出错误，UI库core不允许内部随意alert。
+
+> ⚠️关键结论：**不能直接整块复制搬迁neatui‑functions.js**。搬迁前必须做两件前置工作：
+> 1. 把网状依赖梳理清楚，抽离被多个函数复用的公共子逻辑；
+> 2. 区分：浏览器环境必须的polyfill / DOM底层工具 / 通用业务工具 / 强依赖jQuery的函数 / 业务领域专用函数。
+
+---
+
+## 二、划分原则（对齐MelUI现有架构）
+### melui.min.js（core核心库）职责
+> 只放：**UI组件运行必需的底层基础设施**，组件运行离不开的；纯组件逻辑；浏览器兼容polyfill；DOM基础工具。
+> 原则：core尽量不包含业务工具（日期格式化、千分位、手机号校验、颜色生成、房贷计算器这类业务工具一律扔util）。
+> core对外暴露少量底层工具，供组件自身内部使用，**不鼓励业务直接调用**，业务工具全部走`melui.util.xxx()`。
+
+### melutil.min.js（util扩展库 melui‑util）职责
+> 放：业务开发通用工具集，组件本身**不强制依赖**util；util可以依赖core对外基础类型；util允许部分API依赖jQuery；包含：校验、格式化、日期、数组、颜色、字符串清洗、业务工具。
+
+> 边界红线：
+> 1. core运行不能依赖util；util可以导入core的导出对象；
+> 2. polyfill：组件运行必须的polyfill放进core；只有工具函数才需要的polyfill放到util；
+> 3. 如果一个函数，删掉它，UI组件（dialog / loading / aside / table）还能正常跑 → 归util。
+> 4. 如果删掉它，组件直接报错无法运行 → 归core。
+
+---
+
+## 三、neatui.min.js（UI组件）拆分评估
+neatui.min.js全部是UI组件：
+1. **showAnimate / destroyAnimate 转圈loading** → 搬迁到melui core（就是我们现在的loading模块）
+2. `openAside`侧栏组件 → **core**（melui的drawer/aside组件）
+3. `openIframe` iframe弹窗组件 → **core**（弹窗体系一部分）
+4. `openMask`底层遮罩逻辑 → core弹窗底层内部实现
+5. `alertDialog`提示弹窗 → core dialog模块
+6. `waterMarker`网页水印 → **util扩展库**
+> 理由：水印属于业务增强工具，不是基础组件，删掉水印，dialog/loading/aside全部正常工作，所以放到util。
+7. `goToTop`回到顶部 → **util扩展库**
+> 回到顶部属于业务小部件，不属于基础弹窗、loading这类必备组件。
+8. `export2Excel`导出excel → **util扩展库，强依赖第三方jquery.table2excel插件**
+9. `exportWeb2Image`网页导出图片 → **util扩展库，强依赖html2canvas第三方库**
+10. `installmentPayment`房贷计算器 → **纯业务示例工具，放到demo示例代码，不要打进core/util产物**，业务开发者需要再复制走。
+
+> neatui.min.js小结：
+> ✅ core：loading、aside侧栏、iframe弹窗、mask遮罩、alertDialog弹窗。
+> ✅ util：waterMarker水印、goToTop回到顶部、export2Excel、exportWeb2Image。
+> ❌ 不打进构建产物：installmentPayment房贷计算器，只保留在demo示例。
+
+---
+
+## 四、neatui‑functions.js 对象逐个归类
+### ① 【归 core核心库】：组件运行必须，UI底层依赖，polyfill、原生DOM工具
+> 这些是melui组件内部要调用；业务不直接面向这一堆API；只给core内部使用，可以少量挂载到melui内部命名空间，不暴露给melui.util。
+1. 原型polyfill（IE9‑11组件运行必须）
+- `Function.prototype.bind` polyfill
+- `Array.prototype.filter/indexOf/forEach` polyfill
+- `classList`兼容polyfill
+- `Element.prototype.matches / closest` polyfill
+- `Array.from` polyfill
+
+2. utilities 里面的**纯DOM底层工具（组件内部要用到）**
+- `utilities.getDataset` 获取dataset（弹窗、aside大量用到dataset）
+- `utilities.addClass / removeClass`
+- `utilities.getChildElement / getChildrenElement / getFirstChildElement / getLastChildElement`
+- `utilities.getNextElement / getPrevElement / getAllSiblingElement`
+- `utilities.removeNode`
+- `utilities.insertAfter`
+- `utilities.appendChild / prependChild`
+- `utilities.appendHTML / prependHTML`
+- `utilities.getElementStyle`
+- `utilities.getElementTop / utilities.getElementLeft`
+- `utilities.getElementWidth / utilities.getElementHeight`
+- `utilities.getScrollbarWidth` 获取滚动条宽度（弹窗、遮罩计算布局用）
+- `utilities.elementScrollTo`滚动到指定位置
+- `IEHacker.addEventListener`兼容事件绑定
+
+> 注意：`makeTextareaExpanding`文本域自动高度，业务组件才会用，组件内核不依赖，放到util。
+
+3. `merge.extend`深/浅对象合并
+> **重要**：melui core组件大量做options合并，等价我们现在内部的`mergeObj`。**这个一定要放到core内部底层，组件配置合并强依赖**。
+
+> 其余 utilities里：url参数、数组去重、随机字符串、随机颜色、htmlEncode等全部归util。
+
+### ② 全部归入 melutil（util扩展库），业务工具，core组件不依赖它们
+#### utilities（剩余部分）
+- getUrlParams URL参数解析
+- htmlEncode / htmlDecode HTML实体转义
+- escapeSpecialChars / unescapeSpecialChars 字符串转义
+- readMore阅读更多
+- uniqueArray数组去重
+- arraySort排序
+- arrayHasDuplicate数组重复项检测
+- getOwnKeys
+- isValueEqual深度对比对象
+- isArray、isNaN
+- makeTextareaExpanding textarea自动增高
+- getRandomMinMaxNumber / getRandomNumber / getRandomString / getRandomChar 随机数随机字符串
+- getRandomColor 随机颜色生成
+- getAreaDistinctGroup 省市区分组
+- pickupTel提取手机号
+- combineNextElementToArray数组相邻分组
+
+#### checker 校验整套对象 → util
+`checkHasDangerousChars`、`checkIsMobile`、`checkIsApple`、`checkTel`手机号、`checkEmail`邮箱、各种格式校验。
+
+#### filter 对象整套（html过滤、危险字符过滤）→ util
+
+#### restrict 对象输入限制整套 → util
+
+#### format 对象格式化（千分位等）→ util
+
+#### convert 对象数据转换整套（元/万元、时间戳、百分数转换）→ util
+
+#### calendar 日历日期全套（日期格式化、日期加减、季度、月初月末）→ util
+
+#### sortingAlgorithm 快速排序冒泡排序 → util
+
+#### JQ相关工具
+`$.getUrlParam`、`$.fn.onInput`、`$.makeTextareaExpanding`、`$.fn.formatHtml`；**这一批标记为util内jQuery依赖API，如果业务不用jQuery就不可用。**
+
+### ③ 不打进构建产物，只放到demo示例（业务示例工具）
+1. 房贷计算器相关逻辑（neatui.min.js的installmentPayment）
+2. 省市区数据示例，业务需要自行复制，不要打包进util产物。
+
+---
+
+## 五、搬迁的风险清单（非常重要，因为原functions耦合很重）
+1. **`merge.extend`被util大量调用**：merge放到core，util构建时要导入core的merge，不能自己复制一份，避免两份实现。
+2. **polyfill归属问题**：core里面已经提供bind、classList等polyfill；util不要再重复引入同一套polyfill，防止重复执行。
+3. 大量函数内部直接`alert()`抛出错误。core和util库**禁止直接alert**，要改成console.warn/console.error，把异常抛给上层业务处理。
+4. jQuery依赖区分：
+    - core：我们现在melui core目标**无jQuery**；所有依赖$的工具全部留在util，文档标注：这部分API依赖jQuery。
+    - util内部API分成两类：原生JS实现 / jQuery依赖实现，文档标注清楚。
+5. 网状依赖问题示例：
+    > 比如 `utilities.getRandomColor`内部依赖hsl2Hex、hex2Rgb、对比度计算，这些是内部子函数，原代码全部写在方法内部还好；如果后续拆分抽离，子函数要做内部私有，不要暴露到`melui.util`命名空间。
+6. 入参容错：很多neatui‑functions的函数没有做严格入参判断，搬迁到melutil之后统一补齐容错，保持和现有melutil的编码风格统一。
+
+## 六、产物边界总结
+| 模块 | 包含内容 | 依赖 |
+|---|---|---|
+| melui.min.js（core） | UI组件：loading、dialog、aside、iframe弹窗、mask遮罩；IE9‑11必需polyfill；DOM底层工具；对象合并merge.extend；组件内部私有底层方法 | 原生JS ES5，**不依赖jQuery，不依赖melutil** |
+| melutil.min.js（util扩展包） | 字符串、日期、数组、颜色、校验、过滤、转换、水印、回到顶部、导出excel、导出图片；部分API依赖jQuery | **依赖melui core；部分API依赖jQuery；组件core不依赖util** |
+| demo示例代码 | 房贷计算器、省市区示例，不打进构建产物 | 业务按需复制 |
+
+> 业务使用顺序：
+> 1. 只需要弹窗、loading：只引入`melui.min.js`，不需要util。
+> 2. 需要校验、日期、随机颜色、水印、导出等工具：额外引入`melutil.min.js`，通过`melui.util.xxx()`调用。
+
+如果你需要，下一步我可以输出一份：搬迁改造执行步骤清单，把解耦顺序一条条列出来。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+===========================================================
+        关于polly库的问题
+===========================================================
+> 
+> 源码目录模块名：`mel‑util`
+> rollup打包输出：
+> 
+> 
+> - 开发版：`mel‑util.js`
+> - 压缩生产版：**`mel‑util.min.js`**（不是 `melutil.min.js`，纠正之前笔误）
+
+更新完整产物清单（最终定稿）
+
+| 产物文件名 | 说明 | 是否包含polyfill |
+| --- | --- | --- |
+| `melui.js` | core 开发未压缩版 | ✅内置带守卫的全部原型polyfill |
+| `melui.min.js` | core 生产压缩版，**所有项目统一使用此文件**，IE9‑11 /现代浏览器通用 | ✅内置带守卫的全部原型polyfill |
+| `mel‑util.js` | util扩展包，开发未压缩版 | ❌完全不含polyfill，依赖melui环境 |
+| `mel‑util.min.js` | util扩展包，生产压缩版 | ❌完全不含polyfill，依赖melui环境 |
+| `melui‑third.js` | 第三方适配包，开发版 | ❌无polyfill |
+| `melui‑third.min.js` | 第三方适配包，压缩生产版 | ❌无polyfill |
+| demo目录 | 各类业务示例源码（房贷计算器等，不打进dist产物） | - |
+
+## 文档【快速上手】标准引入示例（只给这一套，普通用户照抄即可）
+
+```
+<!-- 标准引入，IE / 现代浏览器都直接这套写法 -->
+<script src="melui.min.js"></script>
+<!-- 需要工具扩展能力时再引入，不需要可以不加载 -->
+<script src="mel-util.min.js"></script>
+<!-- 需要导出excel、网页截图等第三方适配能力，再额外引入 -->
+<script src="melui-third.min.js"></script>
+```
+
+## util内部运行时警告逻辑（文件名同步修正）
+
+文件入口 `mel‑util.js` 头部增加检测逻辑：
+
+- 如果检测到是IE环境，并且核心原型补丁缺失，控制台输出黄色警告：
+
+```
+[mel‑util warn]: IE浏览器检测到原型补丁缺失，请确认已引入 melui.min.js，请勿使用自行裁剪过的core版本。
+```
+
+> 
+> ⚠️只是warn警告，不抛出异常阻断业务执行；方便开发者打开控制台一眼定位问题。
+
+## 配套约束再对齐一遍
+
+1. `mel‑util` **源码内部一行polyfill都不写**；polyfill全部放在melui core内部，带`if(!xxx)`守卫，现代浏览器不会修改原生对象。
+2. `mel‑util` 运行依赖已经加载完成的 `melui.min.js`；**不能单独脱离core在IE下使用**，该场景归高级文档备注，普通用户不展示。
+3. `melui‑third.min.js`：仅做适配封装，**不会动态加载CDN脚本**，业务自己引入 html2canvas / jquery‑table2excel，文档写明依赖。
+4. 高级进阶角落备注：追求极致体积，可自行本地rollup编译一份裁剪polyfill的melui，风险自行承担；dist发布包不提供modern版本。
+
+> 
+> 命名小提醒：源码模块名 `mel‑util`，打包输出文件名统一带短横线，杜绝之前`melutil.min.js`这种无短横线笔误，后续写文档、写rollup配置、demo引用全部统一这套命名。

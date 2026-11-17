@@ -55,6 +55,232 @@
             gap: 0;
         }
         .demo-box--row > div { margin: 0 18px; }
+        /* API 表格：后期新增 API 只加一行 */
+        .api-table {
+            width: 100%;
+            margin: 4px 0 16px;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        .api-table th, .api-table td {
+            border: 1px solid #d9d9d9;
+            padding: 9px 10px;
+            text-align: left;
+            vertical-align: top;
+            word-break: break-word;
+        }
+        .api-table th { background: #f5f5f3; font-weight: 700; color: #16191b; }
+        .api-table th, .api-table td { padding: 7px 10px; }
+        /* demo_docs.css 把 code 当块级元素，这里在表格与提示行里强制回行内 */
+        .api-table code, .api-hint code {
+            display: inline;
+            padding: 0 3px;
+            margin: 0;
+            background: transparent;
+            border: 0;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #0b6b5f;
+            white-space: normal;
+        }
+        /* 正文里的行内 code：demo_docs.css 的 code 是块级，这里强制行内 */
+        .paper-inner code.inline-code {
+            display: inline;
+            padding: 0 3px;
+            margin: 0;
+            background: #f4f4f0;
+            border: 1px solid #e3e4de;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #0b6b5f;
+            font-family: Consolas, "Courier New", monospace;
+        }
+        .api-hint {
+            margin: 0 0 18px;
+            font-size: 13px;
+            color: #595959;
+        }
+        /* ===== 文档骨架：悬浮顶栏 + 左树 + 右侧白纸 ===== */
+        html, body { margin: 0; padding: 0; background: #f1f1ec; }
+        body { color: #16191b; }
+        .topbar {
+            position: -webkit-sticky; position: sticky; top: 0; z-index: 40;
+            height: 56px; background: #16191b; border-bottom: 1px solid #000;
+        }
+        .topbar-inner {
+            width: 92%; max-width: 1680px; height: 56px; margin: 0 auto; padding: 0;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+            -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+        }
+        .topbar-brand { color: #f1f1ec; font-size: 15px; letter-spacing: .05em; white-space: nowrap; }
+        .topbar-brand span { color: #6fd2c0; }
+        .topbar-ver { color: #868c88; font-size: 12px; white-space: nowrap; }
+        .topbar-menu {
+            display: none; border: 1px solid #3a3f3c; background: transparent;
+            color: #f1f1ec; font-size: 13px; padding: 6px 12px; cursor: pointer;
+        }
+        .layout {
+            width: 92%; max-width: 1680px; margin: 0 auto;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-align: start; -ms-flex-align: start; align-items: flex-start;
+        }
+        .sidebar {
+            width: 300px; -ms-flex-negative: 0; flex-shrink: 0;
+            padding: 26px 0 60px;
+            position: -webkit-sticky; position: sticky; top: 56px;
+            max-height: calc(100vh - 56px); overflow-y: auto;
+            border-right: 1px solid #e3e4de;
+        }
+        .sidebar-title { padding: 0 24px 10px; font-size: 12px; letter-spacing: .14em; color: #8a8f8a; }
+        #docTree { list-style: none; margin: 0; padding: 0 12px 0 0; }
+        .tree-chapter {
+            display: block; padding: 9px 0 9px 28px; font-size: 15px; font-weight: 700;
+            color: #16191b; border-left: 3px solid transparent;
+        }
+        .tree-sub {
+            display: block; padding: 7px 0 7px 46px; font-size: 14px; color: #4a4f52;
+            border-left: 3px solid transparent;
+        }
+        .tree-item {
+            display: block; padding: 6px 0 6px 64px; font-size: 13px; color: #4a4f52;
+            border-left: 3px solid transparent;
+        }
+        .tree-example {
+            display: block; padding: 5px 0 5px 82px; font-size: 12px; color: #8a8f8a;
+            border-left: 3px solid transparent;
+        }
+        .tree-chapter:hover, .tree-sub:hover, .tree-item:hover, .tree-example:hover { background: #e9e9e3; text-decoration: none; }
+        .tree-chapter.is-active { color: #0b6b5f; border-left-color: #0b6b5f; background: #e6efe9; }
+        .tree-sub.is-active, .tree-item.is-active, .tree-example.is-active { color: #0b6b5f; border-left-color: #b7d8cb; background: #ecf4ef; }
+        .paper {
+            -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; min-width: 0;
+            background: #ffffff; min-height: calc(100vh - 56px);
+            padding: 44px 62px 120px; box-sizing: border-box;
+        }
+        .paper-inner { max-width: 1080px; }
+        .paper-inner h2 {
+            margin: 46px 0 10px; padding-top: 20px;
+            border-top: 2px solid #16191b; font-size: 21px; line-height: 1.4;
+            scroll-margin-top: 76px;
+        }
+        .paper-inner h3 {
+            margin: 0 0 8px; padding-left: 10px; border-left: 3px solid #6fd2c0;
+            font-size: 15px; line-height: 1.5;
+        }
+        /* 链接：全文默认无下划线，hover 才出现 */
+        a { color: #0b6b5f; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* 小节标题：拉开与上一段的距离，避免贴着正文 */
+        .paper-inner h3 {
+            margin: 28px 0 8px;
+            padding-left: 10px;
+            border-left: 3px solid #6fd2c0;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* tips：统一成中性底色面板，去掉整条刺眼的黄色 */
+        .tips {
+            margin: 18px 0 10px;
+            padding: 14px 18px;
+            background: #f6f6f2;
+            border: 1px solid #e3e4de;
+            border-left: 3px solid #0b6b5f;
+            font-size: 13px;
+            line-height: 1.9;
+            color: #3c4145;
+        }
+        .tips p { margin: 0 0 8px; }
+        .tips p:last-child { margin-bottom: 0; }
+
+        /* API 表格：更轻的边框、内容垂直居中、表头更克制 */
+        .api-table th, .api-table td {
+            border: 1px solid #e8e8e3;
+            padding: 10px 12px;
+            vertical-align: middle;
+        }
+        .api-table thead th {
+            background: #f6f6f2;
+            font-size: 12px;
+            letter-spacing: .06em;
+            color: #16191b;
+        }
+        .api-table tbody td:first-child { color: #0b6b5f; }
+
+        /* 与 util 手册统一的标题层级与提示样式 */
+        .paper-inner h1 {
+            margin: 0 0 8px; font-size: 30px; line-height: 1.28;
+            font-weight: 700; letter-spacing: -.015em;
+        }
+        .version-desc {
+            margin: 0 0 24px; padding-bottom: 16px;
+            border-bottom: 1px solid #e3e4de;
+            font-size: 13px; color: #6b706c; line-height: 1.9;
+        }
+        .demo-warn {
+            margin: 0 0 22px; padding: 12px 16px;
+            background: #fdf2f0; border: 0; border-left: 4px solid #d93025;
+            color: #8c2b1e; font-size: 13px; line-height: 1.85;
+        }
+        .demo-warn strong { color: #b3261e; }
+
+        /* 红色提醒块：计数配对 / 一键关闭的兜底用法 */
+        .api-warn {
+            margin: 14px 0 6px;
+            padding: 12px 16px;
+            background: #fff1f0;
+            border: 1px solid #ffccc7;
+            border-left: 4px solid #d93025;
+            font-size: 13px;
+            line-height: 1.85;
+            color: #a8071a;
+        }
+        .api-warn p { margin: 0 0 8px; }
+        .api-warn strong { color: #cf1322; }
+        .api-warn pre {
+            margin: 8px 0 8px;
+            background: #ffffff;
+            border: 1px solid #ffd8d2;
+            padding: 10px 12px;
+            font-size: 13px;
+        }
+        .api-warn .api-warn-tail { margin: 8px 0 0; color: #8c2b1e; }
+
+        /* 小节块：给 2.1 / 2.2 / 2.3 这类小节一个明确底色 */
+        .subsec {
+            margin: 18px 0 0; padding: 16px 18px 6px;
+            background: #f6f6f2; border: 1px solid #e3e4de;
+        }
+        .subsec pre { background: #ffffff; margin-bottom: 12px; }
+        .subsec .api-table th { background: #ffffff; }
+        .to-top {
+            position: fixed; right: 26px; bottom: 26px; z-index: 30;
+            width: 44px; height: 44px; padding: 0; border: 1px solid #16191b;
+            background: #16191b; color: #f1f1ec; cursor: pointer; display: none; text-align: center;
+        }
+        .to-top:hover { background: #0b6b5f; border-color: #0b6b5f; }
+        .to-top.is-show { display: block; }
+        .to-top svg { width: 18px; height: 18px; margin-top: 12px; }
+        @media (max-width: 900px) {
+            .topbar-inner { padding: 0 16px; }
+            .topbar-menu { display: inline-block; }
+            .layout { display: block; }
+            .sidebar {
+                position: fixed; top: 56px; left: 0; z-index: 35; width: 246px;
+                height: calc(100vh - 56px); max-height: none; background: #f1f1ec;
+                border-right: 1px solid #d8d9d2; box-shadow: 2px 0 10px rgba(0,0,0,.08);
+                -webkit-transform: translateX(-105%); -ms-transform: translateX(-105%); transform: translateX(-105%);
+                -webkit-transition: transform .22s ease; transition: transform .22s ease;
+            }
+            .sidebar.is-open {
+                -webkit-transform: translateX(0); -ms-transform: translateX(0); transform: translateX(0);
+            }
+            .paper { padding: 26px 16px 90px; }
+        }
     </style>
     <!--[if lte IE 11]>
         <script src="../src/polyfill/es5-shim.min.js"></script>
@@ -63,6 +289,24 @@
     <![endif]-->
 </head>
 <body>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="topbar-brand">MelUi <span>Loading</span></div>
+        <div class="topbar-ver">v0.1.4 &nbsp;·&nbsp; IE9+ &nbsp;·&nbsp; Loading / Spinner</div>
+        <button type="button" class="topbar-menu" id="menuBtn">目录</button>
+    </div>
+</header>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-title">文档目录</div>
+        <ul id="docTree"></ul>
+    </aside>
+
+    <main class="paper">
+        <div class="paper-inner">
+
     <h1 class="page-title">MelUi Loading 加载转圈组件</h1>
     <div class="version-desc">
         版本：v0.1.4 | 兼容IE9~11、移动端自适应 | melui.showLoading() 与 MelUi.showLoading() 等价（小写只是别名）
@@ -71,27 +315,105 @@
     <div class="demo-warn">
         <p><strong>说明：</strong>不能直接双击打开本页面（file://），浏览器会拦截模块加载，必须使用本地 HTTP 服务打开。</p>
         <p><strong>原因：</strong>本页用 type="module" 直接加载 ../src/index.js，浏览器对 file:// 协议下的模块脚本做了安全拦截，必须起一个本地 http 服务，访问 <strong>http://localhost:8099/demo/loading.html</strong>。</p>
-        <p><strong>发布后的业务项目：</strong>只引下面「一、标准引入方式」里的两行 dist 产物，Loading 与 Spinner 已经打包进 melui 主包，不需要单独引 core，也不需要引任何 ../src 下的源码文件。</p>
+        <p><strong>发布后的业务项目：</strong>只引下面「二、标准引入方式」里的两行 dist 产物，Loading 与 Spinner 已经打包进 melui 主包，不需要单独引 core，也不需要引任何 ../src 下的源码文件。</p>
         <p><strong>IE9 验收：</strong>IE9 不支持 ES Module，请用打包产物验证，必须用 release/dist/melui.min.js 在 IE9 真机验证，源码的 type="module" 写法 IE9 不认。</p>
     </div>
 
-    <h2>一、标准引入方式</h2>
+    <h2>一、组件构成与 API 关系</h2>
+    <p>这一页演示的不是一个“转圈组件”，而是一套加载态方案：底层负责画转圈，上层负责把转圈装进遮罩、配文字、管计数。</p>
+
+    <h3>1.1 Spinner：只负责画转圈</h3>
+    <p>createSpinner 的作用只有一个：在指定容器里画出一个四点环，返回实例对象 <code class="inline-code">{ el, options, destroy }</code>。它不创建遮罩、不显示文字、不做计数、不锁页面滚动；放在哪个容器里，就只管那个容器。</p>
+
+    <h3>1.2 Loading：转圈 + 遮罩 + 文案 + 计数</h3>
+    <p>showLoading 是业务入口：内部会调用 createSpinner 生成转圈，再套上遮罩、提示文字、自动 zIndex、滚动锁与调用计数。closeLoading 与它配对使用，计数归零时才销毁或隐藏浮层。isLoading 用来查询当前是否还有未关闭的 Loading。</p>
+
+    <h3>1.3 两者的关系</h3>
+<pre><code class="language-plaintext">
+melui.createSpinner(el, options)          底层：只画转圈，不含遮罩与文字
+        │
+        │ showLoading 内部会调用它
+        ▼
+melui.showLoading(options)                上层：遮罩 + 转圈 + 文字 + 计数 + 滚动锁
+        │
+        ▼
+melui.closeLoading()                      计数归零 → 销毁 / 隐藏，并解锁滚动
+</code></pre>
+    <div class="tips">
+        <p>为什么 createSpinner 也对外：需要无遮罩的局部转圈、想自己控制生命周期、或把转圈塞进已有弹窗时，用不到整套 Loading，直接拿底层图形即可。</p>
+        <p>反向不成立：showLoading 打开的浮层不要手动 destroy，统一用 closeLoading 关闭，否则计数与滚动锁会残留。</p>
+        <p>参数是共用的：Spinner 图形参数（size、color、speed、strokeWidth）两边都能传，Loading 只是在此之上多了遮罩、文字、el、zIndex、destroyOnClose。</p>
+    </div>
+
+    <h2>二、标准引入方式</h2>
 <pre><code class="language-html">
 &lt;link rel="stylesheet" href="../dist/melui.min.css"&gt;
 &lt;script src="../dist/melui.min.js"&gt;&lt;/script&gt;
 </code></pre>
 
-    <h2>二、对外 API 与默认配置参数</h2>
+    <h2>三、对外 API 与默认配置参数</h2>
+
+    <div class="subsec">
+    <h3>3.1 对外 API</h3>
+    <p>业务只调用这 4 个入口，参数全部可选；后续新增 API 在表格里加一行即可。</p>
+    <table class="api-table">
+        <colgroup>
+            <col style="width:27%">
+            <col style="width:27%">
+            <col style="width:24%">
+            <col style="width:22%">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>API</th>
+                <th>作用</th>
+                <th>参数</th>
+                <th>返回值</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>melui.showLoading(options)</code></td>
+                <td>打开全局或局部 Loading；重复调用只更新文字并累加计数，不重建 DOM</td>
+                <td>options 对象，全部可选；也可传字符串简写</td>
+                <td>浮层根节点 HTMLElement；el 解析失败返回 null</td>
+            </tr>
+            <tr>
+                <td><code>melui.closeLoading()</code></td>
+                <td>关闭一层 Loading，计数归零才销毁或隐藏，并解锁滚动</td>
+                <td>无</td>
+                <td>true 成功；计数不足返回 false 并 warn</td>
+            </tr>
+            <tr>
+                <td><code>melui.createSpinner(el, options)</code></td>
+                <td>底层 API：生成转圈 DOM，不含遮罩、文字与计数，用完自己销毁</td>
+                <td>el：DOM 或选择器；options：Spinner 参数</td>
+                <td>实例对象 { el, options, destroy }；容器不存在返回 null</td>
+            </tr>
+            <tr>
+                <td><code>melui.isLoading()</code></td>
+                <td>查询是否还有 Loading 未关闭；只看全局计数，不看 DOM</td>
+                <td>无</td>
+                <td>true / false</td>
+            </tr>
+        </tbody>
+    </table>
+    <p class="api-hint">字符串简写：<code>melui.showLoading("加载中...")</code> 等价于 <code>melui.showLoading({ text: "加载中..." })</code>。</p>
+    <div class="api-warn">
+        <p><strong>重要提示：</strong>多次调用 showLoading 打开加载，必须对应相同次数调用 closeLoading 才能关闭；只调一次 closeLoading 不会关掉整层浮层。</p>
+        <p>页面跳转、全局异常等兜底场景，需要一次性关闭全部 Loading 时，可借助 isLoading() 循环关闭：</p>
 <pre><code class="language-js">
-// ===== 对外公开的 3 个 API（业务唯一调用入口）=====
-melui.showLoading(options);              // 打开全局/局部 Loading 浮层，返回 undefined
-melui.showLoading("加载中...");           // 字符串简写，等价于 { text: "加载中..." }
-melui.closeLoading();                    // 关闭一层 Loading（必须与 showLoading 一一配对）
-melui.createSpinner(container, options); // 底层：在指定容器生成转圈 DOM，返回 { el, destroy }
-melui.isLoading();                       // 查询当前是否有 Loading 未关闭，返回 true / false
+while (melui.isLoading()) {
+    melui.closeLoading();
+}
 </code></pre>
+        <p class="api-warn-tail">上面的循环仅用于兜底清理；正常业务的异步请求请成对调用 showLoading / closeLoading，不要把循环当作常规关闭方式。</p>
+    </div>
+    </div>
+
+    <div class="subsec">
+    <h3>3.2 Spinner 参数默认值（showLoading 与 createSpinner 共用）</h3>
 <pre><code class="language-js">
-// ---- Spinner 转圈图形参数（showLoading 与 createSpinner 共用）----
 var spinnerDefaults = {
     size: 40, // 转圈整体尺寸(可选)。数字即px，支持 数字 / "40px"。
     color: "#1677ff", // 圆点颜色(可选)。支持任意合法css颜色值。
@@ -100,28 +422,64 @@ var spinnerDefaults = {
     type: "ring", // 转圈类型(可选)。当前只有 ring（四点环形），预留扩展。
     customClass: "" // 追加的class(可选)。用于自定义皮肤。
 };
+</code></pre>
+    </div>
 
-// ---- Loading 全局浮层参数（在 spinner 参数基础上扩展）----
+
+    <div class="subsec">
+    <h3>3.3 Loading 浮层参数默认值（在 Spinner 参数基础上扩展）</h3>
+<pre><code class="language-js">
 var loadingDefaults = {
     text: "加载中...", // 提示文字(可选)。空字符串则不渲染文字节点。
     showText: true, // 是否显示提示文字(可选)。值：true显示,false隐藏。
     mask: true, // 是否显示遮罩层(可选)。值：true显示遮罩,false只显示转圈。
     maskColor: "rgba(0,0,0,0.4)", // 遮罩背景色(可选)。mask=false时无效。
+    maskOpacity: 1, // 遮罩透明度(可选)。取值0~1，只作用于遮罩，不影响转圈与文字；会和maskColor里的alpha相乘。
     textColor: "", // 文字颜色(可选)。留空时按有无遮罩自动取：有遮罩用白色，无遮罩用深色。
-    target: null, // 挂载容器(可选)。null表示全屏(body)；可传DOM元素或选择器字符串，局部loading用。
+    el: null, // 挂载容器(可选)。null表示全屏(body)；可传DOM元素或选择器字符串，局部loading用。
     zIndex: 0, // 层级(可选)。0表示自动分配，从2000开始，每开一次加10。
     destroyOnClose: true // 关闭后是否销毁DOM(可选)。false时只隐藏，下次复用同一节点。
 };
 </code></pre>
+    </div>
+
+
     <div class="tips">
         <p>count 计数：连续调用 showLoading 不会重建 DOM，只会更新文字并累加计数；必须调用同样次数的 closeLoading，计数归零后才销毁/隐藏并释放滚动锁。多调 closeLoading 只 warn 不抛错。</p>
-        <p>滚动锁：全屏 Loading 会锁住 html/body 滚动并补偿滚动条宽度，关闭时恢复原滚动位置；target 局部 Loading 用 absolute 定位，不锁页面滚动。</p>
+        <p>滚动锁：全屏 Loading 会锁住 html/body 滚动并补偿滚动条宽度，关闭时恢复原滚动位置；el 局部 Loading 用 absolute 定位，不锁页面滚动。</p>
         <p>IE9 降级：IE9 不支持 @keyframes，转圈只显示静态四点环，遮罩、文字、滚动锁全部正常。</p>
-        <p>createSpinner 是底层 API：第一个参数必须是容器（DOM 元素或选择器），找不到容器返回 null；它不负责遮罩、文字与计数，用完必须自己 destroy。</p>
+        <p>createSpinner 是底层 API：第一个参数必须是容器（DOM 元素或选择器），找不到容器返回 null；它不负责遮罩、文字与计数，用完必须自己 destroy，返回结构与 destroy 的行为见第四节。</p>
         <p>isLoading() 只看全局计数器，不看 DOM：showLoading 后为 true，计数归零后为 false；createSpinner 生成的局部转圈不计入这个计数器，需要自己保存实例判断。</p>
     </div>
 
-    <h2>三、调用示例</h2>
+    <h2>四、createSpinner 返回的实例对象</h2>
+    <p>createSpinner 不返回 DOM 元素本身，而是一个实例对象，三个字段都有明确用途：</p>
+<pre><code class="language-js">
+var sp = melui.createSpinner(el, options);
+
+// sp = {
+//     el:      HTMLElement,  // 转圈根节点，已 append 到容器
+//     options: Object,       // 默认参数 + 你传入的参数，mergeObj 合并后的最终配置
+//     destroy: function () {} // 销毁方法
+// }
+</code></pre>
+<pre><code class="language-js">
+// destroy() 的行为约定
+melui.createSpinner(el).destroy();
+
+// 1. 无参数、无返回值，只做一件事：把 el 从父容器中移除
+// 2. 幂等：已经移除的节点再调一次不会报错，不会重复处理
+// 3. 不清空 sp.options、不重置 el 变量、不影响容器里的其它内容
+// 4. 不碰 loadingCount、不碰滚动锁、不碰遮罩 —— 这些属于 showLoading / closeLoading
+</code></pre>
+    <div class="tips">
+        <p>el 的用途：想把转圈节点挪到别处、或单独改样式时，直接操作 sp.el；它已经是容器里的真实节点。</p>
+        <p>options 的用途：调试或二次封装时读最终配置，比如 sp.options.speed、sp.options.color，拿到的是合并后的值而不是你传的原始对象。</p>
+        <p>不 destroy 的后果：节点会一直留在容器里；同一个容器反复 createSpinner 会叠加多层转圈，需要先 destroy 旧的或清空容器。</p>
+        <p>别和 closeLoading 混用：createSpinner 生成的局部转圈不进全局计数，closeLoading 管不到它；showLoading 打开的浮层也不该手动 destroy，统一用 closeLoading 关闭。</p>
+    </div>
+
+    <h2>五、调用示例</h2>
 
     <div class="block-group">
         <div class="block-group__title">1、纯 Spinner（createSpinner）</div>
@@ -423,13 +781,13 @@ setTimeout(function () {
         <div class="block-group__content">
 
             <div class="block-group__content_box">
-                <div class="block-group__content_box_title">target 传选择器</div>
+                <div class="block-group__content_box_title">el 传选择器</div>
                 <div class="block-group__content_box_describe">转圈只覆盖该容器、改用 absolute 定位，宿主 position 会被临时改成 relative，关闭后还原，且不锁页面滚动</div>
                 <div id="loading-box" class="demo-box">这里是 #loading-box 容器，局部 Loading 只盖住这块区域</div>
                 <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.showLoading({
-    target: "#loading-box",
+    el: "#loading-box",
     text: "容器内加载中..."
 });
 setTimeout(function () {
@@ -439,12 +797,12 @@ setTimeout(function () {
             </div>
 
             <div class="block-group__content_box">
-                <div class="block-group__content_box_title">target 传 DOM 元素</div>
+                <div class="block-group__content_box_title">el 传 DOM 元素</div>
                 <div class="block-group__content_box_describe">直接传元素对象，效果与选择器一致；组件内部调用时用这种写法更稳，不受 id 变化影响</div>
                 <button type="button">点击打开</button>
 <pre><code class="language-js">
 melui.showLoading({
-    target: document.getElementById("loading-box"),
+    el: document.getElementById("loading-box"),
     text: "传 DOM 元素"
 });
 setTimeout(function () {
@@ -492,6 +850,108 @@ setTimeout(function () {
 
         </div>
     </div>
+
+        </div>
+    </main>
+</div>
+
+<button type="button" class="to-top" id="toTop" aria-label="返回顶部">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+        <path d="M12 19V5M5 12l7-7 7 7"></path>
+    </svg>
+</button>
+
+<script>
+    (function () {
+        var headerH = 56;
+        var gap = 20;
+        var treeBox = document.getElementById('docTree');
+        var sidebar = document.getElementById('sidebar');
+        var menuBtn = document.getElementById('menuBtn');
+        var toTop = document.getElementById('toTop');
+        var nodes = document.querySelectorAll('.paper-inner h2, .paper-inner h3, .paper-inner .block-group__title, .paper-inner .block-group__content_box_title');
+        var i, a, li, text, level;
+        var frag = document.createDocumentFragment();
+
+        for (i = 0; i < nodes.length; i++) {
+            if (!nodes[i].id) {
+                nodes[i].id = 'doc-anchor-' + i;
+            }
+        }
+        for (i = 0; i < nodes.length; i++) {
+            text = nodes[i].firstChild && nodes[i].firstChild.nodeType === 3
+                ? nodes[i].firstChild.nodeValue
+                : nodes[i].textContent;
+            text = (text || '').replace(/^\s+|\s+$/g, '');
+            if (!text) continue;
+            if (nodes[i].tagName.toLowerCase() === 'h2') {
+                level = 'tree-chapter';
+            } else if (nodes[i].tagName.toLowerCase() === 'h3') {
+                level = 'tree-sub';
+            } else if (nodes[i].className.indexOf('block-group__title') !== -1) {
+                level = 'tree-item';
+            } else {
+                level = 'tree-example';
+            }
+            li = document.createElement('li');
+            a = document.createElement('a');
+            a.href = '#' + nodes[i].id;
+            a.className = level;
+            a.setAttribute('data-target', nodes[i].id);
+            a.appendChild(document.createTextNode(text));
+            li.appendChild(a);
+            frag.appendChild(li);
+        }
+        treeBox.appendChild(frag);
+
+        var links = treeBox.getElementsByTagName('a');
+
+        function jumpTo(el) {
+            var top = window.pageYOffset || document.documentElement.scrollTop || 0;
+            var y = el.getBoundingClientRect().top + top - headerH - gap;
+            window.scrollTo(0, y < 0 ? 0 : y);
+        }
+        function bind(a) {
+            a.onclick = function (e) {
+                var evt = e || window.event;
+                if (evt.preventDefault) evt.preventDefault(); else evt.returnValue = false;
+                var el = document.getElementById(a.getAttribute('data-target'));
+                if (el) jumpTo(el);
+                if (sidebar.className.indexOf('is-open') !== -1) sidebar.className = 'sidebar';
+                return false;
+            };
+        }
+        for (i = 0; i < links.length; i++) bind(links[i]);
+
+        function onScroll() {
+            var top = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+            var cur = -1, j;
+            for (j = 0; j < nodes.length; j++) {
+                if (nodes[j].getBoundingClientRect().top + top - headerH - 30 <= top) cur = j;
+            }
+            for (j = 0; j < links.length; j++) {
+                var base = links[j].className.replace(/\s*is-active/g, '');
+                links[j].className = j === cur ? base + ' is-active' : base;
+            }
+            if (toTop) toTop.className = top > 320 ? 'to-top is-show' : 'to-top';
+        }
+        var ticking = false;
+        window.onscroll = function () {
+            if (ticking) return;
+            ticking = true;
+            setTimeout(function () { onScroll(); ticking = false; }, 16);
+        };
+        if (toTop) toTop.onclick = function () { window.scrollTo(0, 0); };
+        if (menuBtn) menuBtn.onclick = function () {
+            sidebar.className = sidebar.className.indexOf('is-open') === -1 ? 'sidebar is-open' : 'sidebar';
+        };
+        if (location.hash) {
+            var h = document.getElementById(location.hash.replace('#', ''));
+            if (h) setTimeout(function () { jumpTo(h); }, 80);
+        }
+        onScroll();
+    }());
+</script>
 
     <!-- 源码调试仅本页使用：发布后由 copyDemoPlugin 移除，改为注入 melui.min.js -->
     <script type="module">

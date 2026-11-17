@@ -1,9 +1,9 @@
 /**
  * @File    loading.js
  * @Desc    MelUI Core：通用 Spinner 渲染 + 全局 Loading（遮罩 / 计数 / 滚动锁）
- * @Version 0.1.3
+ * @Version 0.1.4
  * @Date    2026-11-13
- * @PubDate 2026-11-16 16:42:00
+ * @PubDate 2026-11-17 16:37:17
  * @Author  ChenMufeng
  *
  * ── 层级定位：core 公开能力层 ────────────────────────────
@@ -48,8 +48,9 @@
    showText: true,
    mask: true,
    maskColor: 'rgba(0,0,0,0.4)',
+   maskOpacity: 1,           // 遮罩透明度 0~1，1 为原色；只作用于遮罩，不影响转圈与文字
    textColor: '',            // 留空则按是否有遮罩自动取白色/深色
-   target: null,             // null = document.body（全局）
+   el: null,                 // 挂载容器，null = document.body（全局）；可传 DOM 或选择器
    zIndex: 0,                // 0 = 由 Core 的 zIndex 管理器自动分配
    destroyOnClose: true      // false 时关闭只隐藏，下次复用 DOM
  };
@@ -169,13 +170,13 @@
  
  /**
   * 渲染一个纯转圈图形（无遮罩、无全局状态），可嵌在任意容器里
-  * @param {HTMLElement|String} container 挂载容器，支持选择器
+  * @param {HTMLElement|String} el 挂载容器，支持选择器
   * @param {Object} options spinner 参数
   * @return {Object|null} { el, options, destroy }
   */
- export function createSpinner(container, options) {
+ export function createSpinner(el, options) {
    var opts = mergeObj(spinnerDefaults, options);
-   var host = resolveElement(container);
+   var host = resolveElement(el);
    var size;
    var dotSize;
    var radius;
@@ -276,6 +277,7 @@
    var textEl;
    var forcedRelative;
    var originalPosition;
+   var maskOpacity;
  
    if (typeof options === 'string') {
      options = { text: options };
@@ -299,7 +301,7 @@
  
    opts = mergeObj(spinnerDefaults, loadingDefaults, options);
  
-   host = resolveElement(opts.target);
+   host = resolveElement(opts.el);
    if (!host) {
      return null;
    }
@@ -318,6 +320,16 @@
    if (opts.mask) {
      maskEl = createEl('div', 'mel-loading-mask');
      maskEl.style.background = opts.maskColor;
+ 
+     maskOpacity = toNumber(opts.maskOpacity, loadingDefaults.maskOpacity);
+     if (maskOpacity < 0) {
+       maskOpacity = 0;
+     }
+     if (maskOpacity > 1) {
+       maskOpacity = 1;
+     }
+     maskEl.style.opacity = String(maskOpacity);
+ 
      root.appendChild(maskEl);
    }
  

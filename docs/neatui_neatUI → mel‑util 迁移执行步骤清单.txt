@@ -1,0 +1,192 @@
+
+============================================================================================================
+        NeatUI 代码重构迁移完整执行清单
+============================================================================================================
+> 
+> 真实项目目录（无脑补多余文件）
+
+```
+src/
+├─ index.js                 # 主包melui打包入口 → melui.js / melui.min.js
+├─ core/
+│  ├─ internal/
+│  │  ├─ dom.js
+│  │  └─ zIndex.js
+│  ├─ core.css
+│  └─ core.js               # core内核，内置带守卫polyfill、mergeObj、mask底层、openIframe
+├─ components/
+├─ util/
+│  ├─ base/
+│  │  ├─ base.js
+│  │  ├─ object.js
+│  │  └─ type.js
+│  ├─ dom.js                # 新建：DOM工具模块
+│  ├─ string.js             # 新建：字符串/HTML/输入过滤
+│  ├─ array.js              # 新建：数组工具、排序
+│  ├─ date.js               # 新建：日期时间
+│  ├─ format.js             # 新建：格式化、金额转换
+│  ├─ validate.js           # 新建：格式校验
+│  ├─ random.js             # 新建：随机、颜色生成
+│  ├─ biz.js                # 新建：业务辅助工具
+│  ├─ widget.js             # 新建：小部件：水印、回到顶部
+│  └─ util.js               # util包打包入口 → mel‑util.js / mel‑util.min.js
+└─ third/
+   └─ third.js              # 第三方适配包入口 → melui‑third.js / melui‑third.min.js
+```
+
+> 
+> 前置约束（全部确认）
+
+1. ❌ 不迁移 `openAside / showAnimate / alertDialog`；`melui.alert`已经是dialog组件别名，不再重复封装。
+2. ✅ core吸收`openMask`底层逻辑，新增`openIframe`；polyfill全部放在core，**util完全不写polyfill**。
+3. ✅ 所有代码剥离jQuery，产物中不能出现`$`。
+4. ✅ 库代码禁止`alert()`，全部改为`console.warn / console.error`。
+5. ✅ 旧 `checker / filter / restrict / calendar / IEHacker` 不再原样导出；打散重分到各个util模块；内部私有辅助函数命名`_xxx`，不对外暴露。
+6. ✅ util复用core导出的`mergeObj`，util不复写对象合并。
+7. ✅ third包仅做适配封装，**禁止动态加载CDN脚本**，第三方库由业务自行引入。
+8. ✅ 房贷计算器仅放在demo目录，不参与打包。
+9. ✅ util打包时 `melui` 设置为external，不把core打进mel‑util产物。
+
+---
+
+## 阶段0：前期准备（编码之前）
+
+1. 备份参考源文件 `neatui.min.js`、`neatui‑functions.js`，只作为查阅参考，**不要直接复制粘贴进src源码**。
+2. 梳理两份源码：
+   - 标记全部jQuery调用点，搬迁全部替换原生JS。
+   - 标记所有`alert()`，全部替换控制台警告。
+   - 梳理函数依赖关系，识别多处复用的子逻辑，搬迁时抽成模块内`_xxx`私有函数。
+3. 确认core导出：`src/core/core.js`对外导出 `mergeObj`，供util导入使用。
+
+## 阶段1：改造 core（优先完成，util依赖core）
+
+文件：`src/core/core.js`
+
+1. 确认所有原型polyfill已就位，每个polyfill都带存在性守卫 `if (!xxx) { … }`。
+2. 吸收neatui `openMask`底层逻辑：滚动锁定、touchmove滚动穿透、zIndex自增逻辑，集成进core内部mask底层。
+3. 实现 `melui.openIframe(options)` API，复用现有弹窗底层，全部原生JS，剥离jQuery。
+4. 不新增`melui.alert`，dialog组件已经存在该别名。
+5. rollup主包入口：`src/index.js`，产出 `melui.js` / `melui.min.js`。
+
+## 阶段2：新建util下面各个拆分模块文件
+
+在`src/util/`下新建：`dom.js、string.js、array.js、date.js、format.js、validate.js、random.js、biz.js、widget.js`
+
+> 
+> 搬迁每个函数统一执行4步：
+> ① 剥离jQuery，替换原生DOM API；
+> ② `alert` → `console.warn / console.error`；
+> ③ 内部公共子逻辑抽成本文件 `_xxx` 私有函数，不对外挂载；
+> ④ 补齐入参容错，对齐项目编码风格，补充JSDoc注释。
+
+| 文件 | 搬迁来源说明 |
+| --- | --- |
+| util/dom.js | 原utilities DOM相关，IEHacker兼容转为内部私有`_xxx`，不对外导出；重写textarea自动高度 |
+| util/string.js | html编解码、escape、filter、restrict字符串清洗、输入限制 |
+| util/array.js | 数组去重、深度对比、重复检测、排序算法 |
+| util/date.js | calendar全套日期逻辑，内部计算辅助函数私有 |
+| util/format.js | format、convert；千分位、金额、百分数、科学计数转换 |
+| util/validate.js | checker全套：手机号、邮箱、设备检测、危险字符、浏览器判断 |
+| util/random.js | 随机数字、随机字符串、随机颜色；rgb/hsl转换私有不导出 |
+| util/biz.js | 提取手机号、省市区分组等业务辅助 |
+| util/widget.js | neatui.min.js：waterMarker水印、goToTop回到顶部，全部重写原生JS |
+
+## 阶段3：编写 util入口 `src/util/util.js`
+
+```
+// 1.IE环境简易检测警告，仅warn，不阻断执行
+const isIE = !!window.ActiveXObject || "ActiveXObject" in window;
+if(isIE){
+  const testEl = document.createElement('div');
+  if(!testEl.classList){
+    console.warn('[mel‑util warn]: IE浏览器检测到原型补丁缺失，请确认已引入 melui.min.js，请勿使用自行裁剪过的core版本。');
+  }
+}
+
+// 导入core的对象合并工具
+const { mergeObj } = window.melui;
+
+// 导入各个子模块
+import * as base from './base/base.js';
+import * as dom from './dom.js';
+import * as string from './string.js';
+import * as array from './array.js';
+import * as date from './date.js';
+import * as format from './format.js';
+import * as validate from './validate.js';
+import * as random from './random.js';
+import * as biz from './biz.js';
+import * as widget from './widget.js';
+
+// 组装命名空间
+const utilNs = {
+  base,
+  dom,
+  string,
+  array,
+  date,
+  format,
+  validate,
+  random,
+  biz,
+  widget
+};
+
+// 挂载全局melui.util
+window.melui = window.melui || {};
+window.melui.util = utilNs;
+
+export { utilNs };
+```
+
+> 
+> rollup打包util入口指向 `src/util/util.js`，external设置`["melui"]`；产出：`mel‑util.js` / `mel‑util.min.js`。
+
+## 阶段4：第三方适配包 src/third/third.js
+
+1. 搬迁 `export2Excel`、`exportWeb2Image`适配逻辑，剥离jQuery。
+2. 只做参数封装，**不引入第三方库源码，不动态创建script加载CDN**。
+3. JSDoc写明依赖：业务必须自行引入 html2canvas / jquery‑table2excel。
+4. rollup入口：`src/third/third.js`，external设置`["melui"]`；产出 `melui‑third.js` / `melui‑third.min.js`。
+
+## 阶段5：demo与文档
+
+1. 把房贷计算器完整源码复制到demo目录，作为业务示例，**不参与rollup打包**。
+2. 文档【快速上手】固定示例：
+
+```
+<script src="melui.min.js"></script>
+<!-- 需要工具扩展才引入 -->
+<script src="mel‑util.min.js"></script>
+<!-- 需要导出excel、截图才引入，业务自行提前引入html2canvas/table2excel -->
+<script src="melui‑third.min.js"></script>
+```
+
+3. 高级提示写入文档：
+   - mel‑util依赖melui.min.js提供的运行环境；IE下不可单独使用mel‑util。
+   - third包只是适配层，第三方库需要业务手动引入。
+
+## 阶段6：分模块自测回归
+
+1. core自测：dialog、drawer、loading、`openIframe`；IE9‑11 +现代浏览器验证。
+2. mel‑util逐个模块自测：dom / string / array / date / validate / widget。
+   - 测试IE警告：只引入mel‑util不引入melui.min.js，IE打开控制台确认出现warn，不阻断脚本。
+   - 检查产物：确认无`$`、无旧对象名`checker / IEHacker`挂载到全局。
+3. melui‑third：业务手动引入对应第三方库，测试导出excel、导出图片。
+
+## 编码过程持续核对检查清单
+
+- util目录完全没有polyfill代码，polyfill全部放在core。
+- 全部jQuery代码已删除，无`$`残留。
+- 库代码不存在`alert()`，全部使用console.warn / console.error。
+- 模块内部复用逻辑抽成`_xxx`私有函数，不对外暴露。
+- util对象合并统一使用core导出`mergeObj`，不复写。
+- third包没有动态加载CDN脚本。
+- 房贷计算器只放在demo，不打进dist产物。
+- 没有原样保留旧顶层对象 `checker / filter / restrict / calendar / IEHacker`。
+- rollup配置：util、third均标记`melui`为external，不打包core代码进去。
+
+> 
+> 迁移原则：是重构式搬迁，不是复制粘贴，neatui源文件仅做参考，不纳入仓库源码。
+
+如果你需要，下一步可以拿其中一个模块（如validate.js）给你写一份参考示例代码。

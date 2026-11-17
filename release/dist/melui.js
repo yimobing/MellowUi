@@ -11347,9 +11347,9 @@
     /**
      * @File    index.js
      * @Desc    MelUI 全量入口：CSS 集中导入 + 组件 JS 引入 + core/util 装配
-     * @Version 0.1.4
+     * @Version 0.1.5
      * @Date    2026-11-13
-     * @PubDate 2026-11-16 18:20:00
+     * @PubDate 2026-11-17 12:05:00
      * @Author  ChenMufeng
      *
      * ── 文件职责：全量打包入口 ───────────────────────────────
@@ -11382,17 +11382,24 @@
     }
 
     // 主包内置基础工具：来自 util/base（共享层，不是私有层）
-    if (existedUtil) {
-      // 把 base 合并进已存在的 util，扩展工具保持不动
-      for (key in UtilBase) {
-        if (Object.prototype.hasOwnProperty.call(UtilBase, key)) {
-          existedUtil[key] = UtilBase[key];
-        }
+    // ⚠️ 不能把 UtilBase 直接赋给 melui.util：`import * as` 在 rollup 产物里是
+    //    Object.freeze 出来的只读命名空间对象，一旦挂上去，util 扩展包再按 key
+    //    合并就会报 Cannot assign to read only property，业务也改不动。
+    //    这里先复制成普通对象，再合并进已有的 util。
+    var baseUtil = {};
+    for (key in UtilBase) {
+      if (Object.prototype.hasOwnProperty.call(UtilBase, key)) {
+        baseUtil[key] = UtilBase[key];
       }
-      MelUiNS.util = existedUtil;
-    } else {
-      MelUiNS.util = UtilBase;
     }
+
+    var mergedUtil = existedUtil || {};
+    for (key in baseUtil) {
+      if (Object.prototype.hasOwnProperty.call(baseUtil, key)) {
+        mergedUtil[key] = baseUtil[key];
+      }
+    }
+    MelUiNS.util = mergedUtil;
 
     // 小写 melui 只是别名，指向同一个对象，不产生第二份状态
     window.melui = MelUiNS;
