@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title> MelUi Util 工具库使用手册 </title>
+    <title>MelUi Util 工具库使用手册</title>
     <meta name="keywords" content="">
     <meta name="description" content="">
-    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/styles/stackoverflow-light.min.css">
-    <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@highlightjs/cdn-assets@11.3.1/styles/stackoverflow-light.min.css">
+    <script src="https://fastly.jsdelivr.net/npm/@highlightjs/cdn-assets@11.3.1/highlight.min.js"></script>
     <!-- 引入主包 -->
     <link rel="stylesheet" href="../dist/melui.min.css" />
     <script src="../dist/melui.min.js"></script>
@@ -40,10 +40,11 @@
             border-bottom: 1px solid #000;
         }
         .topbar-inner {
-            max-width: 1320px;
+            width: 92%;
+            max-width: 1680px;
             height: 56px;
             margin: 0 auto;
-            padding: 0 28px;
+            padding: 0;
             display: -webkit-box;
             display: -ms-flexbox;
             display: flex;
@@ -79,7 +80,8 @@
 
         /* ===== 两列骨架 ===== */
         .layout {
-            max-width: 1320px;
+            width: 92%;
+            max-width: 1680px;
             margin: 0 auto;
             display: -webkit-box;
             display: -ms-flexbox;
@@ -91,7 +93,7 @@
 
         /* 左侧树 */
         .sidebar {
-            width: 258px;
+            width: 400px;
             -ms-flex-negative: 0;
             flex-shrink: 0;
             padding: 28px 0 60px;
@@ -103,49 +105,97 @@
             border-right: 1px solid #e3e4de;
             background: #f1f1ec;
         }
+        .sidebar-head {
+            position: relative;
+            padding: 0 12px 10px 24px;
+            min-height: 26px;
+        }
         .sidebar-title {
-            padding: 0 24px 10px;
+            padding: 0;
             font-size: 12px;
             letter-spacing: .14em;
             color: #8a8f8a;
+            line-height: 26px;
         }
+        .tree-all {
+            position: absolute;
+            right: 12px;
+            top: 0;
+            height: 24px;
+            padding: 0 8px;
+            border: 1px solid #d8d9d2;
+            background: #ffffff;
+            color: #4a4f52;
+            font-size: 11px;
+            line-height: 22px;
+            cursor: pointer;
+        }
+        .tree-all:hover { color: #0b6b5f; border-color: #b7d8cb; background: #ecf4ef; }
+
         #docTree { list-style: none; margin: 0; padding: 0 12px 0 0; }
-
-        .tree-chapter {
+        #docTree ul { list-style: none; }
+        .tree-children {
+            margin: 0 0 0 18px;
+            padding-left: 12px;
+            border-left: 1px solid #cfd3ca;
+        }
+        .tree-children.is-collapsed { display: none; }
+        .tree-node { position: relative; }
+        .tree-row { position: relative; }
+        .tree-children > .tree-node > .tree-row:before {
+            content: "";
+            position: absolute;
+            left: -13px;
+            top: 17px;
+            width: 8px;
+            border-top: 1px solid #cfd3ca;
+        }
+        .tree-label {
             display: block;
-            padding: 8px 0 8px 24px;
+            padding: 7px 28px 7px 16px;
             font-size: 14px;
-            font-weight: 700;
-            color: #16191b;
-            border-left: 3px solid transparent;
-        }
-        .tree-chapter:hover { background: #e9e9e3; text-decoration: none; }
-        .tree-chapter.is-active {
-            color: #0b6b5f;
-            border-left-color: #0b6b5f;
-            background: #e6efe9;
-        }
-
-        .tree-sub {
-            display: block;
-            padding: 6px 0 6px 38px;
-            font-size: 13px;
+            line-height: 1.45;
             color: #4a4f52;
             border-left: 3px solid transparent;
         }
-        .tree-sub:hover { background: #e9e9e3; text-decoration: none; }
-        .tree-sub.is-active { color: #0b6b5f; border-left-color: #b7d8cb; background: #ecf4ef; }
-
-        .tree-api {
-            display: block;
-            padding: 5px 0 5px 52px;
-            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
-            font-size: 12px;
-            color: #6b706c;
-            border-left: 3px solid transparent;
+        .tree-chapter > .tree-row > .tree-label {
+            padding-top: 9px;
+            padding-bottom: 9px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #16191b;
         }
-        .tree-api:hover { color: #16191b; background: #e9e9e3; text-decoration: none; }
-        .tree-api.is-active { color: #0b6b5f; border-left-color: #b7d8cb; background: #ecf4ef; }
+        .tree-module > .tree-row > .tree-label {
+            font-weight: 700;
+            color: #16191b;
+        }
+        .tree-sub > .tree-row > .tree-label { color: #4a4f52; }
+        .tree-api > .tree-row > .tree-label {
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .tree-label:hover { background: #e9e9e3; text-decoration: none; }
+        .tree-label.is-active { color: #0b6b5f; border-left-color: #b7d8cb; background: #ecf4ef; }
+        .tree-toggle {
+            position: absolute;
+            right: 2px;
+            top: 5px;
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            border: 1px solid #cfd3ca;
+            background: #ffffff;
+            color: #16191b;
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 18px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .tree-toggle.is-open { color: #0b6b5f; border-color: #b7d8cb; background: #ecf4ef; }
+        .tree-toggle:hover { border-color: #0b6b5f; }
+        .module-link { color: #0b6b5f; }
 
         /* 右侧内容纸张 */
         .paper {
@@ -155,10 +205,10 @@
             min-width: 0;
             background: #ffffff;
             min-height: calc(100vh - 56px);
-            padding: 44px 56px 120px;
+            padding: 44px 62px 120px;
             box-sizing: border-box;
         }
-        .paper-inner { max-width: 760px; }
+        .paper-inner { max-width: 1080px; }
 
         /* ===== 标题层级 ===== */
         .doc-title {
@@ -319,6 +369,24 @@
             color: #8c2b1e;
         }
 
+        /* ===== 模块总览表 ===== */
+        .table-wrap { margin: 16px 0 22px; overflow-x: auto; }
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            line-height: 1.7;
+            background: #ffffff;
+        }
+        .api-table th, .api-table td {
+            padding: 9px 11px;
+            border: 1px solid #e3e4de;
+            text-align: left;
+            vertical-align: top;
+        }
+        .api-table th { background: #f6f6f2; color: #16191b; font-weight: 700; white-space: nowrap; }
+        .api-table td code { font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace; color: #0b6b5f; }
+
         /* ===== 返回顶部 ===== */
         .to-top {
             position: fixed;
@@ -379,7 +447,7 @@
 <header class="topbar">
     <div class="topbar-inner">
         <div class="topbar-brand">MelUi <span>Util</span></div>
-        <div class="topbar-ver">v1.0.0 &nbsp;·&nbsp; IE9+ &nbsp;·&nbsp; ES5</div>
+        <div class="topbar-ver">v1.0.0 &nbsp;·&nbsp; 工具函数 &nbsp;·&nbsp; IE9+</div>
         <button type="button" class="topbar-menu" id="menuBtn">目录</button>
     </div>
 </header>
@@ -387,59 +455,65 @@
 <div class="layout">
 
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-title">文档目录</div>
+        <div class="sidebar-head">
+            <div class="sidebar-title">文档目录</div>
+            <button type="button" class="tree-all" id="treeAll" aria-expanded="true" aria-controls="docTree">全部收起</button>
+        </div>
         <ul id="docTree"></ul>
     </aside>
 
-    <main class="paper">
+        <main class="paper">
         <div class="paper-inner">
 
             <h1 class="doc-title">MelUi Util 工具库</h1>
-            <div class="doc-sub">版本 v1.0.0 &nbsp;·&nbsp; 兼容 IE9~11 &nbsp;·&nbsp; 纯 ES5、无 DOM 操作 &nbsp;·&nbsp; 调用方式 melui.util.函数名()</div>
+            <div class="doc-sub">版本 v1.0.0 &nbsp;·&nbsp; 兼容 IE9~11 &nbsp;·&nbsp; 纯 ES5 &nbsp;·&nbsp; 基础层 + 扩展模块</div>
 
             <div class="hotnote">
-                <b>本示例文件已引入主包和扩展包</b>，在浏览器打开后可按 F12 打开控制台，在控制台输入代码 <code>melui.util.函数名()</code> 直接测试。
+                <b>本页按当前 util 产物更新</b>。浏览器打开后可按 F12 打开控制台，直接输入 <code>melui.util.date.getNowTime()</code> 等示例测试。
             </div>
 
             <div class="callout">
                 <div class="callout-label">统一调用入口</div>
-                <div class="callout-code">melui.util.<em>函数名</em>()</div>
-                <div class="callout-note">melui 全小写，util 全小写。例：melui.util.mergeObj({ a: 1 }, { b: 2 })</div>
+                <div class="callout-code">melui.util.<em>模块</em>.<em>函数</em>()</div>
+                <div class="callout-note">基础层例外：melui.util.isArray()、melui.util.mergeObj()。扩展模块：melui.util.date.getNowTime()、melui.util.dom.getHtml()。</div>
             </div>
 
             <!-- ============ 一、库整体说明 ============ -->
-            <h2 id="sec-1">一、库整体说明<span class="h2-desc">纯函数工具层：不创建 DOM、不读全局状态、不依赖组件</span></h2>
-            <p>Util 只做数据判断与对象处理，因此可以脱离 UI 框架单独使用；它不参与任何渲染，也不持有什么运行状态。</p>
-            <p>代码分两层，看文件位置就能分辨职责：</p>
+            <h2 id="sec-1">一、库整体说明<span class="h2-desc">基础层 + 扩展模块，按命名空间分组</span></h2>
+            <p>Util 是 MelUi 的独立工具层。基础层随主包发布，扩展模块单独打包成 <code>melui-util.js</code>，可以脱离 UI 组件单独使用。</p>
+            <p>代码分三层，看文件位置就能分辨职责：</p>
 <pre><code class="language-plaintext">
-src/util/base/    共享基础层，core、components、util 都可以引用
-src/util/util.js  util 扩展包入口，单独打包成 melui-util.js
+src/util/base/      共享基础层，主包与 util 扩展包都包含
+src/util/*.js       扩展模块，随 melui-util.js 发布
+src/util/util.js    util 扩展包入口，负责分组挂载到 melui.util
 </code></pre>
             <div class="note">
-                <p>本页列出的函数全部是已实现、已随产物发布的函数，代码里没有的函数不会出现在本页。</p>
-                <p>所有函数均为纯 ES5 实现，不依赖 Object.assign、Object.keys、Array.prototype.forEach 等 IE9 可能缺失或行为不一致的能力。</p>
+                <p><b>调用形态：</b>基础层扁平挂载，写 <code>melui.util.isArray()</code>；扩展模块按模块名分组，写 <code>melui.util.date.getNowTime()</code>、<code>melui.util.dom.getHtml()</code>。</p>
+                <p><b>函数边界：</b>date / format / string / validate / array / random / biz 不创建 DOM；dom 与 widget 会直接读写 DOM。所有函数均为纯 ES5，不依赖 Object.assign、Object.keys 等在 IE9 缺失的能力。</p>
             </div>
 
             <!-- ============ 二、使用方式 ============ -->
-            <h2 id="sec-2">二、使用方式<span class="h2-desc">四种引入组合，以及合并规则</span></h2>
+            <h2 id="sec-2">二、使用方式<span class="h2-desc">主包、扩展包、两者共存与 Node 引用</span></h2>
 
-            <h3 id="sub-2-1">1、引入主包后使用</h3>
-            <p>引入全量 melui.js，主包内置的基础工具已经挂在 melui.util 上，直接调用即可。</p>
+            <h3 id="sub-2-1">1、只引主包</h3>
+            <p>引入全量 melui.js，只能使用主包内置的基础层函数；<code>melui.util.date</code> 等扩展模块还不存在。</p>
 <pre><code class="language-html">
 &lt;link rel="stylesheet" href="./dist/melui.min.css"&gt;
 &lt;script src="./dist/melui.min.js"&gt;&lt;/script&gt;
 &lt;script&gt;
-    var opts = melui.util.mergeObj({ a: 1 }, { b: 2 });
+    melui.util.mergeObj({ a: 1 }, { b: 2 });
+    melui.util.isArray([]);
 &lt;/script&gt;
 </code></pre>
 
-            <h3 id="sub-2-2">2、单独引入 util 扩展包</h3>
-            <p>只想要工具、不需要 UI 组件时，可以只引 melui-util.js。此时 melui.util 可用，但没有 showLoading、没有 Dialog 等组件 API。</p>
+            <h3 id="sub-2-2">2、只引 util 扩展包</h3>
+            <p>只想要工具、不需要 UI 组件时，可以只引 melui-util.js。此时工具函数全部可用，但没有 showLoading、Dialog 等组件 API。</p>
 <pre><code class="language-html">
 &lt;script src="./dist/melui-util.min.js"&gt;&lt;/script&gt;
 &lt;script&gt;
-    melui.util.isArray([]);            // true
-    melui.util.mergeObj({ a: 1 }, { b: 2 });
+    melui.util.isArray([]);                 // true
+    melui.util.date.getNowTime();           // 当前时间
+    melui.util.dom.getHtml(document.body);  // body 的 innerHTML
 &lt;/script&gt;
 </code></pre>
 
@@ -449,25 +523,31 @@ src/util/util.js  util 扩展包入口，单独打包成 melui-util.js
 &lt;link rel="stylesheet" href="./dist/melui.min.css"&gt;
 &lt;script src="./dist/melui.min.js"&gt;&lt;/script&gt;
 &lt;script src="./dist/melui-util.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+    melui.util.mergeObj({ a: 1 }, { b: 2 }); // 主包 base
+    melui.util.date.getNowTime();            // 扩展模块
+&lt;/script&gt;
 </code></pre>
 
-            <h3 id="sub-2-4">4、ES Module 导入</h3>
+            <h3 id="sub-2-4">4、Node / 构建工具引用</h3>
+            <p>melui.js 与 melui-util.js 都是 UMD 产物。浏览器请用 script 引入；Node 或支持 UMD 的构建工具可以按下面方式引用，不要把 UMD 文件直接当浏览器原生 ESM 模块 import。</p>
 <pre><code class="language-js">
-import MelUi from './dist/melui.js';
-import util from './dist/melui-util.js';
+var MelUi = require('./dist/melui.js');
+var util = require('./dist/melui-util.js');
 
 util.mergeObj({ a: 1 }, { b: 2 });
-MelUi.util.mergeObj({ a: 1 }, { b: 2 });
+util.date.getNowTime();
+MelUi.util.isArray([]);
 </code></pre>
 
             <div class="note">
-                <p><b>合并规则：</b>工具按属性名合并进已有的 melui.util，同名的以后加载的为准，先加载的其它工具不会被清空。</p>
+                <p><b>合并规则：</b>扩展包按 key 合并进已有的 melui.util，同名的以后加载的为准，先加载的其它工具不会被清空。</p>
                 <p><b>加载顺序：</b>如果扩展包先于主包加载，在主包执行完成之前，melui.showLoading 等 UI API 还不存在，此时只能使用 melui.util。</p>
-                <p><b>浏览器导入：</b>melui-util.js 是 UMD 产物，在浏览器里被 import 或 require 时同样会挂载 window.melui.util；在 Node/SSR 环境没有 window，会自动跳过挂载，不报错。</p>
+                <p><b>按需引入：</b>melui-util.js 已包含基础层与扩展模块；如果只需要基础层，可以直接只引主包，不必额外加载扩展包。</p>
             </div>
 
             <!-- ============ 三、主包内置工具 ============ -->
-            <h2 id="sec-3">三、主包内置工具<span class="h2-desc">引入 melui.js 即可使用，共 8 个函数</span></h2>
+            <h2 id="sec-3">三、主包内置工具<span class="h2-desc">引入 melui.js 即可使用基础函数</span></h2>
             <p>分两组：类型判断与对象工具。调用统一写作 <code>melui.util.函数名(...)</code>。</p>
 
             <h3 id="sub-3-1">3.1 类型判断</h3>
@@ -644,17 +724,1901 @@ melui.util.shallowCopy([1, 2]);  // {}
                 <p><b>比较方式：</b>mergeObj 每次都返回新对象，不要用 === 判断两次调用结果是否相等，需要比较内容请逐个属性判断。</p>
             </div>
 
+            
+
             <!-- ============ 四、util 扩展包 ============ -->
-            <h2 id="sec-4">四、util 扩展包<span class="h2-desc">单独引入 melui-util.js 后可用</span></h2>
-            <p>melui-util.js 是独立产物，不随主包发布；它的作用是把工具单独分发，让不需要 UI 组件的项目也能用这套函数。</p>
-            <p>当前扩展包的入口只聚合 src/util/base 的这 8 个函数，与主包内置的是同一套实现，调用方式同样是 <code>melui.util.函数名(...)</code>。</p>
+            <h2 id="sec-4">四、util 扩展包<span class="h2-desc">扩展模块 · 单独打包 melui-util.js</span></h2>
+            <p><code>melui-util.js</code> 是独立产物，包含基础层与下面扩展模块的工具函数。扩展模块按模块名分组挂载，不扁平到 <code>melui.util</code> 顶层。</p>
+            <div class="table-wrap">
+                <table class="api-table">
+                    <thead><tr><th>模块</th><th>职责</th><th>调用前缀</th></tr></thead>
+                    <tbody>
+                    <tr><td><a class="module-link" href="#sec-date"><code>date</code></a></td><td>负责日期比较、日期边界、日期偏移、星期转换、格式化与时间戳互转。全部是日期计算，不读写 DOM。</td><td><code>melui.util.date.xxx</code></td></tr>
+                    <tr><td><a class="module-link" href="#sec-format"><code>format</code></a></td><td>负责数字、百分比、金额、空值、中文数字与科学计数的格式转换，全部是字符串 / 数字处理，不读写 DOM。</td><td><code>melui.util.format.xxx</code></td></tr>
+                    <tr><td><a class="module-link" href="#sec-dom"><code>dom</code></a></td><td>负责 DOM 查询、class 操作、HTML 读写、节点插入、位置尺寸、滚动、事件、textarea 自增高与阅读更多。会直接读写 DOM。</td><td><code>melui.util.dom.xxx</code></td></tr>
+                    <tr><td><a class="module-link" href="#sec-string"><code>string</code></a></td><td>负责 URL 参数、HTML 编解码、特殊字符处理与数值 / 时间字符串过滤，全部是字符串处理，不读写 DOM。</td><td><code>melui.util.string.xxx</code></td></tr>
+                    <tr><td><a class="module-link" href="#sec-validate"><code>validate</code></a></td><td>负责危险字符、JSON、电话 / 邮箱、设备与浏览器、网络状态、时间格式校验。多数返回 Boolean；checkHasDangerousChars 默认会弹提示。</td><td><code>melui.util.validate.xxx</code></td></tr>
+                    <tr><td><a class="module-link" href="#sec-array"><code>array</code></a></td><td>负责数组去重、排序、key 集合、深比较、重复检测与相邻分组。排序函数返回新数组，不修改入参数组。</td><td><code>melui.util.array.xxx</code></td></tr>
+                    <tr><td><a class="module-link" href="#sec-random"><code>random</code></a></td><td>负责随机整数、数字串、字符串、随机词、随机字符与随机颜色。随机颜色支持纯随机、限定亮度和 WCAG 对比度三种模式。</td><td><code>melui.util.random.xxx</code></td></tr>
+                    <tr><td><a class="module-link" href="#sec-biz"><code>biz</code></a></td><td>负责从文本中提取电话号码、把省市区数组去重并分组成树。</td><td><code>melui.util.biz.xxx</code></td></tr>
+                    <tr><td><a class="module-link" href="#sec-widget"><code>widget</code></a></td><td>负责网页水印与返回顶部控件，会创建或修改 DOM。</td><td><code>melui.util.widget.xxx</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
             <div class="note">
-                <p>扩展包不含 UI 能力：只引 melui-util.js 时，melui.showLoading、melui.Dialog 等都不存在。</p>
-                <p>扩展包与主包共用同一个 melui.util 命名空间，合并规则见第二节。</p>
+                <p><b>分组规则：</b><code>melui.util.date</code>、<code>melui.util.dom</code> 等是模块对象；函数不会写成 <code>melui.util.getNowTime</code>。</p>
+                <p><b>错误处理：</b>非法入参按各函数注释返回空串、空数组、空对象、false 或 0；需要弹提示的函数会在对应条目里单独说明。</p>
+                <p><b>DOM 依赖：</b>dom 与 widget 模块需要浏览器环境；在 Node/SSR 里没有 document 时不要调用这两个模块。</p>
+            </div>
+
+            <!-- ============ 五、date 日期工具 ============ -->
+            <h2 id="sec-date" data-tree-parent="sec-4" data-util-module="1">4.1 date 日期工具<span class="h2-desc">调用 melui.util.date.xxx</span></h2>
+            <p>负责日期比较、日期边界、日期偏移、星期转换、格式化与时间戳互转。全部是日期计算，不读写 DOM。</p>
+            <div class="note"><p>本章示例均已写成完整调用路径，例如 <code>melui.util.date.函数名()</code>；<code>melui.util.date</code> 里的函数不会扁平到 <code>melui.util</code> 顶层。</p></div>
+
+            <h3 id="sub-date-compare">比较与判断</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-date-compareTwoDates">compareTwoDates(dateStr1, dateStr2)</h4>
+                <div class="api-meta"><b>功能：</b>比较两个日期字符串的先后&nbsp; <b>返回：</b>String；&quot;&gt;&quot; 前者晚；&quot;&lt;&quot; 前者早；&quot;=&quot; 相同或任一无法解析</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.compareTwoDates(
+    dateStr1,   // {String} 日期 1
+    dateStr2   // {String} 日期 2
+);
+// return {String} &quot;&gt;&quot; 前者晚；&quot;&lt;&quot; 前者早；&quot;=&quot; 相同或任一无法解析</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.compareTwoDates('2026-01-01', '2026-01-02') // '&lt;'
+melui.util.date.compareTwoDates('2026-01-02', '2026-01-01') // '&gt;'
+melui.util.date.compareTwoDates('2026-01-01', '2026-01-01') // '='</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-isDateString">isDateString(str)</h4>
+                <div class="api-meta"><b>功能：</b>是否可被 Date 解析的日期字符串（不认只有年份的 &quot;2018&quot;）&nbsp; <b>返回：</b>Boolean；true 可解析；false 为空、纯数字或非法日期</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.isDateString(
+    str   // {String} 待判断值
+);
+// return {Boolean} true 可解析；false 为空、纯数字或非法日期</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.isDateString('2026-11-20') // true
+melui.util.date.isDateString('2026-13-01') // false
+melui.util.date.isDateString('2026')       // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getNumberOfDays">getNumberOfDays(date1, date2)</h4>
+                <div class="api-meta"><b>功能：</b>两个日期相差的天数（后者减前者）&nbsp; <b>返回：</b>Number；天数；date2 早于 date1 时为负数；任一参数非法返回 0</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getNumberOfDays(
+    date1,   // {String} 开始日期
+    date2   // {String} 结束日期
+);
+// return {Number} 天数；date2 早于 date1 时为负数；任一参数非法返回 0</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getNumberOfDays('2026-01-01', '2026-01-03') // 2
+melui.util.date.getNumberOfDays('2026-01-03', '2026-01-01') // -2
+melui.util.date.getNumberOfDays('bad', '2026-01-01')        // 0</code></pre>
+            </div>
+
+            <h3 id="sub-date-now">当前时间</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getNowTime">getNowTime(options)</h4>
+                <div class="api-meta"><b>功能：</b>当前时间，按格式串返回&nbsp; <b>返回：</b>String；格式化后的当前时间；格式串为空时使用默认格式</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getNowTime(
+    options   // {Object} 可选配置
+    // 可选字段：
+    // options.zero  {Boolean} 月/日/时/分/秒是否补零
+    // options.format  {String} 格式串 支持 y/M/d/H/m/s/q/S 占位符，也兼容 年-月-日、年-月、月-日
+);
+// return {String} 格式化后的当前时间；格式串为空时使用默认格式</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">以下示例按当前时间 2026-11-20 09:30:00 说明：
+melui.util.date.getNowTime()                                  // '2026-11-20 09:30:00'
+melui.util.date.getNowTime({ format: 'yyyy-MM-dd' })           // '2026-11-20'
+melui.util.date.getNowTime({ format: 'HH:mm' })                // '09:30'
+melui.util.date.getNowTime({ zero: false })                    // '2026-11-20 9:30:0'</code></pre>
+            </div>
+
+            <h3 id="sub-date-bounds">本月 / 本季度 / 本年边界</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getMonthFirstDay">getMonthFirstDay()</h4>
+                <div class="api-meta"><b>功能：</b>本月第一天&nbsp; <b>返回：</b>String；yyyy-MM-01</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getMonthFirstDay();
+// return {String} yyyy-MM-01</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getMonthFirstDay() // 当前为 2026-11 时返回 '2026-11-01'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getMonthLastDay">getMonthLastDay()</h4>
+                <div class="api-meta"><b>功能：</b>本月最后一天&nbsp; <b>返回：</b>String；yyyy-MM-dd；自动处理大小月和闰年</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getMonthLastDay();
+// return {String} yyyy-MM-dd；自动处理大小月和闰年</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getMonthLastDay() // 2026-11 返回 '2026-11-30'；2024-02 返回 '2024-02-29'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getQuarterFirstDay">getQuarterFirstDay()</h4>
+                <div class="api-meta"><b>功能：</b>本季度第一天&nbsp; <b>返回：</b>String；yyyy-MM-01</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getQuarterFirstDay();
+// return {String} yyyy-MM-01</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getQuarterFirstDay() // 当前为 2026-11 时返回 '2026-10-01'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getQuarterLastDay">getQuarterLastDay()</h4>
+                <div class="api-meta"><b>功能：</b>本季度最后一天&nbsp; <b>返回：</b>String；yyyy-MM-dd；自动处理季度末月份的天数</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getQuarterLastDay();
+// return {String} yyyy-MM-dd；自动处理季度末月份的天数</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getQuarterLastDay() // 当前为 2026-11 时返回 '2026-12-31'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getYearFirstDay">getYearFirstDay()</h4>
+                <div class="api-meta"><b>功能：</b>本年第一天&nbsp; <b>返回：</b>String；yyyy-01-01</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getYearFirstDay();
+// return {String} yyyy-01-01</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getYearFirstDay() // '2026-01-01'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getYearLastDay">getYearLastDay()</h4>
+                <div class="api-meta"><b>功能：</b>本年最后一天&nbsp; <b>返回：</b>String；yyyy-12-31</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getYearLastDay();
+// return {String} yyyy-12-31</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getYearLastDay() // '2026-12-31'</code></pre>
+            </div>
+
+            <h3 id="sub-date-prev-bounds">上个月 / 去年边界</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getLastMonthFirstDay">getLastMonthFirstDay()</h4>
+                <div class="api-meta"><b>功能：</b>上个月第一天&nbsp; <b>返回：</b>String；yyyy-MM-01；1 月会自动跨到上一年 12 月</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getLastMonthFirstDay();
+// return {String} yyyy-MM-01；1 月会自动跨到上一年 12 月</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getLastMonthFirstDay() // 当前为 2026-01 时返回 '2025-12-01'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getLastMonthLastDay">getLastMonthLastDay()</h4>
+                <div class="api-meta"><b>功能：</b>上个月最后一天&nbsp; <b>返回：</b>String；yyyy-MM-dd；自动处理跨年、大小月和闰年</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getLastMonthLastDay();
+// return {String} yyyy-MM-dd；自动处理跨年、大小月和闰年</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getLastMonthLastDay() // 当前为 2026-01 时返回 '2025-12-31'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getLastYearFirstDay">getLastYearFirstDay()</h4>
+                <div class="api-meta"><b>功能：</b>去年第一天&nbsp; <b>返回：</b>String；yyyy-01-01</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getLastYearFirstDay();
+// return {String} yyyy-01-01</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getLastYearFirstDay() // '2025-01-01'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getLastYearLastDay">getLastYearLastDay()</h4>
+                <div class="api-meta"><b>功能：</b>去年最后一天&nbsp; <b>返回：</b>String；yyyy-12-31</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getLastYearLastDay();
+// return {String} yyyy-12-31</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getLastYearLastDay() // '2025-12-31'</code></pre>
+            </div>
+
+            <h3 id="sub-date-offset">日期偏移</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getNDay">getNDay(day)</h4>
+                <div class="api-meta"><b>功能：</b>今天前后 N 天&nbsp; <b>返回：</b>String；yyyy-MM-dd；参数不是有效数字时返回空串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getNDay(
+    day   // {Number} 正数向后，负数向前，0 表示今天
+);
+// return {String} yyyy-MM-dd；参数不是有效数字时返回空串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getNDay(0)  // '2026-11-20'
+melui.util.date.getNDay(-7) // '2026-11-13'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getNMonth">getNMonth(month)</h4>
+                <div class="api-meta"><b>功能：</b>今天前后 N 个月（目标月没有该日期时由 Date 自动顺延）&nbsp; <b>返回：</b>String；yyyy-MM-dd；参数不是有效数字时返回空串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getNMonth(
+    month   // {Number} 正数向后，负数向前，0 表示本月
+);
+// return {String} yyyy-MM-dd；参数不是有效数字时返回空串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getNMonth(1)  // '2026-12-20'
+melui.util.date.getNMonth(-1) // '2026-10-20'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-getNYear">getNYear(year)</h4>
+                <div class="api-meta"><b>功能：</b>今天前后 N 年（2 月 29 日会自动落到 2 月 28 日或 3 月 1 日）&nbsp; <b>返回：</b>String；yyyy-MM-dd；参数不是有效数字时返回空串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.getNYear(
+    year   // {Number} 正数向后，负数向前，0 表示今年
+);
+// return {String} yyyy-MM-dd；参数不是有效数字时返回空串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.getNYear(1)  // '2027-11-20'
+melui.util.date.getNYear(-1) // '2025-11-20'</code></pre>
+            </div>
+
+            <h3 id="sub-date-week">星期转换</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-date-dateToWeek">dateToWeek(date)</h4>
+                <div class="api-meta"><b>功能：</b>日期转星期几&nbsp; <b>返回：</b>String；星期日 ~ 星期六；日期非法时返回空串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.dateToWeek(
+    date   // {String} 日期字符串，如 2026-11-20
+);
+// return {String} 星期日 ~ 星期六；日期非法时返回空串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.dateToWeek('2026-11-20') // '星期五'
+melui.util.date.dateToWeek('bad')        // ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-numToWeek">numToWeek(psNumArrStr)</h4>
+                <div class="api-meta"><b>功能：</b>数字转星期；传数组返回数组，传单个值返回字符串&nbsp; <b>返回：</b>String|Array；单值返回字符串；数组返回同长度数组；undefined 返回空数组</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.numToWeek(
+    psNumArrStr   // {String|Array} 1~7（1 = 星期一），支持 '1,3,5' 形式
+);
+// return {String|Array} 单值返回字符串；数组返回同长度数组；undefined 返回空数组</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.numToWeek('1')       // '星期一'
+melui.util.date.numToWeek('1,3,5')   // '星期一,星期三,星期五'
+melui.util.date.numToWeek(['1','2']) // ['星期一','星期二']</code></pre>
+            </div>
+
+            <h3 id="sub-date-format">格式化 / 时间戳 / 时长</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-date-dateFormat">dateFormat(dateTime, formatStr)</h4>
+                <div class="api-meta"><b>功能：</b>日期格式化 / 标准化日期字符串 支持入参：10-19-2017、2017/10/19、2017-10-19（可带时分秒）&nbsp; <b>返回：</b>String|Object；非法日期返回 ''；正常日期返回格式化字符串或 { year, mon, day, hours, minutes, seconds } 对象</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.dateFormat(
+    dateTime,   // {String} 日期字符串
+    formatStr   // {String} 格式串 含 y/M/d/H/m/s/q/S 占位符时返回字符串； 不含可识别占位符时返回拆解后的对象。
+);
+// return {String|Object} 非法日期返回 ''；正常日期返回格式化字符串或 { year, mon, day, hours, minutes, seconds } 对象</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.dateFormat('2026-11-20 09:30:00')                         // '2026-11-20 09:30:00'
+melui.util.date.dateFormat('2026-11-20', 'yyyy/MM/dd')                    // '2026/11/20'
+melui.util.date.dateFormat('2026-11-20', '年-月-日')                       // '2026年11月20日'
+melui.util.date.dateFormat('2026-11-20', 'unknown')                       // { year:'2026', mon:'11', ... }
+melui.util.date.dateFormat('2026-13-01')                                  // ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-timestampToTime">timestampToTime(timestamp, opts)</h4>
+                <div class="api-meta"><b>功能：</b>时间戳转日期字符串&nbsp; <b>返回：</b>String；格式化后的日期；时间戳非法返回空串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.timestampToTime(
+    timestamp,   // {Number|String} 时间戳
+    opts   // {Object} 可选配置
+    // 可选字段：
+    // opts.bit  {Number} 13 表示毫秒，10 表示秒
+    // opts.format  {String} 格式串
+);
+// return {String} 格式化后的日期；时间戳非法返回空串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.timestampToTime(1790000000000)                       // '2026-09-21 22:13:20'（UTC+8）
+melui.util.date.timestampToTime(1790000000, { bit: 10 })             // 秒级时间戳
+melui.util.date.timestampToTime(1790000000000, { format: 'yyyy-MM-dd' }) // '2026-09-21'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-timeToTimestamp">timeToTimestamp(time, isMilliSecond)</h4>
+                <div class="api-meta"><b>功能：</b>日期字符串转时间戳&nbsp; <b>返回：</b>Number|String；时间戳；日期非法返回 ''</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.timeToTimestamp(
+    time,   // {String} 日期字符串
+    isMilliSecond   // {Boolean} true 返回毫秒，false 返回秒
+);
+// return {Number|String} 时间戳；日期非法返回 ''</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.timeToTimestamp('2026-11-20 09:30:00')        // 1795138200000（UTC+8，13 位）
+melui.util.date.timeToTimestamp('2026-11-20 09:30:00', false) // 10 位秒级时间戳
+melui.util.date.timeToTimestamp('bad')                        // ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-date-timeStringToDayHourMinuteSecond">timeStringToDayHourMinuteSecond(psTimeStr, psOpt)</h4>
+                <div class="api-meta"><b>功能：</b>时间数值转“天小时分钟秒”&nbsp; <b>返回：</b>String；中文时长；空值或非数字返回 ''；负数返回提示文案</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.date.timeStringToDayHourMinuteSecond(
+    psTimeStr,   // {String|Number} 时间数值
+    psOpt   // {Object} 可选配置
+    // 可选字段：
+    // psOpt.unit  {String} 输入单位：小时 / 分钟 / 秒
+    // psOpt.accurate  {String} 输出精度：天 / 小时 / 分钟 / 秒 / 毫秒
+    // psOpt.zeroing  {Boolean} 不足一级时是否补出 0 单位
+);
+// return {String} 中文时长；空值或非数字返回 ''；负数返回提示文案</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.date.timeStringToDayHourMinuteSecond(25)                       // '1天1小时'
+melui.util.date.timeStringToDayHourMinuteSecond(25, { zeroing: true })    // '1天1小时0分钟0秒'
+melui.util.date.timeStringToDayHourMinuteSecond(25, { accurate: '小时' })  // '1天1小时'
+melui.util.date.timeStringToDayHourMinuteSecond('')                       // ''</code></pre>
+            </div>
+
+            <!-- ============ 六、format 格式化工具 ============ -->
+            <h2 id="sec-format" data-tree-parent="sec-4" data-util-module="2">4.2 format 格式化工具<span class="h2-desc">调用 melui.util.format.xxx</span></h2>
+            <p>负责数字、百分比、金额、空值、中文数字与科学计数的格式转换，全部是字符串 / 数字处理，不读写 DOM。</p>
+            <div class="note"><p>本章示例均已写成完整调用路径，例如 <code>melui.util.format.函数名()</code>；<code>melui.util.format</code> 里的函数不会扁平到 <code>melui.util</code> 顶层。</p></div>
+
+            <h3 id="sub-format-number">数字格式化</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-format-thousandth">thousandth(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>数字千分位（整数部分每三位加逗号，小数部分原样保留）&nbsp; <b>返回：</b>String；加千分位后的字符串；非数字字符不会被剔除，长度不足三位时原样返回</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.thousandth(
+    psStr   // {String|Number} 原始数字
+);
+// return {String} 加千分位后的字符串；非数字字符不会被剔除，长度不足三位时原样返回</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.thousandth(1234567.89) // '1,234,567.89'
+melui.util.format.thousandth('-1234')    // '-1,234'
+melui.util.format.thousandth('abc')      // 'abc'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-format-toFixed">toFixed(psNumber, psDigit)</h4>
+                <div class="api-meta"><b>功能：</b>修复精度的 toFixed（不改写 Number.prototype）&nbsp; <b>返回：</b>String；固定位数的小数字符串；位数非法时返回原数字字符串； 数字不是有效数字或大于等于 1e21 时返回 Number#toString 的结果</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.toFixed(
+    psNumber,   // {Number} 要处理的数字
+    psDigit   // {Number} 小数位数 0~20
+);
+// return {String} 固定位数的小数字符串；位数非法时返回原数字字符串； 数字不是有效数字或大于等于 1e21 时返回 Number#toString 的结果</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.toFixed(1.005, 2) // '1.01'
+melui.util.format.toFixed(1.5, 0)   // '2'
+melui.util.format.toFixed(1.2, 3)   // '1.200'
+melui.util.format.toFixed(1.2, -1)  // '1.2'（位数非法，原样返回）
+melui.util.format.toFixed('abc', 2) // 'NaN'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-format-numToChines">numToChines(num)</h4>
+                <div class="api-meta"><b>功能：</b>数字转中文（支持到万级）&nbsp; <b>返回：</b>String；中文数字；无法转成整数时返回 ''；只处理整数部分，小数会被 parseInt 截掉</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.numToChines(
+    num   // {Number|String} 原始数字
+);
+// return {String} 中文数字；无法转成整数时返回 ''；只处理整数部分，小数会被 parseInt 截掉</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.numToChines(12345) // '一万二千三百四十五'
+melui.util.format.numToChines('100') // '一百'
+melui.util.format.numToChines('abc') // ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-format-scientific2String">scientific2String(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>科学计数法转普通数字字符串&nbsp; <b>返回：</b>String；普通数字字符串；无法识别时原样返回；null/undefined 返回 ''</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.scientific2String(
+    psStr   // {String} 例 1.5E+006 / 1.32e-006
+);
+// return {String} 普通数字字符串；无法识别时原样返回；null/undefined 返回 ''</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.scientific2String('1.5E+006')  // '1500000'
+melui.util.format.scientific2String('1.32e-006') // '0.00000132'
+melui.util.format.scientific2String('abc')       // 'abc'</code></pre>
+            </div>
+
+            <h3 id="sub-format-percent">百分比与金额</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-format-decimal2Percent">decimal2Percent(psDecimalStr, psMethod, psDigit, psIsEmptyTips)</h4>
+                <div class="api-meta"><b>功能：</b>小数转百分数&nbsp; <b>返回：</b>String；百分数字符串；空值返回 ''；空值且 psIsEmptyTips 为 true 时返回引导文案并追加 %</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.decimal2Percent(
+    psDecimalStr,   // {String|Number} 小数字符串
+    psMethod,   // {String} round 四舍五入（默认，按 ×100 后取整）/ floor 向下取整 / ceil 向上取整 floor / ceil 当前是直接对小数本身取整，不是对百分数取整，通常只会得到 0% 或 1%
+    psDigit,   // {Number} 小数位数，默认 -1 不处理
+    psIsEmptyTips   // {Boolean} 空值是否返回引导文案
+);
+// return {String} 百分数字符串；空值返回 ''；空值且 psIsEmptyTips 为 true 时返回引导文案并追加 %</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.decimal2Percent('0.3')         // '30%'
+melui.util.format.decimal2Percent('0.3333', 'round', 2) // '33.33%'
+melui.util.format.decimal2Percent('')            // ''
+melui.util.format.decimal2Percent('', 'round', -1, true) // '如30%，请输入0.3%'（当前实现会给提示文案追加 %）</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-format-percent2Decimal">percent2Decimal(psPercentStr, psDigit)</h4>
+                <div class="api-meta"><b>功能：</b>百分数转小数&nbsp; <b>返回：</b>Number|String；百分数除以 100 的结果；psDigit &gt; 0 时返回固定位数的小数字符串，否则返回 Number</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.percent2Decimal(
+    psPercentStr,   // {String|Number} 百分数字符串
+    psDigit   // {Number} 小数位数，默认 -1 不处理
+);
+// return {Number|String} 百分数除以 100 的结果；psDigit &gt; 0 时返回固定位数的小数字符串，否则返回 Number</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.percent2Decimal('30%')      // 0.3
+melui.util.format.percent2Decimal('33.33%')   // 0.3333
+melui.util.format.percent2Decimal('33.33%', 2) // '0.33'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-format-yuan2TenThousand">yuan2TenThousand(psStr, psMethod, psDigit, psIsEmptyTips)</h4>
+                <div class="api-meta"><b>功能：</b>元 → 万元&nbsp; <b>返回：</b>Number|String；万元数值；空值或无法解析时返回 ''；round 且 psDigit &gt;= 0 时返回字符串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.yuan2TenThousand(
+    psStr,   // {String|Number} 元
+    psMethod,   // {String} round 四舍五入（默认）/ floor / ceil
+    psDigit,   // {Number} 小数位数，默认 -1 不处理
+    psIsEmptyTips   // {Boolean} 空值是否返回空串（当前分支结果都是空串，参数不改变返回值）
+);
+// return {Number|String} 万元数值；空值或无法解析时返回 ''；round 且 psDigit &gt;= 0 时返回字符串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.yuan2TenThousand(10000)       // 1
+melui.util.format.yuan2TenThousand('12345', 'round', 2) // '1.23'
+melui.util.format.yuan2TenThousand('')          // ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-format-tenThousand2Yuan">tenThousand2Yuan(psStr, psDigit)</h4>
+                <div class="api-meta"><b>功能：</b>万元 → 元&nbsp; <b>返回：</b>Number|String；元数值；空值或无有效数字返回 ''；psDigit &gt; 0 时返回字符串，0 时向下取整</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.tenThousand2Yuan(
+    psStr,   // {String|Number} 万元
+    psDigit   // {Number} 小数位数：&gt;0 保留，0 取整，-1（默认）不处理
+);
+// return {Number|String} 元数值；空值或无有效数字返回 ''；psDigit &gt; 0 时返回字符串，0 时向下取整</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.tenThousand2Yuan(1)        // 10000
+melui.util.format.tenThousand2Yuan('1.2345') // 12345
+melui.util.format.tenThousand2Yuan('1.5', 0) // 15000
+melui.util.format.tenThousand2Yuan('')       // ''</code></pre>
+            </div>
+
+            <h3 id="sub-format-empty">空值与对象结构</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-format-zeroString2Empty">zeroString2Empty(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>全零字符串转空串（0、0.00、-0.000 都算零） 判定规则：去掉所有空格后，字符只由 0、.、- 组成时返回空串； 只要出现其它字符，就原样返回。&nbsp; <b>返回：</b>String|Number|null|undefined；全零返回 ''；非全零原样返回； null / undefined 原样返回</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.zeroString2Empty(
+    psStr   // {String|Number} 待处理值
+);
+// return {String|Number|null|undefined} 全零返回 ''；非全零原样返回； null / undefined 原样返回</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.zeroString2Empty('0.00')    // ''
+melui.util.format.zeroString2Empty('-0.0000') // ''
+melui.util.format.zeroString2Empty(0)         // ''
+melui.util.format.zeroString2Empty('0.01')    // '0.01'
+melui.util.format.zeroString2Empty('abc')     // 'abc'
+melui.util.format.zeroString2Empty(null)      // null</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-format-emptyString2Zero">emptyString2Zero(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>空串转 0（只有空格也算空）&nbsp; <b>返回：</b>String|Number|null|undefined；空串/空白返回 0；非空原样返回； null / undefined 原样返回</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.emptyString2Zero(
+    psStr   // {String|Number} 待处理值
+);
+// return {String|Number|null|undefined} 空串/空白返回 0；非空原样返回； null / undefined 原样返回</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.emptyString2Zero('')    // 0
+melui.util.format.emptyString2Zero('   ') // 0
+melui.util.format.emptyString2Zero('0.00') // '0.00'
+melui.util.format.emptyString2Zero(null)  // null</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-format-nonstandardObjectToStandardData">nonstandardObjectToStandardData(psSource, psOpts)</h4>
+                <div class="api-meta"><b>功能：</b>把不规范的数据结构转成标准结构（{data:[...]} → 平铺对象或标准数组对象）&nbsp; <b>返回：</b>Object|null|undefined；无 data 时原样返回；单条或 oneWiki 时 返回 { return:'ok', ...单条字段 }；多条时返回 { return:'ok', data:原数组 }</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.format.nonstandardObjectToStandardData(
+    psSource,   // {Object} 数据源
+    psOpts   // {Object} 可选
+    // 可选字段：
+    // psOpts.oneWiki  {Boolean} 是否强制转成一维对象
+);
+// return {Object|null|undefined} 无 data 时原样返回；单条或 oneWiki 时 返回 { return:'ok', ...单条字段 }；多条时返回 { return:'ok', data:原数组 }</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.format.nonstandardObjectToStandardData({ data: [{ a: 1 }] })      // { return:'ok', a:1 }
+melui.util.format.nonstandardObjectToStandardData({ data: [{ a:1 }, { a:2 }] }) // { return:'ok', data:[...] }
+melui.util.format.nonstandardObjectToStandardData({})                        // {}</code></pre>
+            </div>
+
+            <!-- ============ 七、dom DOM 工具 ============ -->
+            <h2 id="sec-dom" data-tree-parent="sec-4" data-util-module="3">4.3 dom DOM 工具<span class="h2-desc">调用 melui.util.dom.xxx</span></h2>
+            <p>负责 DOM 查询、class 操作、HTML 读写、节点插入、位置尺寸、滚动、事件、textarea 自增高与阅读更多。会直接读写 DOM。</p>
+            <div class="note"><p>本章示例均已写成完整调用路径，例如 <code>melui.util.dom.函数名()</code>；<code>melui.util.dom</code> 里的函数不会扁平到 <code>melui.util</code> 顶层。</p></div>
+
+            <h3 id="sub-dom-attr">属性与 class</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getDataset">getDataset(ele)</h4>
+                <div class="api-meta"><b>功能：</b>读取 data-* 属性（IE11 以下无 dataset）&nbsp; <b>返回：</b>Object；属性键值对象，键会从连字符转成驼峰；无元素时返回空对象</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getDataset(
+    ele   // {HTMLElement} DOM 元素
+);
+// return {Object} 属性键值对象，键会从连字符转成驼峰；无元素时返回空对象</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// &lt;div class=&quot;slide&quot; data-auto-play=&quot;true&quot; data-delay=&quot;3000&quot;&gt;&lt;/div&gt;
+melui.util.dom.getDataset(document.querySelector('.slide'))
+// { autoPlay: 'true', delay: '3000' }
+melui.util.dom.getDataset(null)
+// {}</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-addClass">addClass(el, cls)</h4>
+                <div class="api-meta"><b>功能：</b>添加 class（兼容无 classList 的 IE9）&nbsp; <b>返回：</b>void；无返回值，直接修改元素的 className；元素为空时不做任何事</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.addClass(
+    el,   // {HTMLElement}
+    cls   // {String}
+);
+// return {void} 无返回值，直接修改元素的 className；元素为空时不做任何事</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.addClass(document.querySelector('.box'), 'active')
+// &lt;div class=&quot;box active&quot;&gt;</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-removeClass">removeClass(el, cls)</h4>
+                <div class="api-meta"><b>功能：</b>移除 class（兼容无 classList 的 IE9）&nbsp; <b>返回：</b>void；无返回值，直接修改元素的 className；元素为空或本来没有该 class 时不做任何事</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.removeClass(
+    el,   // {HTMLElement}
+    cls   // {String}
+);
+// return {void} 无返回值，直接修改元素的 className；元素为空或本来没有该 class 时不做任何事</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.removeClass(document.querySelector('.box'), 'active')
+// &lt;div class=&quot;box&quot;&gt;</code></pre>
+            </div>
+
+            <h3 id="sub-dom-query">节点查询</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getChildElement">getChildElement(o, classOrTagName)</h4>
+                <div class="api-meta"><b>功能：</b>取直接子元素（可按类名或标签名过滤）&nbsp; <b>返回：</b>Array|null；直接子元素组成的新数组，不是 NodeList；父节点为空时返回 null，无匹配返回 []</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getChildElement(
+    o,   // {HTMLElement} 父节点
+    classOrTagName   // {String} 可选，类名或标签名
+);
+// return {Array|null} 直接子元素组成的新数组，不是 NodeList；父节点为空时返回 null，无匹配返回 []</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// &lt;div&gt;&lt;p&gt;&lt;/p&gt;&lt;div class=&quot;active&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+melui.util.dom.getChildElement(box)
+// [&lt;p&gt;, &lt;div class=&quot;active&quot;&gt;]
+melui.util.dom.getChildElement(box, 'active')
+// [&lt;div class=&quot;active&quot;&gt;]
+melui.util.dom.getChildElement(null)
+// null</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getChildrenElement">getChildrenElement(o, classOrTagName)</h4>
+                <div class="api-meta"><b>功能：</b>取子孙元素（含自身，可按类名或标签名过滤）&nbsp; <b>返回：</b>Array；匹配到的元素组成的新数组；节点为空或无匹配返回 []</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getChildrenElement(
+    o,   // {HTMLElement} 当前节点
+    classOrTagName   // {String} 可选，类名或标签名；不传则返回自身及全部后代元素
+);
+// return {Array} 匹配到的元素组成的新数组；节点为空或无匹配返回 []</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// &lt;div class=&quot;box&quot;&gt;&lt;span class=&quot;item&quot;&gt;&lt;/span&gt;&lt;span class=&quot;item&quot;&gt;&lt;/span&gt;&lt;/div&gt;
+melui.util.dom.getChildrenElement(box, 'item')
+// [&lt;span class=&quot;item&quot;&gt;, &lt;span class=&quot;item&quot;&gt;]
+melui.util.dom.getChildrenElement(box)
+// [&lt;div class=&quot;box&quot;&gt;, &lt;span class=&quot;item&quot;&gt;, &lt;span class=&quot;item&quot;&gt;]（包含 box 自身）</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getFirstChildElement">getFirstChildElement(o)</h4>
+                <div class="api-meta"><b>功能：</b>第一个子元素&nbsp; <b>返回：</b>HTMLElement|null；第一个元素子节点；没有元素子节点或父节点为空时返回 null</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getFirstChildElement(
+    o   // {HTMLElement}
+);
+// return {HTMLElement|null} 第一个元素子节点；没有元素子节点或父节点为空时返回 null</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getFirstChildElement(document.querySelector('.box'))
+// &lt;p&gt; 或 null</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getLastChildElement">getLastChildElement(o)</h4>
+                <div class="api-meta"><b>功能：</b>最后一个子元素&nbsp; <b>返回：</b>HTMLElement|null；最后一个元素子节点；没有元素子节点或父节点为空时返回 null</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getLastChildElement(
+    o   // {HTMLElement}
+);
+// return {HTMLElement|null} 最后一个元素子节点；没有元素子节点或父节点为空时返回 null</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getLastChildElement(document.querySelector('.box'))
+// &lt;div&gt; 或 null</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getNextElement">getNextElement(o)</h4>
+                <div class="api-meta"><b>功能：</b>下一个兄弟元素（跳过文本节点）&nbsp; <b>返回：</b>HTMLElement|null；下一个元素兄弟节点；没有则返回 null</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getNextElement(
+    o   // {HTMLElement}
+);
+// return {HTMLElement|null} 下一个元素兄弟节点；没有则返回 null</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getNextElement(document.querySelector('.item'))
+// &lt;span class=&quot;item&quot;&gt; 或 null</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getPrevElement">getPrevElement(o)</h4>
+                <div class="api-meta"><b>功能：</b>上一个兄弟元素（跳过文本节点）&nbsp; <b>返回：</b>HTMLElement|null；上一个元素兄弟节点；没有则返回 null</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getPrevElement(
+    o   // {HTMLElement}
+);
+// return {HTMLElement|null} 上一个元素兄弟节点；没有则返回 null</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getPrevElement(document.querySelector('.item'))
+// &lt;span class=&quot;item&quot;&gt; 或 null</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getAllSiblingElement">getAllSiblingElement(o)</h4>
+                <div class="api-meta"><b>功能：</b>全部兄弟元素（不含自身）&nbsp; <b>返回：</b>Array；同级元素组成的新数组，不含自身；无父节点时返回 []</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getAllSiblingElement(
+    o   // {HTMLElement}
+);
+// return {Array} 同级元素组成的新数组，不含自身；无父节点时返回 []</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// &lt;div&gt;&lt;p&gt;&lt;/p&gt;&lt;span&gt;&lt;/span&gt;&lt;a&gt;&lt;/a&gt;&lt;/div&gt;
+melui.util.dom.getAllSiblingElement(span)
+// [&lt;p&gt;, &lt;a&gt;]</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getAllPrevElement">getAllPrevElement(o)</h4>
+                <div class="api-meta"><b>功能：</b>前面的全部兄弟元素&nbsp; <b>返回：</b>Array；自身前面的同级元素组成的新数组；是第一个子元素或无父节点时返回 []</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getAllPrevElement(
+    o   // {HTMLElement}
+);
+// return {Array} 自身前面的同级元素组成的新数组；是第一个子元素或无父节点时返回 []</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// &lt;div&gt;&lt;p&gt;&lt;/p&gt;&lt;span&gt;&lt;/span&gt;&lt;a&gt;&lt;/a&gt;&lt;/div&gt;
+melui.util.dom.getAllPrevElement(a)
+// [&lt;p&gt;, &lt;span&gt;]</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getAllNextElement">getAllNextElement(o, classOrTagName)</h4>
+                <div class="api-meta"><b>功能：</b>后面的全部兄弟元素&nbsp; <b>返回：</b>Array；自身后面的同级元素组成的新数组；无匹配、是最后一个子元素或无父节点时返回 []</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getAllNextElement(
+    o,   // {HTMLElement}
+    classOrTagName   // {String} 可选，类名或标签名
+);
+// return {Array} 自身后面的同级元素组成的新数组；无匹配、是最后一个子元素或无父节点时返回 []</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// &lt;div&gt;&lt;p&gt;&lt;/p&gt;&lt;span class=&quot;item&quot;&gt;&lt;/span&gt;&lt;a class=&quot;item&quot;&gt;&lt;/a&gt;&lt;/div&gt;
+melui.util.dom.getAllNextElement(p, 'item')
+// [&lt;span class=&quot;item&quot;&gt;, &lt;a class=&quot;item&quot;&gt;]</code></pre>
+            </div>
+
+            <h3 id="sub-dom-html">HTML 读写</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getHtml">getHtml(el)</h4>
+                <div class="api-meta"><b>功能：</b>读取节点内部 HTML（innerHTML）&nbsp; <b>返回：</b>String；元素 innerHTML；取不到元素时返回空串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getHtml(
+    el   // {HTMLElement|String|NodeList} 元素、选择器或节点集合
+);
+// return {String} 元素 innerHTML；取不到元素时返回空串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getHtml('#box')
+// '&lt;p&gt;内容&lt;/p&gt;'
+melui.util.dom.getHtml('#missing')
+// ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-setHtml">setHtml(el, str)</h4>
+                <div class="api-meta"><b>功能：</b>写入节点内部 HTML&nbsp; <b>返回：</b>HTMLElement|null；被写入的元素；取不到元素时返回 null，且不执行写入</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.setHtml(
+    el,   // {HTMLElement|String|NodeList} 元素、选择器或节点集合
+    str   // {String} HTML 字符串，传 null / undefined 视为空串
+);
+// return {HTMLElement|null} 被写入的元素；取不到元素时返回 null，且不执行写入</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.setHtml('#box', '&lt;p&gt;新内容&lt;/p&gt;')
+// 返回 #box，页面内容变为 &lt;p&gt;新内容&lt;/p&gt;
+melui.util.dom.setHtml('#missing', 'x')
+// null</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getCurrentFormHtml">getCurrentFormHtml(el)</h4>
+                <div class="api-meta"><b>功能：</b>读取带表单当前值的 HTML 解决的问题：innerHTML 只反映标签上的初始属性；用户在 input / textarea / radio / checkbox / option 上输入、勾选、选择后，改变的是运行时状态， 直接读 innerHTML 拿到的是旧值。本函数先把运行时状态同步回标签属性，再读 innerHTML。 处理范围：input、button、textarea、radio、checkbox、option； 不处理 contenteditable。 注意：会改写目标节点内部控件的 value / checked / selected 属性； 返回内容包含用户输入，重新插入页面前需自行保证内容可信，存在 XSS 风险。&nbsp; <b>返回：</b>String；同步后的 innerHTML；取不到元素时返回空串；元素不支持 querySelectorAll 时直接返回原 innerHTML</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getCurrentFormHtml(
+    el   // {HTMLElement|String|NodeList} 容器元素、选择器或节点集合
+);
+// return {String} 同步后的 innerHTML；取不到元素时返回空串；元素不支持 querySelectorAll 时直接返回原 innerHTML</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// &lt;div id=&quot;form&quot;&gt;&lt;input value=&quot;旧值&quot;&gt;&lt;textarea&gt;旧文本&lt;/textarea&gt;&lt;/div&gt;
+// 用户输入后：
+melui.util.dom.getCurrentFormHtml('#form')
+// '&lt;input value=&quot;新值&quot;&gt;&lt;textarea&gt;新文本&lt;/textarea&gt;'
+melui.util.dom.getCurrentFormHtml('#missing')
+// ''</code></pre>
+            </div>
+
+            <h3 id="sub-dom-insert">插入与删除</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-appendHtml">appendHtml(str, el)</h4>
+                <div class="api-meta"><b>功能：</b>往容器末尾插入 HTML 字符串&nbsp; <b>返回：</b>void；无返回值，直接向容器追加节点</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.appendHtml(
+    str,   // {String} HTML 字符串
+    el   // {HTMLElement} 容器
+);
+// return {void} 无返回值，直接向容器追加节点</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.appendHtml('&lt;p&gt;新内容&lt;/p&gt;', document.querySelector('.box'))
+// .box 末尾新增一个 &lt;p&gt;</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-prependHtml">prependHtml(str, el)</h4>
+                <div class="api-meta"><b>功能：</b>往容器最前面插入 HTML 字符串&nbsp; <b>返回：</b>void；无返回值，直接向容器最前面插入节点</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.prependHtml(
+    str,   // {String} HTML 字符串
+    el   // {HTMLElement} 容器
+);
+// return {void} 无返回值，直接向容器最前面插入节点</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.prependHtml('&lt;p&gt;新内容&lt;/p&gt;', document.querySelector('.box'))
+// .box 第一个子节点变为新插入的 &lt;p&gt;</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-appendChild">appendChild(childNode, fatherNode)</h4>
+                <div class="api-meta"><b>功能：</b>追加子节点：定位最后一个普通子节点，插到它后面 会跳过尾部连续的 script / style / .controls，但如果这些节点后面还有普通子节点， 就以最后一个普通子节点为准，新节点会排到这些特殊节点之后。&nbsp; <b>返回：</b>void；无返回值，直接移动/插入节点；父节点没有普通子节点时直接 append 到末尾</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.appendChild(
+    childNode,   // {HTMLElement} 子节点
+    fatherNode   // {HTMLElement} 父节点
+);
+// return {void} 无返回值，直接移动/插入节点；父节点没有普通子节点时直接 append 到末尾</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// &lt;div class=&quot;box&quot;&gt;&lt;p&gt;&lt;/p&gt;&lt;script&gt;&lt;/script&gt;&lt;/div&gt;
+melui.util.dom.appendChild(document.createElement('span'), document.querySelector('.box'))
+// 新 &lt;span&gt; 插在 &lt;p&gt; 后面、&lt;script&gt; 前面</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-prependChild">prependChild(childNode, fatherNode)</h4>
+                <div class="api-meta"><b>功能：</b>插入子节点到容器最前面，跳过 script / style&nbsp; <b>返回：</b>void；无返回值，直接移动/插入节点；容器只有 script/style 或为空时 append 到末尾</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.prependChild(
+    childNode,   // {HTMLElement} 子节点
+    fatherNode   // {HTMLElement} 父节点
+);
+// return {void} 无返回值，直接移动/插入节点；容器只有 script/style 或为空时 append 到末尾</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.prependChild(document.createElement('p'), document.querySelector('.box'))
+// 新 &lt;p&gt; 插在 .box 内第一个普通子节点之前</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-insertAfter">insertAfter(newNode, existingNode)</h4>
+                <div class="api-meta"><b>功能：</b>在已有节点后面插入新节点&nbsp; <b>返回：</b>void；无返回值，直接插入节点；已有节点是父节点最后一个元素时直接 append</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.insertAfter(
+    newNode,   // {HTMLElement} 新节点
+    existingNode   // {HTMLElement} 已有节点
+);
+// return {void} 无返回值，直接插入节点；已有节点是父节点最后一个元素时直接 append</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.insertAfter(document.createElement('p'), document.querySelector('.item'))
+// 新 &lt;p&gt; 出现在 .item 后面</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-removeNode">removeNode(node)</h4>
+                <div class="api-meta"><b>功能：</b>移除节点&nbsp; <b>返回：</b>void；无返回值；节点为空或已没有父节点时不做任何事</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.removeNode(
+    node   // {HTMLElement}
+);
+// return {void} 无返回值；节点为空或已没有父节点时不做任何事</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.removeNode(document.querySelector('.item'))
+// .item 从页面移除</code></pre>
+            </div>
+
+            <h3 id="sub-dom-position">位置与尺寸</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getElementStyle">getElementStyle(o)</h4>
+                <div class="api-meta"><b>功能：</b>取元素的计算样式&nbsp; <b>返回：</b>CSSStyleDeclaration|Object；现代浏览器返回 getComputedStyle 结果；旧 IE 返回 currentStyle</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getElementStyle(
+    o   // {HTMLElement}
+);
+// return {CSSStyleDeclaration|Object} 现代浏览器返回 getComputedStyle 结果；旧 IE 返回 currentStyle</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getElementStyle(document.querySelector('.box')).width
+// '200px'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getElementTop">getElementTop(o)</h4>
+                <div class="api-meta"><b>功能：</b>元素到文档顶部的距离（含祖先 offsetTop 与 html 的 margin-top）&nbsp; <b>返回：</b>Number；相对文档顶部的像素值，包含逐级 offsetParent 的 offsetTop 与 html 的 margin-top</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getElementTop(
+    o   // {HTMLElement}
+);
+// return {Number} 相对文档顶部的像素值，包含逐级 offsetParent 的 offsetTop 与 html 的 margin-top</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getElementTop(document.querySelector('.box'))
+// 120</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getElementLeft">getElementLeft(o)</h4>
+                <div class="api-meta"><b>功能：</b>元素到文档左侧的距离（含祖先 offsetLeft 与页面居中补偿）&nbsp; <b>返回：</b>Number；相对文档左侧的像素值；页面宽度大于文档宽度时补上居中偏移</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getElementLeft(
+    o   // {HTMLElement}
+);
+// return {Number} 相对文档左侧的像素值；页面宽度大于文档宽度时补上居中偏移</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getElementLeft(document.querySelector('.box'))
+// 80</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getElementWidth">getElementWidth(o)</h4>
+                <div class="api-meta"><b>功能：</b>元素宽度（隐藏元素用 clientWidth + padding + border 兜底）&nbsp; <b>返回：</b>Number；元素像素宽度；元素为空或无法测量时返回 0</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getElementWidth(
+    o   // {HTMLElement}
+);
+// return {Number} 元素像素宽度；元素为空或无法测量时返回 0</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getElementWidth(document.querySelector('.box'))
+// 200
+melui.util.dom.getElementWidth(null)
+// 0</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getElementHeight">getElementHeight(o)</h4>
+                <div class="api-meta"><b>功能：</b>元素高度（隐藏元素用 clientHeight + padding + border 兜底）&nbsp; <b>返回：</b>Number；元素像素高度；元素为空或无法测量时返回 0</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getElementHeight(
+    o   // {HTMLElement}
+);
+// return {Number} 元素像素高度；元素为空或无法测量时返回 0</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getElementHeight(document.querySelector('.box'))
+// 80
+melui.util.dom.getElementHeight(null)
+// 0</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-getScrollbarWidth">getScrollbarWidth()</h4>
+                <div class="api-meta"><b>功能：</b>浏览器滚动条宽度&nbsp; <b>返回：</b>Number；滚动条占用的像素宽度，一般为 15~21；用覆盖式滚动条或没有 body 时返回 0</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.getScrollbarWidth();
+// return {Number} 滚动条占用的像素宽度，一般为 15~21；用覆盖式滚动条或没有 body 时返回 0</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.getScrollbarWidth()
+// 17</code></pre>
+            </div>
+
+            <h3 id="sub-dom-scroll">滚动与事件</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-elementScrollTo">elementScrollTo(options)</h4>
+                <div class="api-meta"><b>功能：</b>滚动到指定位置，完成后回调 window 场景使用原生 window.scrollTo(left, top)，不传 behavior； 元素场景优先用 element.scrollTo({ top, left, behavior })，不支持时退回直接赋值。 回调在滚动位置与目标相差 1px 以内时触发；已在目标位置则同步触发。&nbsp; <b>返回：</b>void；无返回值，只执行滚动并可选触发回调</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.elementScrollTo(
+    options   // {Object}
+    // 可选字段：
+    // options.element  {HTMLElement|Window} 滚动容器，默认 window
+    // options.top  {Number} 目标纵向位置，默认 0
+    // options.left  {Number} 目标横向位置，默认 0
+    // options.behavior  {String} auto（默认）/ smooth（仅元素场景且浏览器支持时生效）
+    // options.callback  {Function} 滚动结束回调
+);
+// return {void} 无返回值，只执行滚动并可选触发回调</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.elementScrollTo({
+  element: document.querySelector('.list'),
+  top: 100,
+  behavior: 'smooth',
+  callback: function () { console.log('滚动结束'); }
+});</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-addEventListener">addEventListener(ele, event, fn)</h4>
+                <div class="api-meta"><b>功能：</b>兼容 IE8- 的事件绑定&nbsp; <b>返回：</b>void；无返回值；现代浏览器用 addEventListener，旧 IE 用 attachEvent 并把 this 绑回 ele</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.addEventListener(
+    ele,   // {HTMLElement|Window} 绑定对象
+    event,   // {String} 事件名
+    fn   // {Function} 回调
+);
+// return {void} 无返回值；现代浏览器用 addEventListener，旧 IE 用 attachEvent 并把 this 绑回 ele</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.addEventListener(document.querySelector('.btn'), 'click', function () {
+  console.log('clicked');
+});</code></pre>
+            </div>
+
+            <h3 id="sub-dom-form">表单与阅读更多</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-makeTextareaExpanding">makeTextareaExpanding(el, opt)</h4>
+                <div class="api-meta"><b>功能：</b>textarea 随内容自动增高&nbsp; <b>返回：</b>void；无返回值；找不到元素时不做任何事，找到后会立即设置一次高度并监听 input / 删除键 / 剪切</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.makeTextareaExpanding(
+    el,   // {HTMLElement|String|NodeList} 元素、选择器或节点集合
+    opt   // {Object} 可选
+    // 可选字段：
+    // opt.initHeight  {Number} 初始高度，默认 28
+    // opt.maxHeight  {Number} 最大高度，默认 120；传 0 或负数表示不限制
+);
+// return {void} 无返回值；找不到元素时不做任何事，找到后会立即设置一次高度并监听 input / 删除键 / 剪切</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.makeTextareaExpanding('#remark', { initHeight: 32, maxHeight: 160 })
+// textarea 初始 32px，随输入增高，最高 160px，超过后出现纵向滚动条</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-readMore">readMore(psSelector, psLength, psMoreText)</h4>
+                <div class="api-meta"><b>功能：</b>阅读更多：先截断内容，点“阅读全文”后还原 注意：只处理纯文本长度，不切断标签&nbsp; <b>返回：</b>void；无返回值；找不到容器或内容长度未超过限制时不做任何事，否则改写容器内容并在其后插入按钮</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.readMore(
+    psSelector,   // {HTMLElement|String|NodeList} 容器
+    psLength,   // {Number} 默认显示的字符数，默认 600
+    psMoreText   // {String} 按钮文字，默认“阅读全文”
+);
+// return {void} 无返回值；找不到容器或内容长度未超过限制时不做任何事，否则改写容器内容并在其后插入按钮</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.readMore('#article', 300, '展开全文')
+// 正文只显示前 300 个可见字符并追加“ ......”，后面出现“展开全文”按钮；点击后恢复原文并移除按钮</code></pre>
+            </div>
+
+            <h3 id="sub-dom-selector">选择器转 DOM</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-dom-anyToDomObject">anyToDomObject(o)</h4>
+                <div class="api-meta"><b>功能：</b>把选择器 / NodeList / 类数组集合统一成 DOM 元素&nbsp; <b>返回：</b>HTMLElement|null；解析到的第一个元素；传入 null、空集合或匹配不到时返回 null</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.dom.anyToDomObject(
+    o   // {HTMLElement|String|NodeList}
+);
+// return {HTMLElement|null} 解析到的第一个元素；传入 null、空集合或匹配不到时返回 null</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.dom.anyToDomObject('.item')
+// 第一个 .item 元素
+melui.util.dom.anyToDomObject(document.querySelectorAll('.item'))
+// 第一个 .item 元素
+melui.util.dom.anyToDomObject('#missing')
+// null</code></pre>
+            </div>
+
+            <!-- ============ 八、string 字符串工具 ============ -->
+            <h2 id="sec-string" data-tree-parent="sec-4" data-util-module="4">4.4 string 字符串工具<span class="h2-desc">调用 melui.util.string.xxx</span></h2>
+            <p>负责 URL 参数、HTML 编解码、特殊字符处理与数值 / 时间字符串过滤，全部是字符串处理，不读写 DOM。</p>
+            <div class="note"><p>本章示例均已写成完整调用路径，例如 <code>melui.util.string.函数名()</code>；<code>melui.util.string</code> 里的函数不会扁平到 <code>melui.util</code> 顶层。</p></div>
+
+            <h3 id="sub-string-url">URL 参数</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-string-getUrlParams">getUrlParams(psKey, psUrl)</h4>
+                <div class="api-meta"><b>功能：</b>获取 URL 参数&nbsp; <b>返回：</b>String|Object|null；传了 key 时返回 decodeURI 后的参数值，参数不存在返回 null； 不传 key 时返回全部参数对象，值为原始（未解码）字符串；没有参数时返回 {}</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.getUrlParams(
+    psKey,   // {String} 参数名；不传则返回全部参数组成的对象
+    psUrl   // {String} 目标 URL；不传则取当前页面地址
+);
+// return {String|Object|null} 传了 key 时返回 decodeURI 后的参数值，参数不存在返回 null； 不传 key 时返回全部参数对象，值为原始（未解码）字符串；没有参数时返回 {}</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// 地址：https://a.com/?name=%E5%BC%A0%E4%B8%89&amp;age=18
+melui.util.string.getUrlParams('name')  // '张三'
+melui.util.string.getUrlParams('none')  // null
+melui.util.string.getUrlParams()        // { name: '%E5%BC%A0%E4%B8%89', age: '18' }（值为原始字符串，未解码）
+melui.util.string.getUrlParams('age', 'https://a.com/?age=18') // '18'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-getUrlQueryString">getUrlQueryString(psUrl)</h4>
+                <div class="api-meta"><b>功能：</b>取 URL 中问号后面的部分&nbsp; <b>返回：</b>String；问号后的原始字符串（不解码、不去 hash）；无参数或没有问号时返回 ''</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.getUrlQueryString(
+    psUrl   // {String} 链接
+);
+// return {String} 问号后的原始字符串（不解码、不去 hash）；无参数或没有问号时返回 ''</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.getUrlQueryString('https://a.com/list?page=2&amp;size=10')
+// 'page=2&amp;size=10'
+melui.util.string.getUrlQueryString('https://a.com/list')
+// ''
+melui.util.string.getUrlQueryString()
+// ''</code></pre>
+            </div>
+
+            <h3 id="sub-string-html">HTML 编解码</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-string-htmlEncode">htmlEncode(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>HTML 编码：把文本转成可入库的带 &lt;p&gt; 排版的 HTML 实体内容 有 document 时先用 textContent 转义，再补单双引号；换行会变成 &lt;br&gt;， 多个换行会包成 &lt;p&gt; 段落；桌面端连续空白转 &amp;nbsp;，移动端合并为一个空格。 没有 document 时走字符串替换分支，只保证实体转义，不做 DOM 排版。&nbsp; <b>返回：</b>String；编码后的 HTML 字符串；null/undefined 返回 ''</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.htmlEncode(
+    psStr   // {String} 原始文本
+);
+// return {String} 编码后的 HTML 字符串；null/undefined 返回 ''</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.htmlEncode('a&lt;b&amp;c')
+// 'a&amp;lt;b&amp;amp;c'
+melui.util.string.htmlEncode('第一行\n第二行')
+// '&lt;p&gt;第一行&lt;/p&gt;&lt;p&gt;第二行&lt;/p&gt;'（桌面端空白会进一步转 &amp;nbsp;）
+melui.util.string.htmlEncode(null)
+// ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-htmlDecode">htmlDecode(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>HTML 解码：把实体内容还原为纯文本（用于回填 textarea / 编辑器）&nbsp; <b>返回：</b>String；解码后的文本；null / 空串返回 ''；没有 document 时原样返回入参</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.htmlDecode(
+    psStr   // {String} 带 HTML 实体的字符串
+);
+// return {String} 解码后的文本；null / 空串返回 ''；没有 document 时原样返回入参</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.htmlDecode('a&amp;lt;b&amp;amp;c')
+// 'a&lt;b&amp;c'
+melui.util.string.htmlDecode('&lt;p&gt;第一行&lt;/p&gt;&lt;p&gt;第二行&lt;/p&gt;')
+// '第一行\n第二行' 或 '第一行第二行'（块级标签是否换行取决于浏览器 innerText）
+melui.util.string.htmlDecode(null)
+// ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-html">html(psStr, options)</h4>
+                <div class="api-meta"><b>功能：</b>表单入库清洗：过滤 HTML 标签、控制字符、高危字符等&nbsp; <b>返回：</b>String；清洗后的字符串；null/undefined 返回 ''，其余入参会先转成字符串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.html(
+    psStr,   // {String} 原始字符串
+    options   // {Object} 可选配置，字段见函数内 config： filterHtmlTag 去标签、filterRiskTag 去危险标签、filterControlChar 去控制字符、 filterFullWidthSpace 全角空格转半角、escapeNewLine 换行转字面量 \n、 escapeTab 制表符转字面量 \t、mergeSpace 合并连续空格、dangerMode 危险字符模式
+);
+// return {String} 清洗后的字符串；null/undefined 返回 ''，其余入参会先转成字符串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.html('&lt;p&gt;你好&lt;/p&gt;&lt;script&gt;alert(1)&lt;/script&gt;')
+// '你好'
+melui.util.string.html('a\nb')
+// 'ab'（filterControlChar 默认先删掉换行；要保留换行需关掉该开关）
+melui.util.string.html('a\nb', { filterControlChar: false })
+// 'a\\nb'（escapeNewLine 默认 true，把换行转成字面量 \n）
+melui.util.string.html(null)
+// ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-dangerousChars">dangerousChars(psStr, psMethod)</h4>
+                <div class="api-meta"><b>功能：</b>过滤 SQL / 数据库高危字符&nbsp; <b>返回：</b>String；处理后的字符串；null/undefined 返回 ''，其余入参会先转成字符串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.dangerousChars(
+    psStr,   // {String} 原字符串
+    psMethod   // {String} loose 宽松（默认，替换为全角或中文符号）/ strict 严格（直接删除）
+);
+// return {String} 处理后的字符串；null/undefined 返回 ''，其余入参会先转成字符串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.dangerousChars('a;b(c)', 'strict') // 'abc'
+melui.util.string.dangerousChars('a;b(c)')           // 'a；b（c）'
+melui.util.string.dangerousChars('a--b')             // 'a-b'</code></pre>
+            </div>
+
+            <h3 id="sub-string-special">特殊字符</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-string-escapeSpecialChars">escapeSpecialChars(str, needUrlEncode)</h4>
+                <div class="api-meta"><b>功能：</b>转义字符串特殊字符（JSON / JS 字符串场景）&nbsp; <b>返回：</b>String；转义后的字符串；非字符串或 null/undefined 返回 ''</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.escapeSpecialChars(
+    str,   // {String} 原始字符串
+    needUrlEncode   // {Boolean} 是否再做 URL 编码
+);
+// return {String} 转义后的字符串；非字符串或 null/undefined 返回 ''</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.escapeSpecialChars('a&quot;b\nc')
+// 'a\\&quot;b\\nc'
+melui.util.string.escapeSpecialChars('a&quot;b', true)
+// 'a%5C%22b'（先转义引号，再做 encodeURIComponent）
+melui.util.string.escapeSpecialChars(null)
+// ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-unescapeSpecialChars">unescapeSpecialChars(str, needUrlDecode)</h4>
+                <div class="api-meta"><b>功能：</b>反转义（配合 escapeSpecialChars）&nbsp; <b>返回：</b>String；还原后的字符串；非字符串或 null/undefined 返回 ''</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.unescapeSpecialChars(
+    str,   // {String} 转义后的字符串
+    needUrlDecode   // {Boolean} 是否先做 URL 解码
+);
+// return {String} 还原后的字符串；非字符串或 null/undefined 返回 ''</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.unescapeSpecialChars('a\\&quot;b\\nc')
+// 'a&quot;b\nc'
+melui.util.string.unescapeSpecialChars('a%5C%22b', true)
+// 'a&quot;b'
+melui.util.string.unescapeSpecialChars(null)
+// ''</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-charCode">charCode(psStr, psOpts)</h4>
+                <div class="api-meta"><b>功能：</b>强净化：清掉脚本、样式、标签、空白等&nbsp; <b>返回：</b>String；净化后的字符串；null 或非字符串返回 ''</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.charCode(
+    psStr,   // {String} 原始字符串
+    psOpts   // {Object} 可选开关，字段见函数内 defaults： javascript / css / space / html / lineFeed / tab
+);
+// return {String} 净化后的字符串；null 或非字符串返回 ''</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.charCode('&lt;p&gt;a&lt;/p&gt;&lt;script&gt;x&lt;/script&gt;')
+// 'a'
+melui.util.string.charCode(' a\tb\nc ')
+// 'abc'（space、lineFeed、tab 默认全部开启）
+melui.util.string.charCode('&lt;b&gt;a&lt;/b&gt;', { html: false })
+// '&lt;b&gt;a&lt;/b&gt;'（标签保留，空格仍被清理）</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-notNumericChar">notNumericChar(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>只保留数字字符&nbsp; <b>返回：</b>String；只由 0-9 组成的字符串；小数点、负号、空格、字母都会被删掉</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.notNumericChar(
+    psStr   // {String} 原字符串
+);
+// return {String} 只由 0-9 组成的字符串；小数点、负号、空格、字母都会被删掉</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.notNumericChar('a1-2.3') // '123'
+melui.util.string.notNumericChar(10086)    // '10086'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-repeatedChar">repeatedChar(psStr, psChar)</h4>
+                <div class="api-meta"><b>功能：</b>相同字符只保留第一个（可指定只处理某个字符）&nbsp; <b>返回：</b>String；去重后的字符串；传了 psChar 时只去掉该字符的重复项，其它重复字符保留</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.repeatedChar(
+    psStr,   // {String} 原字符串
+    psChar   // {String} 指定字符；不传则对所有重复字符生效
+);
+// return {String} 去重后的字符串；传了 psChar 时只去掉该字符的重复项，其它重复字符保留</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.repeatedChar('aabbcc')     // 'abc'
+melui.util.string.repeatedChar('aabbcc', 'a') // 'abbcc'
+melui.util.string.repeatedChar('1122', '2')   // '112'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-blankSpace">blankSpace(psStr, psMethod)</h4>
+                <div class="api-meta"><b>功能：</b>过滤空格&nbsp; <b>返回：</b>String|Null；处理后的字符串；null/undefined 原样返回；只处理半角空格，不处理制表符和换行</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.blankSpace(
+    psStr,   // {String} 原字符串
+    psMethod   // {String} all 全部去掉（默认）/ one 只保留一个
+);
+// return {String|Null} 处理后的字符串；null/undefined 原样返回；只处理半角空格，不处理制表符和换行</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.blankSpace('a  b   c')       // 'abc'
+melui.util.string.blankSpace('a  b   c', 'one') // 'a b c'
+melui.util.string.blankSpace(null)              // null</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-lastDotChar">lastDotChar(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>去掉结尾的小数点 注意：当前实现只要字符串以点结尾，就会删除字符串里的所有点， 不是只删末尾那一个；例如 '1.2.' 会变成 '12'。不以点结尾时原样返回。&nbsp; <b>返回：</b>String|*；以点结尾时返回去掉所有点后的字符串；否则原样返回入参（可能是数字等非字符串）</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.lastDotChar(
+    psStr   // {String} 原字符串
+);
+// return {String|*} 以点结尾时返回去掉所有点后的字符串；否则原样返回入参（可能是数字等非字符串）</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.lastDotChar('12.')  // '12'
+melui.util.string.lastDotChar('1.2.') // '12'
+melui.util.string.lastDotChar('1.2')  // '1.2'</code></pre>
+            </div>
+
+            <h3 id="sub-string-filter">数值与时间过滤</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-string-onlyInterval">onlyInterval(str)</h4>
+                <div class="api-meta"><b>功能：</b>输入限制：只保留正整数&nbsp; <b>返回：</b>String；只保留 0-9 的字符串；负号、小数点、空格都会被删掉</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.onlyInterval(
+    str   // {String}
+);
+// return {String} 只保留 0-9 的字符串；负号、小数点、空格都会被删掉</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.onlyInterval('-12.3') // '123'
+melui.util.string.onlyInterval('a1b2')  // '12'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-negativeInterval">negativeInterval(str)</h4>
+                <div class="api-meta"><b>功能：</b>输入限制：只保留正负整数，负号归位到最前&nbsp; <b>返回：</b>String；只保留数字和最多一个负号；负号出现在中间时会移到最前</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.negativeInterval(
+    str   // {String}
+);
+// return {String} 只保留数字和最多一个负号；负号出现在中间时会移到最前</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.negativeInterval('a-1b2')  // '-12'
+melui.util.string.negativeInterval('12-34')  // '-1234'
+melui.util.string.negativeInterval('--5')    // '-5'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-onlyFloat">onlyFloat(str)</h4>
+                <div class="api-meta"><b>功能：</b>输入限制：只保留正小数&nbsp; <b>返回：</b>String；只保留数字和小数点；开头的点、重复的点会被去掉，负号会被删掉</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.onlyFloat(
+    str   // {String}
+);
+// return {String} 只保留数字和小数点；开头的点、重复的点会被去掉，负号会被删掉</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.onlyFloat('a1.2.3') // '1.23'
+melui.util.string.onlyFloat('.5')     // '5'
+melui.util.string.onlyFloat('-1.2')   // '1.2'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-negativeFloat">negativeFloat(str)</h4>
+                <div class="api-meta"><b>功能：</b>输入限制：只保留正负小数，负号归位到最前&nbsp; <b>返回：</b>String；只保留数字、小数点和最多一个负号；会去掉开头的点、重复的点和重复的负号</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.negativeFloat(
+    str   // {String}
+);
+// return {String} 只保留数字、小数点和最多一个负号；会去掉开头的点、重复的点和重复的负号</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.negativeFloat('a-1.2')  // '-1.2'
+melui.util.string.negativeFloat('1.2-3')  // '-1.23'
+melui.util.string.negativeFloat('-.5')    // '5'（当前实现会把 '-.' 一起删掉）</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-numericalOnBlur">numericalOnBlur(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>数值输入框失焦清洗：去掉尾部小数点 / 负号、去掉前导 0&nbsp; <b>返回：</b>String|*；清洗后的值；不以点或负号结尾、且不是 0 开头的数字时原样返回</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.numericalOnBlur(
+    psStr   // {String} 原值
+);
+// return {String|*} 清洗后的值；不以点或负号结尾、且不是 0 开头的数字时原样返回</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.numericalOnBlur('12.')   // '12'
+melui.util.string.numericalOnBlur('12-')   // '12'
+melui.util.string.numericalOnBlur('01.2')  // '1.2'
+melui.util.string.numericalOnBlur('0.5')   // '.5'（前导 0 被去掉，当前实现保留了点）</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-string-hourMinute">hourMinute(str)</h4>
+                <div class="api-meta"><b>功能：</b>输入限制：只保留“时:分”，小时最大 23、分钟最大 59&nbsp; <b>返回：</b>String；带冒号的时分字符串；小时为 1 位时会补 0，分钟不强制补 0； 数字足够长但还没冒号时，按前两位为小时、后两位为分钟自动补冒号</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.string.hourMinute(
+    str   // {String}
+);
+// return {String} 带冒号的时分字符串；小时为 1 位时会补 0，分钟不强制补 0； 数字足够长但还没冒号时，按前两位为小时、后两位为分钟自动补冒号</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.string.hourMinute('9:5')    // '09:5'
+melui.util.string.hourMinute('9:05')   // '09:05'
+melui.util.string.hourMinute('24:00')  // '23:00'
+melui.util.string.hourMinute('1234')   // '12:34'
+melui.util.string.hourMinute('12:9')   // '12:9'</code></pre>
+            </div>
+
+            <!-- ============ 九、validate 校验工具 ============ -->
+            <h2 id="sec-validate" data-tree-parent="sec-4" data-util-module="5">4.5 validate 校验工具<span class="h2-desc">调用 melui.util.validate.xxx</span></h2>
+            <p>负责危险字符、JSON、电话 / 邮箱、设备与浏览器、网络状态、时间格式校验。多数返回 Boolean；checkHasDangerousChars 默认会弹提示。</p>
+            <div class="note"><p>本章示例均已写成完整调用路径，例如 <code>melui.util.validate.函数名()</code>；<code>melui.util.validate</code> 里的函数不会扁平到 <code>melui.util</code> 顶层。</p></div>
+
+            <h3 id="sub-validate-danger">危险字符与 JSON</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkHasDangerousChars">checkHasDangerousChars(psStr, psOpts)</h4>
+                <div class="api-meta"><b>功能：</b>校验字符串是否包含 SQL / 数据库危险字符&nbsp; <b>返回：</b>Boolean；true 表示含危险字符；false 表示不含或入参为 null/undefined/空串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkHasDangerousChars(
+    psStr,   // {String} 原字符串
+    psOpts   // {Object} 可选
+    // 可选字段：
+    // psOpts.popup  {Boolean} 命中时是否提示，默认 true
+    // psOpts.additionalTip  {String} 追加提示文案
+);
+// return {Boolean} true 表示含危险字符；false 表示不含或入参为 null/undefined/空串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkHasDangerousChars(&quot;a'b&quot;, { popup: false }) // true
+melui.util.validate.checkHasDangerousChars('正常文本', { popup: false }) // false
+melui.util.validate.checkHasDangerousChars('', { popup: false }) // false
+// popup 默认 true，命中时会调用 melui.alert 或原生 alert</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkJsonHasData">checkJsonHasData(psSource)</h4>
+                <div class="api-meta"><b>功能：</b>判断数据源是否带有效 data 数组&nbsp; <b>返回：</b>Boolean；true 表示对象至少有一个自有属性，且 data 不为 null/undefined 并有 length &gt; 0</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkJsonHasData(
+    psSource   // {Object} 数据源
+);
+// return {Boolean} true 表示对象至少有一个自有属性，且 data 不为 null/undefined 并有 length &gt; 0</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkJsonHasData({ data: [1, 2] }) // true
+melui.util.validate.checkJsonHasData({ data: 'abc' })  // true（字符串也有 length）
+melui.util.validate.checkJsonHasData({ data: [] })     // false
+melui.util.validate.checkJsonHasData({ foo: 1 })       // false
+melui.util.validate.checkJsonHasData(null)             // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsJsonObject">checkIsJsonObject(psObj)</h4>
+                <div class="api-meta"><b>功能：</b>判断是否普通 JSON 对象（排除数组）&nbsp; <b>返回：</b>Boolean；true 表示 Object 原型对象且 length 为假值（undefined 或 0）；数组、null、DOM、日期、正则返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsJsonObject(
+    psObj   // {*} 目标对象
+);
+// return {Boolean} true 表示 Object 原型对象且 length 为假值（undefined 或 0）；数组、null、DOM、日期、正则返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsJsonObject({ a: 1 }) // true
+melui.util.validate.checkIsJsonObject([])       // false
+melui.util.validate.checkIsJsonObject({ length: 0 }) // true（普通对象带 length 0 也会被当成 JSON 对象）
+melui.util.validate.checkIsJsonObject(null)     // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsJsonString">checkIsJsonString(str)</h4>
+                <div class="api-meta"><b>功能：</b>判断是否 JSON 字符串&nbsp; <b>返回：</b>Boolean；true 表示 JSON.parse 成功且结果是对象或数组；'null'、数字、布尔、非法 JSON 返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsJsonString(
+    str   // {String} 字符串
+);
+// return {Boolean} true 表示 JSON.parse 成功且结果是对象或数组；'null'、数字、布尔、非法 JSON 返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsJsonString('{&quot;a&quot;:1}') // true
+melui.util.validate.checkIsJsonString('[1,2]')   // true
+melui.util.validate.checkIsJsonString('null')    // false（解析结果是 null）
+melui.util.validate.checkIsJsonString('abc')     // false
+melui.util.validate.checkIsJsonString('')        // false</code></pre>
+            </div>
+
+            <h3 id="sub-validate-contact">电话与邮箱</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkTel">checkTel(str, options)</h4>
+                <div class="api-meta"><b>功能：</b>校验电话&nbsp; <b>返回：</b>Boolean；true 表示通过；standard 下未知 pattern 返回 false；loose 下只比较去空格后的长度</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkTel(
+    str,   // {String} 电话字符串
+    options   // {Object} 可选
+    // 可选字段：
+    // options.mode  {String} standard 标准（默认）/ loose 只校验位数
+    // options.pattern  {String} mobilephone（默认）/ telephone / both
+    // options.bit  {Object} 宽松模式位数范围 {from, to}，默认 6~12
+);
+// return {Boolean} true 表示通过；standard 下未知 pattern 返回 false；loose 下只比较去空格后的长度</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkTel('13800138000') // true
+melui.util.validate.checkTel('13800138000', { mode: 'loose' }) // true
+melui.util.validate.checkTel('12345', { mode: 'loose', bit: { from: 5, to: 8 } }) // true
+melui.util.validate.checkTel('abc') // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkEmail">checkEmail(email)</h4>
+                <div class="api-meta"><b>功能：</b>校验邮箱&nbsp; <b>返回：</b>Boolean；true 表示符合内置邮箱正则；null、空串、格式不完整返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkEmail(
+    email   // {String}
+);
+// return {Boolean} true 表示符合内置邮箱正则；null、空串、格式不完整返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkEmail('a@b.com')   // true
+melui.util.validate.checkEmail('a@b')       // false
+melui.util.validate.checkEmail('a b@c.com') // false</code></pre>
+            </div>
+
+            <h3 id="sub-validate-device">设备与浏览器</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsMobile">checkIsMobile()</h4>
+                <div class="api-meta"><b>功能：</b>是否移动端设备&nbsp; <b>返回：</b>Boolean；true 表示 UA 命中 mobile / android / iphone / ipad 等移动端标记</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsMobile();
+// return {Boolean} true 表示 UA 命中 mobile / android / iphone / ipad 等移动端标记</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// iPhone Safari UA
+melui.util.validate.checkIsMobile() // true
+// Windows Chrome UA
+melui.util.validate.checkIsMobile() // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsApple">checkIsApple()</h4>
+                <div class="api-meta"><b>功能：</b>是否苹果设备（iPhone / iPad / iPod / Mac）&nbsp; <b>返回：</b>Boolean；true 表示 UA 命中 iphone / ipod / ipad / mac</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsApple();
+// return {Boolean} true 表示 UA 命中 iphone / ipod / ipad / mac</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// Mac Safari UA
+melui.util.validate.checkIsApple() // true
+// Windows Chrome UA
+melui.util.validate.checkIsApple() // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsImage">checkIsImage(str)</h4>
+                <div class="api-meta"><b>功能：</b>是否图片地址&nbsp; <b>返回：</b>Boolean；true 表示以 .png/.gif/.jpg/.jpeg/.webp 结尾（不区分大小写）；带查询参数或 hash 返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsImage(
+    str   // {String} 地址
+);
+// return {Boolean} true 表示以 .png/.gif/.jpg/.jpeg/.webp 结尾（不区分大小写）；带查询参数或 hash 返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsImage('a.JPG')        // true
+melui.util.validate.checkIsImage('a.webp')       // true
+melui.util.validate.checkIsImage('a.png?x=1')    // false（正则只匹配结尾）
+melui.util.validate.checkIsImage('a.svg')        // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkBrowserType">checkBrowserType()</h4>
+                <div class="api-meta"><b>功能：</b>浏览器类型&nbsp; <b>返回：</b>String|undefined；ie6~ie11 / firefox / opera / safari / chrome / edge；无法识别返回 undefined</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkBrowserType();
+// return {String|undefined} ie6~ie11 / firefox / opera / safari / chrome / edge；无法识别返回 undefined</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// Chrome UA
+melui.util.validate.checkBrowserType() // 'chrome'
+// Firefox UA
+melui.util.validate.checkBrowserType() // 'firefox'
+// 某些未覆盖的 UA
+melui.util.validate.checkBrowserType() // undefined</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsIE">checkIsIE()</h4>
+                <div class="api-meta"><b>功能：</b>是否 IE 浏览器（含 Edge 的 ActiveXObject 判定口径）&nbsp; <b>返回：</b>Boolean；true 表示 window 上存在 ActiveXObject</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsIE();
+// return {Boolean} true 表示 window 上存在 ActiveXObject</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsIE() // 现代 Chrome 返回 false，IE 返回 true</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIEVersion">checkIEVersion()</h4>
+                <div class="api-meta"><b>功能：</b>IE 版本号&nbsp; <b>返回：</b>Number|String；IE 返回 6~11 的整数；无法识别返回 0；非 IE 返回提示文字</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIEVersion();
+// return {Number|String} IE 返回 6~11 的整数；无法识别返回 0；非 IE 返回提示文字</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// IE10
+melui.util.validate.checkIEVersion() // 10
+// Chrome
+melui.util.validate.checkIEVersion() // '抱歉，不是IE浏览器，无法检测IE版本'</code></pre>
+            </div>
+
+            <h3 id="sub-validate-number">类型与数字</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsDomObject">checkIsDomObject(psObj)</h4>
+                <div class="api-meta"><b>功能：</b>判断是否 DOM 元素&nbsp; <b>返回：</b>Boolean；true 表示元素节点（nodeType 为 1）；文本节点、普通对象、null 返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsDomObject(
+    psObj   // {*} 目标对象
+);
+// return {Boolean} true 表示元素节点（nodeType 为 1）；文本节点、普通对象、null 返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsDomObject(document.body) // true
+melui.util.validate.checkIsDomObject(document.createTextNode('x')) // false
+melui.util.validate.checkIsDomObject({}) // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsNumeric">checkIsNumeric(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>是否纯数字（不含小数点、负号）&nbsp; <b>返回：</b>Boolean；true 表示只由 0-9 组成；空串、空格、小数、负号、字母返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsNumeric(
+    psStr   // {String}
+);
+// return {Boolean} true 表示只由 0-9 组成；空串、空格、小数、负号、字母返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsNumeric('123')  // true
+melui.util.validate.checkIsNumeric(123)    // true
+melui.util.validate.checkIsNumeric('1.2')  // false
+melui.util.validate.checkIsNumeric('')     // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsNumerType">checkIsNumerType(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>是否数值（正整数或正小数）&nbsp; <b>返回：</b>Boolean；true 表示正整数或不带负号的十进制小数；负号、开头小数点、结尾小数点返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsNumerType(
+    psStr   // {String}
+);
+// return {Boolean} true 表示正整数或不带负号的十进制小数；负号、开头小数点、结尾小数点返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsNumerType('123')  // true
+melui.util.validate.checkIsNumerType('1.25') // true
+melui.util.validate.checkIsNumerType('-1')   // false
+melui.util.validate.checkIsNumerType('.5')   // false
+melui.util.validate.checkIsNumerType('1.')   // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsDecimal">checkIsDecimal(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>是否小数（必须带小数部分，可为负）&nbsp; <b>返回：</b>Boolean；true 表示带小数点的十进制数，且小数点前后都有数字；整数、'.5'、'1.' 返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsDecimal(
+    psStr   // {String}
+);
+// return {Boolean} true 表示带小数点的十进制数，且小数点前后都有数字；整数、'.5'、'1.' 返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsDecimal('1.25')  // true
+melui.util.validate.checkIsDecimal('-1.25') // true
+melui.util.validate.checkIsDecimal('1')     // false
+melui.util.validate.checkIsDecimal('1.')    // false
+melui.util.validate.checkIsDecimal('.5')    // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsInteger">checkIsInteger(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>是否整数（正整数或负整数）&nbsp; <b>返回：</b>Boolean；true 表示可选一个负号的纯数字；'+1'、'1.0'、'1.' 返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsInteger(
+    psStr   // {String}
+);
+// return {Boolean} true 表示可选一个负号的纯数字；'+1'、'1.0'、'1.' 返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsInteger('123')  // true
+melui.util.validate.checkIsInteger('-123') // true
+melui.util.validate.checkIsInteger('+123') // false
+melui.util.validate.checkIsInteger('1.0')  // false</code></pre>
+            </div>
+
+            <h3 id="sub-validate-network">网络与时间</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkNetWorkOnline">checkNetWorkOnline()</h4>
+                <div class="api-meta"><b>功能：</b>网络是否在线&nbsp; <b>返回：</b>Boolean；true 表示 navigator.onLine 不是明确的 false；onLine 为 undefined 时也返回 true</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkNetWorkOnline();
+// return {Boolean} true 表示 navigator.onLine 不是明确的 false；onLine 为 undefined 时也返回 true</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkNetWorkOnline() // 在线 true，离线 false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-getNetworkType">getNetworkType()</h4>
+                <div class="api-meta"><b>功能：</b>当前网络类型（读 UA 中的 NetType 标记，常见于移动端 WebView）&nbsp; <b>返回：</b>String；wifi / 4g / 3g / 2g / other；没有 NetType 标记或无法识别时返回 other</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.getNetworkType();
+// return {String} wifi / 4g / 3g / 2g / other；没有 NetType 标记或无法识别时返回 other</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">// UA 含 NetType/wifi
+melui.util.validate.getNetworkType() // 'wifi'
+// UA 含 NetType/3gnet
+melui.util.validate.getNetworkType() // '3g'
+// 普通浏览器 UA
+melui.util.validate.getNetworkType() // 'other'</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsHourMinute">checkIsHourMinute(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>是否“时:分”格式（00:00 ~ 23:59）&nbsp; <b>返回：</b>Boolean；true 表示严格两位小时、两位分钟的 24 小时制时间；'9:05'、'24:00' 返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsHourMinute(
+    psStr   // {String}
+);
+// return {Boolean} true 表示严格两位小时、两位分钟的 24 小时制时间；'9:05'、'24:00' 返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsHourMinute('09:05') // true
+melui.util.validate.checkIsHourMinute('23:59') // true
+melui.util.validate.checkIsHourMinute('9:05')  // false
+melui.util.validate.checkIsHourMinute('24:00') // false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-validate-checkIsHourMinuteSecond">checkIsHourMinuteSecond(psStr)</h4>
+                <div class="api-meta"><b>功能：</b>是否“时:分:秒”格式（00:00:00 ~ 23:59:59）&nbsp; <b>返回：</b>Boolean；true 表示严格两位时/分/秒的 24 小时制时间；缺位、越界返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.validate.checkIsHourMinuteSecond(
+    psStr   // {String}
+);
+// return {Boolean} true 表示严格两位时/分/秒的 24 小时制时间；缺位、越界返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.validate.checkIsHourMinuteSecond('09:05:30') // true
+melui.util.validate.checkIsHourMinuteSecond('23:59:59') // true
+melui.util.validate.checkIsHourMinuteSecond('9:05:30')  // false
+melui.util.validate.checkIsHourMinuteSecond('24:00:00') // false</code></pre>
+            </div>
+
+            <!-- ============ 十、array 数组工具 ============ -->
+            <h2 id="sec-array" data-tree-parent="sec-4" data-util-module="6">4.6 array 数组工具<span class="h2-desc">调用 melui.util.array.xxx</span></h2>
+            <p>负责数组去重、排序、key 集合、深比较、重复检测与相邻分组。排序函数返回新数组，不修改入参数组。</p>
+            <div class="note"><p>本章示例均已写成完整调用路径，例如 <code>melui.util.array.函数名()</code>；<code>melui.util.array</code> 里的函数不会扁平到 <code>melui.util</code> 顶层。</p></div>
+
+            <h3 id="sub-array-sort">去重与排序</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-array-uniqueArray">uniqueArray(psArr)</h4>
+                <div class="api-meta"><b>功能：</b>数组去重（保持首次出现的顺序）&nbsp; <b>返回：</b>Array；去重后的新数组；非数组返回 []；对象按引用比较，NaN 不会被去掉</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.array.uniqueArray(
+    psArr   // {Array} 原数组
+);
+// return {Array} 去重后的新数组；非数组返回 []；对象按引用比较，NaN 不会被去掉</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.array.uniqueArray([1, 2, 2, 3, 1]) // [1, 2, 3]
+melui.util.array.uniqueArray(['a', 'a', 'b']) // ['a', 'b']
+melui.util.array.uniqueArray('abc')           // []</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-array-quickSort">quickSort(arr)</h4>
+                <div class="api-meta"><b>功能：</b>快速排序（升序），不修改入参数组&nbsp; <b>返回：</b>Array；排序后的新数组；非数组返回 []，空数组或单元素数组返回副本</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.array.quickSort(
+    arr   // {Array} 原数组
+);
+// return {Array} 排序后的新数组；非数组返回 []，空数组或单元素数组返回副本</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.array.quickSort([3, 1, 2]) // [1, 2, 3]
+melui.util.array.quickSort([3, 1, 2]).length // 3
+melui.util.array.quickSort(null) // []</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-array-bubbleSort">bubbleSort(arr)</h4>
+                <div class="api-meta"><b>功能：</b>冒泡排序（升序），不修改入参数组&nbsp; <b>返回：</b>Array；排序后的新数组；非数组返回 []</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.array.bubbleSort(
+    arr   // {Array} 原数组
+);
+// return {Array} 排序后的新数组；非数组返回 []</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.array.bubbleSort([3, 1, 2]) // [1, 2, 3]
+melui.util.array.bubbleSort('abc')     // []</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-array-arraySort">arraySort(arr, method)</h4>
+                <div class="api-meta"><b>功能：</b>数组排序&nbsp; <b>返回：</b>Array；排序后的新数组；非数组返回 []；method 不是 desc 时按升序处理</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.array.arraySort(
+    arr,   // {Array} 原数组
+    method   // {String} asc 升序（默认）/ desc 降序
+);
+// return {Array} 排序后的新数组；非数组返回 []；method 不是 desc 时按升序处理</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.array.arraySort([3, 1, 2])          // [1, 2, 3]
+melui.util.array.arraySort([3, 1, 2], 'desc')  // [3, 2, 1]
+melui.util.array.arraySort(null)               // []</code></pre>
+            </div>
+
+            <h3 id="sub-array-query">key / 比较 / 分组</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-array-getOwnKeys">getOwnKeys(obj)</h4>
+                <div class="api-meta"><b>功能：</b>自定义 key 集合，替代 Object.keys（IE9 无 Object.keys）&nbsp; <b>返回：</b>Array；自有可枚举属性名组成的新数组；null、非对象、无属性时返回 []</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.array.getOwnKeys(
+    obj   // {Object} 目标对象
+);
+// return {Array} 自有可枚举属性名组成的新数组；null、非对象、无属性时返回 []</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.array.getOwnKeys({ a: 1, b: 2 }) // ['a', 'b']
+melui.util.array.getOwnKeys([10, 20])       // ['0', '1']（数组返回下标字符串）
+melui.util.array.getOwnKeys(null)           // []</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-array-isValueEqual">isValueEqual(a, b)</h4>
+                <div class="api-meta"><b>功能：</b>深度对比两个值是否相等 - 严格相等直接通过 - 数组逐项递归、普通对象逐键递归 - NaN 与 NaN 视为相等&nbsp; <b>返回：</b>Boolean；true 表示结构相等；日期、正则、函数等非普通对象只按引用比较；循环引用会递归溢出</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.array.isValueEqual(
+    a,   // {*} 值 a
+    b   // {*} 值 b
+);
+// return {Boolean} true 表示结构相等；日期、正则、函数等非普通对象只按引用比较；循环引用会递归溢出</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.array.isValueEqual([1, { a: 2 }], [1, { a: 2 }]) // true
+melui.util.array.isValueEqual(NaN, NaN)                    // true
+melui.util.array.isValueEqual({ a: 1 }, { a: 2 })          // false
+melui.util.array.isValueEqual(new Date(0), new Date(0))    // false（不是普通对象分支）</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-array-arrayHasDuplicate">arrayHasDuplicate(arr, opts)</h4>
+                <div class="api-meta"><b>功能：</b>检测数组中是否已存在某个元素&nbsp; <b>返回：</b>Boolean；true 表示找到重复；arr 不是数组、key 为 null 且 targetItem 为 null 时返回 false</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.array.arrayHasDuplicate(
+    arr,   // {Array} 目标数组
+    opts   // {Object} 配置
+    // 可选字段：
+    // opts.key  {String} 指定对象字段，非空时走字段匹配（严格相等）
+    // opts.value  {*} 字段对应的值
+    // opts.targetItem  {*} 整元素深度比对的内容
+);
+// return {Boolean} true 表示找到重复；arr 不是数组、key 为 null 且 targetItem 为 null 时返回 false</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.array.arrayHasDuplicate([{ id: 1 }, { id: 2 }], { key: 'id', value: 2 })
+// true
+melui.util.array.arrayHasDuplicate([1, 2, 3], { targetItem: 2 })
+// true
+melui.util.array.arrayHasDuplicate([1, 2], {})
+// false</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-array-combineNextElementToArray">combineNextElementToArray(psArr, psValue)</h4>
+                <div class="api-meta"><b>功能：</b>把一维数组里相邻元素按固定差值分组成二维数组 例：[1,2,3,4, 9,13,16]（差值 1）→ [[1,2,3,4],[9],[13],[16]]&nbsp; <b>返回：</b>Array；分组后的二维数组；非数组返回 []；单元素数组返回 [[该元素]]</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.array.combineNextElementToArray(
+    psArr,   // {Array} 一维数组
+    psValue   // {Number} 指定的相邻差值，默认 1
+);
+// return {Array} 分组后的二维数组；非数组返回 []；单元素数组返回 [[该元素]]</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.array.combineNextElementToArray([1, 2, 3, 4, 9, 13, 16])
+// [[1, 2, 3, 4], [9], [13], [16]]
+melui.util.array.combineNextElementToArray([1, 3, 5, 9], 2)
+// [[1, 3, 5], [9]]
+melui.util.array.combineNextElementToArray(null)
+// []</code></pre>
+            </div>
+
+            <!-- ============ 十一、random 随机工具 ============ -->
+            <h2 id="sec-random" data-tree-parent="sec-4" data-util-module="7">4.7 random 随机工具<span class="h2-desc">调用 melui.util.random.xxx</span></h2>
+            <p>负责随机整数、数字串、字符串、随机词、随机字符与随机颜色。随机颜色支持纯随机、限定亮度和 WCAG 对比度三种模式。</p>
+            <div class="note"><p>本章示例均已写成完整调用路径，例如 <code>melui.util.random.函数名()</code>；<code>melui.util.random</code> 里的函数不会扁平到 <code>melui.util</code> 顶层。</p></div>
+
+            <h3 id="sub-random-number">随机数字</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-random-getRandomMinMaxNumber">getRandomMinMaxNumber(n, m)</h4>
+                <div class="api-meta"><b>功能：</b>生成 [n, m] 区间内的随机整数（含两端）&nbsp; <b>返回：</b>Number；区间内的整数；n 大于 m 时结果不保证落在区间内（函数不做参数校验）</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.random.getRandomMinMaxNumber(
+    n,   // {Number} 最小值
+    m   // {Number} 最大值
+);
+// return {Number} 区间内的整数；n 大于 m 时结果不保证落在区间内（函数不做参数校验）</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.random.getRandomMinMaxNumber(1, 10)
+// 可能返回 1、2 ... 10
+melui.util.random.getRandomMinMaxNumber(5, 5)
+// 5</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-random-getRandomNumber">getRandomNumber(n)</h4>
+                <div class="api-meta"><b>功能：</b>生成 n 位纯数字随机串 注：逐位随机，位与位之间可能重复，不做去重&nbsp; <b>返回：</b>String；长度为 n 的数字字符串，可能以 0 开头；n 不是正数时默认 5 位</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.random.getRandomNumber(
+    n   // {Number} 位数
+);
+// return {String} 长度为 n 的数字字符串，可能以 0 开头；n 不是正数时默认 5 位</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.random.getRandomNumber(4) // '0372'（每次不同）
+melui.util.random.getRandomNumber(0) // 5 位数字
+melui.util.random.getRandomNumber()  // 5 位数字</code></pre>
+            </div>
+
+            <h3 id="sub-random-string">随机字符串</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-random-getRandomString">getRandomString(psLen, psOpts)</h4>
+                <div class="api-meta"><b>功能：</b>生成固定长度随机字符串（数字 + 大小写字母）&nbsp; <b>返回：</b>String；指定长度的随机字符串；长度不是正数时默认 8 位</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.random.getRandomString(
+    psLen,   // {Number} 长度，默认 8
+    psOpts   // {Object} 可选配置
+    // 可选字段：
+    // psOpts.pureType  {String} 空=不限制，number=纯数字，letter=纯字母
+    // psOpts.upperCase  {Boolean} 是否包含大写字母，默认 true
+);
+// return {String} 指定长度的随机字符串；长度不是正数时默认 8 位</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.random.getRandomString(8)                         // 8 位数字 + 大小写字母
+melui.util.random.getRandomString(6, { pureType: 'number' }) // 6 位纯数字
+melui.util.random.getRandomString(6, { pureType: 'letter', upperCase: false }) // 6 位纯小写字母</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-random-getRandomWord">getRandomWord(min, max, isRandomed)</h4>
+                <div class="api-meta"><b>功能：</b>生成随机字符串（字母 + 数字），长度可固定也可在区间内浮动&nbsp; <b>返回：</b>String；由数字和大小写字母组成的随机串；长度在 [min, max] 内，isRandomed 为 false 时固定 min 位</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.random.getRandomWord(
+    min,   // {Number} 最小长度
+    max,   // {Number} 最大长度，默认等于 min
+    isRandomed   // {Boolean} 是否随机长度，默认 true
+);
+// return {String} 由数字和大小写字母组成的随机串；长度在 [min, max] 内，isRandomed 为 false 时固定 min 位</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.random.getRandomWord(6, 10)          // 6~10 位随机串
+melui.util.random.getRandomWord(6, 10, false)   // 固定 6 位
+melui.util.random.getRandomWord(4)              // 固定 4 位</code></pre>
+            </div>
+            <div class="api">
+                <h4 class="api-name" id="api-random-getRandomChar">getRandomChar()</h4>
+                <div class="api-meta"><b>功能：</b>生成不固定长度的随机串（基于 36 进制随机数）&nbsp; <b>返回：</b>String；由 0-9、a-z 组成的随机串，长度不固定；随机值为 0 时可能返回空串</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.random.getRandomChar();
+// return {String} 由 0-9、a-z 组成的随机串，长度不固定；随机值为 0 时可能返回空串</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.random.getRandomChar() // 例如 'k3j9x2'
+// 长度每次不同，不适合需要固定位数的场景</code></pre>
+            </div>
+
+            <h3 id="sub-random-color">随机颜色</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-random-getRandomColor">getRandomColor(opt)</h4>
+                <div class="api-meta"><b>功能：</b>生成随机颜色（三种模式）&nbsp; <b>返回：</b>String|Array；#RRGGBB 字符串，或颜色字符串数组</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.random.getRandomColor(
+    opt   // {Object} 可选配置
+    // 可选字段：
+    // opt.mode  {Number} 1 纯随机 / 2 限定亮度 HSL（默认）/ 3 WCAG 对比度校验
+    // opt.bgColor  {String} 背景色，mode 3 使用，默认 #FFFFFF
+    // opt.minContrast  {Number} 最小对比度，默认 4.5
+    // opt.minLight  {Number} 亮度下限 0-100，默认 20
+    // opt.maxLight  {Number} 亮度上限 0-100，默认 55
+    // opt.count  {Number} 1 返回字符串；2 / 3 返回同色系深浅数组；其它大于 1 的值在 mode 2/3 下返回 []
+);
+// return {String|Array} #RRGGBB 字符串，或颜色字符串数组</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.random.getRandomColor()                 // '#7A3B2E'（mode 2，每次不同）
+melui.util.random.getRandomColor({ mode: 1 })      // '#A1B2C3'（纯随机）
+melui.util.random.getRandomColor({ mode: 3, count: 3 }) // ['#...', '#...', '#...']（同色系深浅）
+melui.util.random.getRandomColor({ count: 2 })     // 两个同色系颜色</code></pre>
+            </div>
+
+            <!-- ============ 十二、biz 业务工具 ============ -->
+            <h2 id="sec-biz" data-tree-parent="sec-4" data-util-module="8">4.8 biz 业务工具<span class="h2-desc">调用 melui.util.biz.xxx</span></h2>
+            <p>负责从文本中提取电话号码、把省市区数组去重并分组成树。</p>
+            <div class="note"><p>本章示例均已写成完整调用路径，例如 <code>melui.util.biz.函数名()</code>；<code>melui.util.biz</code> 里的函数不会扁平到 <code>melui.util</code> 顶层。</p></div>
+
+            <h3 id="sub-biz-tel">电话号码</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-biz-pickupTel">pickupTel(psStr, options)</h4>
+                <div class="api-meta"><b>功能：</b>提取字符串中的电话号码（固话或手机号）&nbsp; <b>返回：</b>String|Array|null；first 返回号码字符串（去掉空格和横线），没有号码返回 ''； all 返回匹配到的原始号码数组，没有号码返回 null；type 不是 first/all 时返回 ''</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.biz.pickupTel(
+    psStr,   // {String} 待提取字符串
+    options   // {Object} 可选
+    // 可选字段：
+    // options.type  {String} first 只取第一处（默认）/ all 取全部
+);
+// return {String|Array|null} first 返回号码字符串（去掉空格和横线），没有号码返回 ''； all 返回匹配到的原始号码数组，没有号码返回 null；type 不是 first/all 时返回 ''</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.biz.pickupTel('联系电话：010-12345678，手机 13800138000')
+// '01012345678'
+melui.util.biz.pickupTel('联系电话：010-12345678，手机 13800138000', { type: 'all' })
+// ['010-12345678', '13800138000']
+melui.util.biz.pickupTel('没有电话') // ''
+melui.util.biz.pickupTel('没有电话', { type: 'all' }) // null</code></pre>
+            </div>
+
+            <h3 id="sub-biz-area">省市区</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-biz-getAreaDistinctGroup">getAreaDistinctGroup(list)</h4>
+                <div class="api-meta"><b>功能：</b>省市区数组去重并分组 输入：[{province, city, county}, ...] 输出：[{province, data:[{city, data:[{county}]}]}]&nbsp; <b>返回：</b>Array；按 province → city → county 去重后的分组数组；参数不是数组时提示并返回 []； 空 county 会被忽略，重复 county 只保留一个</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.biz.getAreaDistinctGroup(
+    list   // {Array} 原始数组
+);
+// return {Array} 按 province → city → county 去重后的分组数组；参数不是数组时提示并返回 []； 空 county 会被忽略，重复 county 只保留一个</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.biz.getAreaDistinctGroup([
+  { province: '广东', city: '广州', county: '天河' },
+  { province: '广东', city: '广州', county: '天河' },
+  { province: '广东', city: '深圳', county: '南山' }
+])
+// [{ province:'广东', data:[
+//   { city:'广州', data:[{ county:'天河' }] },
+//   { city:'深圳', data:[{ county:'南山' }] }
+// ]}]</code></pre>
+            </div>
+
+            <!-- ============ 十三、widget 界面小部件 ============ -->
+            <h2 id="sec-widget" data-tree-parent="sec-4" data-util-module="9">4.9 widget 界面小部件<span class="h2-desc">调用 melui.util.widget.xxx</span></h2>
+            <p>负责网页水印与返回顶部控件，会创建或修改 DOM。</p>
+            <div class="note"><p>本章示例均已写成完整调用路径，例如 <code>melui.util.widget.函数名()</code>；<code>melui.util.widget</code> 里的函数不会扁平到 <code>melui.util</code> 顶层。</p></div>
+
+            <h3 id="sub-widget-watermark">网页水印</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-widget-waterMarker">waterMarker(options)</h4>
+                <div class="api-meta"><b>功能：</b>网页水印&nbsp; <b>返回：</b>void；无返回值；直接修改目标元素的 backgroundImage；canvas 不可用时直接返回</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.widget.waterMarker(
+    options   // {Object} 可选
+    // 可选字段：
+    // options.element  {Array} 目标元素选择器数组，默认 ['body']
+    // options.word  {String} 水印文字，默认“水印”
+    // options.width  {Number} 画布宽，默认 250
+    // options.height  {Number} 画布高，默认 250
+    // options.rotate  {Number} 旋转角度，默认 -30
+    // options.font  {String} 字体，默认 16px Helvetica Neue
+    // options.fillStyle  {String} 文字颜色，默认 rgba(17,17,17,.5)
+    // options.textAlign  {String} 水平对齐，默认 left
+    // options.textBaseline  {String} 垂直基线，默认 middle
+);
+// return {void} 无返回值；直接修改目标元素的 backgroundImage；canvas 不可用时直接返回</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.widget.waterMarker({ element: ['body'], word: '内部资料' })
+// body 背景出现“内部资料”平铺水印
+melui.util.widget.waterMarker({ element: ['.panel'], word: '仅限内部', rotate: -20 })
+// .panel 背景出现旋转水印</code></pre>
+            </div>
+
+            <h3 id="sub-widget-top">返回顶部</h3>
+            <div class="api">
+                <h4 class="api-name" id="api-widget-goToTop">goToTop(options)</h4>
+                <div class="api-meta"><b>功能：</b>返回顶部控件&nbsp; <b>返回：</b>HTMLElement|null；enable 为 false 时返回 null；已存在 .mel-goToTop 时返回已有节点； 否则创建并返回新节点</div>
+                <div class="code-label">签名与参数</div>
+<pre><code class="language-js">melui.util.widget.goToTop(
+    options   // {Object} 可选
+    // 可选字段：
+    // options.enable  {Boolean} 是否启用，默认 true
+    // options.zIndex  {Number} 层级，默认 2
+    // options.direction  {String} right（默认）/ left
+    // options.bottom  {String} 距底部距离，默认 5%
+    // options.opacity  {Number} 透明度 0~1，默认 0.6
+    // options.title  {String} 文字，默认 TOP
+    // options.showTitle  {Boolean} 是否显示文字，默认 true
+    // options.distance  {Number} 滚动多少距离后显示，默认 200
+    // options.alwaysShow  {Boolean} 是否常显，默认 false
+);
+// return {HTMLElement|null} enable 为 false 时返回 null；已存在 .mel-goToTop 时返回已有节点； 否则创建并返回新节点</code></pre>
+                <div class="code-label">示例</div>
+<pre><code class="language-js">melui.util.widget.goToTop({ bottom: '20px', distance: 300 })
+// 页面滚动超过 300px 后出现 TOP 按钮，点击回到顶部
+melui.util.widget.goToTop({ enable: false })
+// null（不会创建控件）
+melui.util.widget.goToTop()
+// 已存在控件时返回已有节点，不重复创建</code></pre>
             </div>
 
         </div>
-    </main>
+    </main></main>
 </div>
 
 <button type="button" class="to-top" id="toTop" aria-label="返回顶部">
@@ -671,84 +2635,270 @@ melui.util.shallowCopy([1, 2]);  // {}
         var sidebar = document.getElementById('sidebar');
         var menuBtn = document.getElementById('menuBtn');
         var toTop = document.getElementById('toTop');
+        var treeAll = document.getElementById('treeAll');
 
         // 1. 收集标题：h2 章节 / h3 小节 / h4 API
         var nodes = document.querySelectorAll('.paper-inner h2, .paper-inner h3, .paper-inner h4');
+        var map = {};
+        var links = [];
+        var parents = [];
+        var sec4Node = null;
+        var currentH2 = null;
+        var currentH3 = null;
         var i;
         var id;
         var level;
         var text;
         var target;
+        var li;
+        var row;
+        var a;
+        var childUl;
+        var parentLi;
+        var parentEntry;
 
-        for (i = 0; i < nodes.length; i++) {
-            if (!nodes[i].id) {
-                nodes[i].id = 'doc-anchor-' + i;
+        function getHeadingText(el) {
+            if (el.firstChild && el.firstChild.nodeType === 3) {
+                return el.firstChild.nodeValue;
             }
+            return el.textContent;
         }
 
-        // 2. 按层级生成左侧树（h2 一级、h3 二级、h4 三级）
-        var frag = document.createDocumentFragment();
+        function ensureChildren(parent) {
+            if (!parent.__childrenUl) {
+                var ul = document.createElement('ul');
+                ul.className = 'tree-children';
+                parent.appendChild(ul);
+                parent.__childrenUl = ul;
+            }
+            return parent.__childrenUl;
+        }
+
+        function makeNode(el, className, parent) {
+            var node = document.createElement('li');
+            var rowEl = document.createElement('div');
+            var link = document.createElement('a');
+            var title = (getHeadingText(el) || '').replace(/^\s+|\s+$/g, '');
+
+            node.className = 'tree-node ' + className;
+            rowEl.className = 'tree-row';
+            link.className = 'tree-label ' + className;
+            link.href = '#' + el.id;
+            link.setAttribute('data-target', el.id);
+            link.appendChild(document.createTextNode(title));
+            rowEl.appendChild(link);
+            node.appendChild(rowEl);
+
+            if (parent) {
+                ensureChildren(parent).appendChild(node);
+            } else {
+                treeBox.appendChild(node);
+            }
+
+            node.__entry = { li: node, row: rowEl, label: link, childrenUl: null, toggle: null };
+            map[el.id] = node.__entry;
+            links.push(link);
+            return node;
+        }
+
         for (i = 0; i < nodes.length; i++) {
             target = nodes[i];
+            if (!target.id) {
+                target.id = 'doc-anchor-' + i;
+            }
             level = target.tagName.toLowerCase();
-            text = target.firstChild && target.firstChild.nodeType === 3
-                ? target.firstChild.nodeValue
-                : target.textContent;
-            text = (text || '').replace(/^\s+|\s+$/g, '');
+            text = (getHeadingText(target) || '').replace(/^\s+|\s+$/g, '');
             if (!text) {
                 continue;
             }
 
-            var li = document.createElement('li');
-            var a = document.createElement('a');
-            a.href = '#' + target.id;
-            a.innerHTML = '';
-            a.appendChild(document.createTextNode(text));
-            a.className = level === 'h2' ? 'tree-chapter' : (level === 'h3' ? 'tree-sub' : 'tree-api');
-            a.setAttribute('data-target', target.id);
-            li.appendChild(a);
-            frag.appendChild(li);
+            if (level === 'h2') {
+                if (target.id === 'sec-4') {
+                    sec4Node = makeNode(target, 'tree-chapter', null);
+                    currentH2 = target;
+                    currentH3 = null;
+                } else if (target.getAttribute('data-util-module')) {
+                    makeNode(target, 'tree-chapter tree-module', sec4Node);
+                    currentH2 = target;
+                    currentH3 = null;
+                } else {
+                    makeNode(target, 'tree-chapter', null);
+                    currentH2 = target;
+                    currentH3 = null;
+                }
+            } else if (level === 'h3') {
+                parentLi = currentH2 ? map[currentH2.id].li : null;
+                makeNode(target, 'tree-sub', parentLi);
+                currentH3 = target;
+            } else {
+                if (currentH3 && map[currentH3.id]) {
+                    parentLi = map[currentH3.id].li;
+                } else {
+                    parentLi = currentH2 && map[currentH2.id] ? map[currentH2.id].li : null;
+                }
+                makeNode(target, 'tree-api', parentLi);
+            }
         }
-        treeBox.appendChild(frag);
 
-        // 3. 锚点跳转：扣掉顶栏高度，避免标题被遮住
-        var links = treeBox.getElementsByTagName('a');
-
-        function jumpTo(el) {
-            var rect = el.getBoundingClientRect();
-            var top = (window.pageYOffset || document.documentElement.scrollTop || 0);
-            var y = rect.top + top - headerH - offsetGap;
-            window.scrollTo(0, y < 0 ? 0 : y);
+        // 2. 给有子节点的行加展开 / 收起按钮
+        function setExpanded(entry, expanded) {
+            if (!entry || !entry.childrenUl) {
+                return;
+            }
+            entry.childrenUl.className = 'tree-children' + (expanded ? '' : ' is-collapsed');
+            if (entry.toggle) {
+                entry.toggle.innerHTML = expanded ? '−' : '+';
+                entry.toggle.className = 'tree-toggle' + (expanded ? ' is-open' : '');
+                entry.toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                entry.toggle.title = expanded ? '收起子菜单' : '展开子菜单';
+            }
         }
 
-        function bindJump(a) {
-            a.onclick = function (e) {
+        function hasChildren(entry) {
+            return !!(entry && entry.li && entry.li.__childrenUl && entry.li.__childrenUl.firstChild);
+        }
+
+        function addToggle(entry) {
+            var btn = document.createElement('button');
+            entry.childrenUl = entry.li.__childrenUl;
+            btn.type = 'button';
+            btn.className = 'tree-toggle is-open';
+            btn.innerHTML = '−';
+            btn.setAttribute('aria-expanded', 'true');
+            btn.setAttribute('aria-label', '收起子菜单');
+            btn.onclick = function (e) {
                 var evt = e || window.event;
                 if (evt.preventDefault) {
                     evt.preventDefault();
                 } else {
                     evt.returnValue = false;
                 }
-                var el = document.getElementById(a.getAttribute('data-target'));
-                if (!el) {
-                    return false;
+                if (evt.stopPropagation) {
+                    evt.stopPropagation();
+                } else {
+                    evt.cancelBubble = true;
                 }
-                jumpTo(el);
-                if (sidebar.className.indexOf('is-open') !== -1) {
-                    sidebar.className = 'sidebar';
-                }
+                setExpanded(entry, entry.childrenUl.className.indexOf('is-collapsed') !== -1);
+                updateAllLabel();
                 return false;
             };
-        }
-        for (i = 0; i < links.length; i++) {
-            bindJump(links[i]);
+            entry.toggle = btn;
+            entry.row.appendChild(btn);
         }
 
-        // 4. 滚动时高亮当前章节，并控制返回顶部按钮
+        for (id in map) {
+            if (Object.prototype.hasOwnProperty.call(map, id)) {
+                parentEntry = map[id];
+                if (hasChildren(parentEntry)) {
+                    addToggle(parentEntry);
+                    parents.push(parentEntry);
+                }
+            }
+        }
+
+        function updateAllLabel() {
+            var collapsed = 0;
+            var j;
+            for (j = 0; j < parents.length; j++) {
+                if (parents[j].childrenUl.className.indexOf('is-collapsed') !== -1) {
+                    collapsed++;
+                }
+            }
+            if (treeAll) {
+                treeAll.innerHTML = collapsed ? '全部展开' : '全部收起';
+                treeAll.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            }
+        }
+
+        if (treeAll) {
+            treeAll.onclick = function () {
+                var collapsed = 0;
+                var j;
+                var expand;
+                for (j = 0; j < parents.length; j++) {
+                    if (parents[j].childrenUl.className.indexOf('is-collapsed') !== -1) {
+                        collapsed++;
+                    }
+                }
+                expand = collapsed > 0;
+                for (j = 0; j < parents.length; j++) {
+                    setExpanded(parents[j], expand);
+                }
+                updateAllLabel();
+            };
+        }
+        updateAllLabel();
+
+        // 3. 锚点跳转 + 自动展开父级
         function currentTop() {
             return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
         }
 
+        function jumpTo(el) {
+            if (!el) {
+                return;
+            }
+            var rect = el.getBoundingClientRect();
+            var top = currentTop();
+            var y = rect.top + top - headerH - offsetGap;
+            window.scrollTo(0, y < 0 ? 0 : y);
+        }
+
+        function expandAncestors(targetId) {
+            var entry = map[targetId];
+            var parentNode;
+            var parentLi;
+            var parentEntry;
+            if (!entry) {
+                return;
+            }
+            parentNode = entry.li.parentNode;
+            if (!parentNode || parentNode === treeBox) {
+                return;
+            }
+            parentLi = parentNode.parentNode;
+            while (parentLi && parentLi.tagName === 'LI') {
+                parentEntry = parentLi.__entry;
+                if (parentEntry) {
+                    setExpanded(parentEntry, true);
+                }
+                parentNode = parentLi.parentNode;
+                parentLi = parentNode && parentNode.parentNode;
+            }
+        }
+
+        function bindJump(link, targetId) {
+            link.onclick = function (e) {
+                var evt = e || window.event;
+                if (evt.preventDefault) {
+                    evt.preventDefault();
+                } else {
+                    evt.returnValue = false;
+                }
+                var el = document.getElementById(targetId);
+                if (!el) {
+                    return false;
+                }
+                expandAncestors(targetId);
+                jumpTo(el);
+                if (sidebar.className.indexOf('is-open') !== -1) {
+                    sidebar.className = 'sidebar';
+                }
+                updateAllLabel();
+                return false;
+            };
+        }
+
+        for (i = 0; i < links.length; i++) {
+            bindJump(links[i], links[i].getAttribute('data-target'));
+        }
+
+        var moduleLinks = document.querySelectorAll('.module-link');
+        for (i = 0; i < moduleLinks.length; i++) {
+            bindJump(moduleLinks[i], moduleLinks[i].getAttribute('href').replace('#', ''));
+        }
+
+        // 4. 滚动时高亮当前章节，并控制返回顶部按钮
         function onScroll() {
             var top = currentTop();
             var cur = -1;
@@ -797,8 +2947,10 @@ melui.util.shallowCopy([1, 2]);  // {}
 
         // 6. 带 hash 打开页面时，也按偏移量定位
         if (location.hash) {
-            var hashEl = document.getElementById(location.hash.replace('#', ''));
+            var hashId = location.hash.replace('#', '');
+            var hashEl = document.getElementById(hashId);
             if (hashEl) {
+                expandAncestors(hashId);
                 setTimeout(function () {
                     jumpTo(hashEl);
                 }, 80);

@@ -1,9 +1,9 @@
 /**
  * @File    object.js
  * @Desc    MelUI Util 基础层：对象工具（深合并 / 浅拷贝，不污染入参）
- * @Version 0.1.1
+ * @Version 0.1.2
  * @Date    2026-11-13
- * @PubDate 2026-11-16 10:15:14
+ * @PubDate 2026-11-20 15:28:00
  * @Author  ChenMufeng
  *
  * ── 层级定位：共享基础层（base）──────────────────────────
@@ -18,86 +18,97 @@
  * ──────────────────────────────────────────────────────
  */
 
- import { isPlainObject, isArray } from './type.js';
+import { isPlainObject, isArray } from './type.js';
 
- /**
-  * 克隆一个值：
-  * 普通对象递归克隆，数组浅拷贝，其它（函数 / DOM / 基本类型）原样返回
-  * @param {*} val
-  * @return {*}
-  */
- function internalClone(val) {
-   var result;
-   var i;
-   var key;
-   if (isPlainObject(val)) {
-     result = {};
-     for (key in val) {
-       if (Object.prototype.hasOwnProperty.call(val, key)) {
-         result[key] = internalClone(val[key]);
-       }
-     }
-     return result;
-   }
-   if (isArray(val)) {
-     result = [];
-     for (i = 0; i < val.length; i++) {
-       result.push(internalClone(val[i]));
-     }
-     return result;
-   }
-   return val;
- }
- 
- /**
-  * 深合并多个对象，返回全新对象
-  * - 不做 Object.assign（IE9 不支持）
-  * - 不修改任何入参对象，避免污染调用方 options
-  * - 同名属性：都为普通对象时递归合并，否则后者覆盖前者
-  *
-  * @param {...Object} 任意个对象，后面的覆盖前面的
-  * @return {Object}
-  */
- export function mergeObj() {
-   var result = {};
-   var i;
-   var source;
-   var key;
-   for (i = 0; i < arguments.length; i++) {
-     source = arguments[i];
-     if (!isPlainObject(source)) {
-       continue;
-     }
-     for (key in source) {
-       if (!Object.prototype.hasOwnProperty.call(source, key)) {
-         continue;
-       }
-       if (isPlainObject(source[key]) && isPlainObject(result[key])) {
-         result[key] = mergeObj(result[key], source[key]);
-       } else {
-         result[key] = internalClone(source[key]);
-       }
-     }
-   }
-   return result;
- }
- 
- /**
-  * 浅拷贝对象
-  * @param {Object} val
-  * @return {Object}
-  */
- export function shallowCopy(val) {
-   var result = {};
-   var key;
-   if (!isPlainObject(val)) {
-     return result;
-   }
-   for (key in val) {
-     if (Object.prototype.hasOwnProperty.call(val, key)) {
-       result[key] = val[key];
-     }
-   }
-   return result;
- }
- 
+/**
+ * 克隆一个值：
+ * 普通对象递归克隆，数组递归克隆每个元素，其它（函数 / DOM / 基本类型）原样返回
+ * @param {*} val
+ * @returns {*} 克隆后的值；函数、DOM、日期等非普通对象不复制，直接返回引用
+ */
+function internalClone(val) {
+  var result;
+  var i;
+  var key;
+  if (isPlainObject(val)) {
+    result = {};
+    for (key in val) {
+      if (Object.prototype.hasOwnProperty.call(val, key)) {
+        result[key] = internalClone(val[key]);
+      }
+    }
+    return result;
+  }
+  if (isArray(val)) {
+    result = [];
+    for (i = 0; i < val.length; i++) {
+      result.push(internalClone(val[i]));
+    }
+    return result;
+  }
+  return val;
+}
+
+/**
+ * 深合并多个对象，返回全新对象
+ * - 不做 Object.assign（IE9 不支持）
+ * - 不修改任何入参对象，避免污染调用方 options
+ * - 同名属性：都为普通对象时递归合并，否则后者覆盖前者
+ *
+ * @param {...Object} 任意个对象，后面的覆盖前面的
+ * @returns {Object} 合并后的新对象；非普通对象参数会被忽略；数组按值递归克隆，不共享引用
+ * @example
+ * mergeObj({ a: 1, nested: { x: 1 } }, { b: 2, nested: { y: 2 } })
+ * // { a: 1, b: 2, nested: { x: 1, y: 2 } }
+ * mergeObj({ a: 1 }, { a: 2 })
+ * // { a: 2 }
+ * mergeObj(null, { a: 1 })
+ * // { a: 1 }
+ */
+export function mergeObj() {
+  var result = {};
+  var i;
+  var source;
+  var key;
+  for (i = 0; i < arguments.length; i++) {
+    source = arguments[i];
+    if (!isPlainObject(source)) {
+      continue;
+    }
+    for (key in source) {
+      if (!Object.prototype.hasOwnProperty.call(source, key)) {
+        continue;
+      }
+      if (isPlainObject(source[key]) && isPlainObject(result[key])) {
+        result[key] = mergeObj(result[key], source[key]);
+      } else {
+        result[key] = internalClone(source[key]);
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * 浅拷贝对象
+ * @param {Object} val
+ * @returns {Object} 只含自有可枚举属性的新对象；非普通对象返回 {}；属性值是引用，不递归克隆
+ * @example
+ * shallowCopy({ a: 1, b: { c: 2 } })
+ * // { a: 1, b: { c: 2 } }（b 仍是原引用）
+ * shallowCopy(null)
+ * // {}
+ */
+export function shallowCopy(val) {
+  var result = {};
+  var key;
+  if (!isPlainObject(val)) {
+    return result;
+  }
+  for (key in val) {
+    if (Object.prototype.hasOwnProperty.call(val, key)) {
+      result[key] = val[key];
+    }
+  }
+  return result;
+}

@@ -822,10 +822,10 @@ select.mel-form-ctrl {
 
 /**
  * @File    core.css
- * @Desc    MelUI Core 基础样式：Spinner 与全局 Loading（含 IE9 静态降级）
- * @Version 0.1.0
+ * @Desc    MelUI Core 基础样式：Spinner、全局 Loading、通用遮罩与 iframe 弹窗（含 IE9 静态降级）
+ * @Version 0.1.2
  * @Date    2026-11-13
- * @PubDate 2026-11-13 18:09:21
+ * @PubDate 2026-11-19 15:49:00
  * @Author  ChenMufeng
  */
 
@@ -914,6 +914,207 @@ select.mel-form-ctrl {
     line-height: 1.4;
     /* 不继承父级大字号，避免被业务页面样式污染 */
     font-family: inherit;
+}
+
+/* ==================== 通用遮罩 ==================== */
+
+/* 尺寸与定位在 JS 里同时写了一份内联样式，避免业务页面漏引 core.css 时遮罩错位 */
+.mel-mask {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ==================== iframe 弹窗 ==================== */
+
+/* 定位与宽高由 JS 写成内联，保证漏引 core.css 时位置仍正确 */
+.mel-iframe {
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    -webkit-box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+    font-family: inherit;
+}
+
+.mel-iframe-no-border {
+    border: 0;
+}
+
+.mel-iframe-no-radius {
+    border-radius: 0;
+}
+
+.mel-iframe-close {
+    position: absolute;
+    top: 0;
+    width: 40px;
+    height: 35px;
+    line-height: 35px;
+    text-align: center;
+    font-size: 22px;
+    color: #777;
+    cursor: pointer;
+    z-index: 5;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mel-iframe-close:hover {
+    color: #333;
+}
+
+.mel-iframe-close.left {
+    left: 0;
+}
+
+.mel-iframe-close.right {
+    right: 0;
+}
+
+.mel-iframe-info {
+    background: #f7f7f7;
+    border-bottom: 1px solid #e6e6e6;
+}
+
+.mel-iframe-title {
+    height: 35px;
+    line-height: 35px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    /* 左右留出打叉的位置，标题过长省略，不换行 */
+    padding: 0 44px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+}
+
+.mel-iframe-buttons {
+    padding: 8px 10px;
+    text-align: right;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+}
+
+.mel-iframe-buttons.horizontal .mel-iframe-btn {
+    margin-left: 8px;
+}
+
+.mel-iframe-buttons.vertical .mel-iframe-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+}
+
+.mel-iframe-buttons.vertical .mel-iframe-btn:first-child {
+    margin-top: 0;
+}
+
+.mel-iframe-btn {
+    display: inline-block;
+    height: 32px;
+    line-height: 30px;
+    padding: 0 16px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    background: #fff;
+    color: #333;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+}
+
+.mel-iframe-btn:hover {
+    border-color: #999;
+}
+
+.mel-iframe-theme-back .mel-iframe-btn {
+    background: #888;
+    border-color: #888;
+    color: #fff;
+}
+
+.mel-iframe-content {
+    position: relative;
+    background: #fff;
+}
+
+.mel-iframe-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #fff;
+}
+
+/* 动画只在支持的浏览器生效，IE9 直接静态出现，不阻断打开 */
+@-webkit-keyframes mel-iframe-in-top {
+    from {
+        opacity: 0;
+        -webkit-transform: translateY(-18px);
+    }
+    to {
+        opacity: 1;
+        -webkit-transform: translateY(0);
+    }
+}
+
+@keyframes mel-iframe-in-top {
+    from {
+        opacity: 0;
+        -webkit-transform: translateY(-18px);
+                transform: translateY(-18px);
+    }
+    to {
+        opacity: 1;
+        -webkit-transform: translateY(0);
+                transform: translateY(0);
+    }
+}
+
+@-webkit-keyframes mel-iframe-in-left {
+    from {
+        opacity: 0;
+        -webkit-transform: translateX(-18px);
+    }
+    to {
+        opacity: 1;
+        -webkit-transform: translateX(0);
+    }
+}
+
+@keyframes mel-iframe-in-left {
+    from {
+        opacity: 0;
+        -webkit-transform: translateX(-18px);
+                transform: translateX(-18px);
+    }
+    to {
+        opacity: 1;
+        -webkit-transform: translateX(0);
+                transform: translateX(0);
+    }
+}
+
+.mel-iframe-animation-top {
+    -webkit-animation: mel-iframe-in-top 0.22s ease-out;
+    animation: mel-iframe-in-top 0.22s ease-out;
+}
+
+.mel-iframe-animation-left {
+    -webkit-animation: mel-iframe-in-left 0.22s ease-out;
+    animation: mel-iframe-in-left 0.22s ease-out;
 }
 
 /**

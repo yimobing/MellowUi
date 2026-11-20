@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>MelUi 使用手册</title>
+    <meta name="keywords" content="MelUi,原生JS,UI框架,IE9,使用手册">
+    <meta name="description" content="MelUi 原生 JS UI 框架总入口：Core 核心能力、组件总览、Util 工具库、Third 第三方适配。">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #f1f1ec;
+            color: #16191b;
+            font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
+            font-size: 15px;
+            line-height: 1.85;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a {
+            color: #0b6b5f;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== 顶栏 ===== */
+        .topbar {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            height: 56px;
+            background: #16191b;
+            border-bottom: 1px solid #000000;
+        }
+
+        .topbar-inner {
+            width: 94%;
+            max-width: 1680px;
+            height: 56px;
+            box-sizing: border-box;
+            margin: 0 auto;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
+            justify-content: space-between;
+        }
+
+        .topbar-brand {
+            color: #f1f1ec;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            white-space: nowrap;
+        }
+
+        .topbar-brand span {
+            color: #6fd2c0;
+            font-weight: 400;
+        }
+
+        .topbar-ver {
+            color: #868c88;
+            font-size: 12px;
+            letter-spacing: .04em;
+            white-space: nowrap;
+        }
+
+        .topbar-menu {
+            display: none;
+            border: 1px solid #3a3f3c;
+            background: transparent;
+            color: #f1f1ec;
+            font-size: 13px;
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+
+        /* ===== 两列骨架 ===== */
+        .layout {
+            width: 94%;
+            max-width: 1680px;
+            margin: 0 auto;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: start;
+            -ms-flex-align: start;
+            align-items: flex-start;
+        }
+
+        .sidebar {
+            width: 360px;
+            -ms-flex-negative: 0;
+            flex-shrink: 0;
+            padding: 26px 0 60px;
+            position: -webkit-sticky;
+            position: sticky;
+            top: 56px;
+            max-height: calc(100vh - 56px);
+            overflow-y: auto;
+            border-right: 1px solid #e3e4de;
+            background: #f1f1ec;
+        }
+
+        .sidebar-head {
+            position: relative;
+            padding: 0 12px 10px 24px;
+            min-height: 26px;
+        }
+
+        .sidebar-title {
+            padding: 0;
+            font-size: 12px;
+            letter-spacing: .14em;
+            color: #8a8f8a;
+            line-height: 26px;
+        }
+
+        .tree-all {
+            position: absolute;
+            right: 12px;
+            top: 0;
+            height: 24px;
+            padding: 0 8px;
+            border: 1px solid #d8d9d2;
+            background: #ffffff;
+            color: #4a4f52;
+            font-size: 11px;
+            line-height: 22px;
+            cursor: pointer;
+        }
+
+        .tree-all:hover {
+            color: #0b6b5f;
+            border-color: #b7d8cb;
+            background: #ecf4ef;
+        }
+
+        #docTree {
+            list-style: none;
+            margin: 0;
+            padding: 0 12px 0 0;
+        }
+
+        #docTree ul {
+            list-style: none;
+        }
+
+        .tree-children {
+            margin: 0 0 0 18px;
+            padding-left: 12px;
+            border-left: 1px solid #cfd3ca;
+        }
+
+        .tree-children.is-collapsed {
+            display: none;
+        }
+
+        .tree-node {
+            position: relative;
+        }
+
+        .tree-row {
+            position: relative;
+        }
+
+        .tree-children > .tree-node > .tree-row:before {
+            content: "";
+            position: absolute;
+            left: -13px;
+            top: 17px;
+            width: 8px;
+            border-top: 1px solid #cfd3ca;
+        }
+
+        .tree-label {
+            display: block;
+            padding: 7px 28px 7px 16px;
+            font-size: 14px;
+            line-height: 1.45;
+            color: #4a4f52;
+            border-left: 3px solid transparent;
+        }
+
+        .tree-chapter > .tree-row > .tree-label {
+            padding-top: 9px;
+            padding-bottom: 9px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #16191b;
+        }
+
+        .tree-sub > .tree-row > .tree-label {
+            color: #3c4145;
+            font-weight: 600;
+        }
+
+        .tree-component > .tree-row > .tree-label {
+            color: #4a4f52;
+            font-size: 13.5px;
+        }
+
+        .tree-subleaf > .tree-row > .tree-label {
+            color: #4a4f52;
+            font-size: 13px;
+            font-weight: 400;
+        }
+
+        .tree-api > .tree-row > .tree-label {
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .tree-label:hover {
+            background: #e9e9e3;
+            text-decoration: none;
+        }
+
+        .tree-label.is-active {
+            color: #0b6b5f;
+            border-left-color: #b7d8cb;
+            background: #ecf4ef;
+        }
+
+        .tree-toggle {
+            position: absolute;
+            right: 2px;
+            top: 5px;
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            border: 1px solid #cfd3ca;
+            background: #ffffff;
+            color: #16191b;
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 18px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .tree-toggle.is-open {
+            color: #0b6b5f;
+            border-color: #b7d8cb;
+            background: #ecf4ef;
+        }
+
+        .tree-toggle:hover {
+            border-color: #0b6b5f;
+        }
+
+        /* ===== 右侧纸张 ===== */
+        .paper {
+            -webkit-box-flex: 1;
+            -ms-flex: 1 1 auto;
+            flex: 1 1 auto;
+            min-width: 0;
+            background: #ffffff;
+            min-height: calc(100vh - 56px);
+            padding: 42px 58px 120px;
+            box-sizing: border-box;
+        }
+
+        .paper-inner {
+            max-width: 1120px;
+        }
+
+        /* ===== 首页大标题 ===== */
+        .hero {
+            margin: 0 0 42px;
+            padding: 34px 38px 32px;
+            background: #16191b;
+            color: #f1f1ec;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero:after {
+            content: "";
+            position: absolute;
+            right: -42px;
+            top: -58px;
+            width: 230px;
+            height: 230px;
+            border: 1px solid #39413d;
+            border-radius: 50%;
+        }
+
+        .hero .eyebrow {
+            margin-bottom: 10px;
+            color: #6fd2c0;
+            font-size: 11px;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            margin: 0 0 12px;
+            font-size: 38px;
+            line-height: 1.2;
+            letter-spacing: -.025em;
+        }
+
+        .hero h1 span {
+            color: #6fd2c0;
+            font-weight: 400;
+        }
+
+        .hero .lead {
+            max-width: 760px;
+            margin: 0;
+            color: #c8ccc8;
+            font-size: 14px;
+            line-height: 1.9;
+        }
+
+        .hero-stats {
+            margin-top: 24px;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -ms-flex-wrap: wrap;
+            flex-wrap: wrap;
+        }
+
+        .hero-stat {
+            margin: 0 26px 8px 0;
+            padding-right: 26px;
+            border-right: 1px solid #39413d;
+        }
+
+        .hero-stat:last-child {
+            border-right: 0;
+        }
+
+        .hero-stat b {
+            display: block;
+            color: #ffffff;
+            font-size: 22px;
+            line-height: 1.2;
+            font-weight: 700;
+        }
+
+        .hero-stat span {
+            display: block;
+            margin-top: 3px;
+            color: #8f9792;
+            font-size: 11px;
+            letter-spacing: .06em;
+        }
+
+        /* ===== 标题层级 ===== */
+        h2 {
+            margin: 54px 0 6px;
+            padding-top: 22px;
+            border-top: 2px solid #16191b;
+            font-size: 21px;
+            line-height: 1.4;
+            font-weight: 700;
+            scroll-margin-top: 76px;
+        }
+
+        h2 .h2-num {
+            display: inline-block;
+            margin-right: 10px;
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 13px;
+            font-weight: 400;
+            color: #0b6b5f;
+            vertical-align: 2px;
+        }
+
+        h2 .h2-desc {
+            display: block;
+            margin-top: 4px;
+            font-size: 13px;
+            font-weight: 400;
+            color: #6b706c;
+            letter-spacing: 0;
+        }
+
+        h3 {
+            margin: 34px 0 10px;
+            padding-left: 12px;
+            border-left: 3px solid #6fd2c0;
+            font-size: 16px;
+            line-height: 1.5;
+            font-weight: 700;
+            scroll-margin-top: 76px;
+        }
+
+        h4.subhead {
+            margin: 26px 0 8px;
+            padding-left: 0;
+            color: #303634;
+            font-size: 14px;
+            line-height: 1.6;
+            font-weight: 700;
+            scroll-margin-top: 76px;
+        }
+
+        p {
+            margin: 0 0 12px;
+            max-width: 78ch;
+        }
+
+        .lead-small {
+            max-width: 76ch;
+            color: #4a4f52;
+            font-size: 14px;
+        }
+
+        /* ===== 说明块 ===== */
+        .note {
+            margin: 18px 0;
+            padding: 14px 18px;
+            background: #f6f6f2;
+            border: 1px solid #e3e4de;
+            border-radius: 0;
+            font-size: 13px;
+            line-height: 1.9;
+            color: #3c4145;
+        }
+
+        .note p {
+            margin: 0 0 6px;
+        }
+
+        .note p:last-child {
+            margin-bottom: 0;
+        }
+
+        .note b {
+            color: #16191b;
+        }
+
+        .note--warn {
+            background: #fdf4f1;
+            border-color: #e6c9c1;
+            color: #7b2f20;
+        }
+
+        .note--warn b {
+            color: #7b2f20;
+        }
+
+        .note--green {
+            background: #ecf4ef;
+            border-color: #c7ded4;
+            color: #164d40;
+        }
+
+        /* ===== 强调 ===== */
+        .callout {
+            margin: 16px 0 18px;
+            padding: 16px 20px 17px;
+            background: #16191b;
+            color: #f1f1ec;
+        }
+
+        .callout-label {
+            font-size: 11px;
+            letter-spacing: .16em;
+            color: #8a8f8a;
+            margin-bottom: 6px;
+        }
+
+        .callout-code {
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 19px;
+            line-height: 1.5;
+            color: #ffffff;
+            word-break: normal;
+            overflow-wrap: break-word;
+        }
+
+        .callout-code em {
+            color: #6fd2c0;
+            font-style: normal;
+        }
+
+        .callout-note {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #b1b6b2;
+        }
+
+        /* ===== 代码块 ===== */
+        .code-label {
+            margin: 12px 0 6px;
+            font-size: 11px;
+            letter-spacing: .14em;
+            color: #9a9f9a;
+        }
+
+        pre {
+            margin: 0 0 16px;
+            padding: 14px 16px;
+            background: #f6f6f2;
+            border: 1px solid #e3e4de;
+            border-radius: 0;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.72;
+            tab-size: 4;
+        }
+
+        pre code {
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+        }
+
+        .inline-code,
+        .api-table code,
+        .faq-answer code {
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 12.5px;
+            padding: 1px 5px;
+            background: #f0f2ed;
+            color: #0b6b5f;
+        }
+
+        /* ===== 表格 ===== */
+        .table-wrap {
+            margin: 16px 0 22px;
+            overflow-x: auto;
+        }
+
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            line-height: 1.7;
+            background: #ffffff;
+        }
+
+        .api-table th,
+        .api-table td {
+            padding: 9px 11px;
+            border: 1px solid #e3e4de;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .api-table th {
+            background: #f6f6f2;
+            color: #16191b;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .api-table td:first-child {
+            color: #0b6b5f;
+            white-space: nowrap;
+        }
+
+        /* ===== 层级卡片 ===== */
+        .layer-grid {
+            margin: 16px -10px 8px 0;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -ms-flex-wrap: wrap;
+            flex-wrap: wrap;
+        }
+
+        .layer-card {
+            width: calc(25% - 10px);
+            margin: 0 10px 10px 0;
+            padding: 16px 17px;
+            background: #fbfbf8;
+            border: 1px solid #e3e4de;
+            box-sizing: border-box;
+        }
+
+        .layer-num {
+            margin-bottom: 7px;
+            color: #0b6b5f;
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 11px;
+            letter-spacing: .12em;
+        }
+
+        .layer-name {
+            margin: 0 0 7px;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
+        .layer-desc {
+            margin: 0;
+            color: #5d635f;
+            font-size: 12.5px;
+            line-height: 1.75;
+        }
+
+        /* ===== 组件卡片 ===== */
+        .component-grid {
+            margin: 18px -10px 10px 0;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -ms-flex-wrap: wrap;
+            flex-wrap: wrap;
+        }
+
+        .component-card {
+            width: calc(50% - 10px);
+            margin: 0 10px 16px 0;
+            padding: 18px 19px 16px;
+            background: #fbfbf8;
+            border: 1px solid #e3e4de;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .component-card:hover {
+            border-color: #b7d8cb;
+        }
+
+        .comp-top {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
+            justify-content: space-between;
+            margin-bottom: 9px;
+        }
+
+        .comp-kicker {
+            color: #0b6b5f;
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        .comp-type {
+            color: #9a9f9a;
+            font-size: 11px;
+            letter-spacing: .04em;
+        }
+
+        .component-card h4 {
+            margin: 0 0 8px;
+            font-size: 17px;
+            line-height: 1.4;
+            font-weight: 700;
+            scroll-margin-top: 76px;
+        }
+
+        .comp-desc {
+            min-height: 44px;
+            margin: 0 0 11px;
+            color: #4a4f52;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .comp-tags {
+            margin: 0 0 12px;
+            font-size: 0;
+        }
+
+        .comp-tags span {
+            display: inline-block;
+            margin: 0 5px 5px 0;
+            padding: 2px 7px;
+            border: 1px solid #dfe5dc;
+            background: #f3f6f1;
+            color: #4a5b54;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .comp-entry {
+            margin: 0 0 14px;
+            padding-top: 10px;
+            border-top: 1px dashed #dfe3dc;
+            color: #7a7f7a;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .comp-entry code {
+            display: block;
+            margin-top: 3px;
+            color: #0b6b5f;
+            font-family: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+            font-size: 12.5px;
+            word-break: break-all;
+        }
+
+        .comp-actions {
+            margin-top: 0;
+        }
+
+        .btn {
+            display: inline-block;
+            margin: 0 7px 7px 0;
+            padding: 7px 12px;
+            border: 1px solid #cfd3ca;
+            background: #ffffff;
+            color: #16191b;
+            font-size: 12.5px;
+            line-height: 1.3;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            text-decoration: none;
+            border-color: #0b6b5f;
+            color: #0b6b5f;
+        }
+
+        .btn-primary {
+            background: #0b6b5f;
+            border-color: #0b6b5f;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #084f46;
+            border-color: #084f46;
+            color: #ffffff;
+        }
+
+        .btn-ghost {
+            color: #4a4f52;
+        }
+
+        /* ===== FAQ ===== */
+        .faq-item {
+            margin: 0 0 14px;
+            padding: 13px 16px 12px;
+            border-left: 3px solid #d8d9d2;
+            background: #fbfbf8;
+        }
+
+        .faq-q {
+            margin: 0 0 5px;
+            color: #16191b;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.6;
+        }
+
+        .faq-answer {
+            margin: 0;
+            color: #4a4f52;
+            font-size: 13px;
+            line-height: 1.85;
+        }
+
+        /* ===== 工具卡片 ===== */
+        .tool-card {
+            margin: 16px 0 18px;
+            padding: 22px 24px;
+            background: #16191b;
+            color: #f1f1ec;
+        }
+
+        .tool-kicker {
+            margin-bottom: 7px;
+            color: #6fd2c0;
+            font-size: 11px;
+            letter-spacing: .16em;
+        }
+
+        .tool-title {
+            margin: 0 0 8px;
+            color: #ffffff;
+            font-size: 20px;
+            line-height: 1.4;
+        }
+
+        .tool-desc {
+            max-width: 720px;
+            margin: 0 0 12px;
+            color: #c8ccc8;
+            font-size: 13px;
+            line-height: 1.9;
+        }
+
+        .tool-metrics {
+            margin: 14px 0 14px;
+            font-size: 0;
+        }
+
+        .tool-metric {
+            display: inline-block;
+            margin: 0 24px 8px 0;
+            padding-right: 20px;
+            border-right: 1px solid #39413d;
+            vertical-align: top;
+        }
+
+        .tool-metric b {
+            display: block;
+            color: #6fd2c0;
+            font-size: 20px;
+            line-height: 1.2;
+        }
+
+        .tool-metric span {
+            display: block;
+            color: #9aa19c;
+            font-size: 11px;
+        }
+
+        .tool-card .btn {
+            background: transparent;
+            color: #f1f1ec;
+            border-color: #59615c;
+        }
+
+        .tool-card .btn:hover {
+            color: #6fd2c0;
+            border-color: #6fd2c0;
+            text-decoration: none;
+        }
+
+        /* ===== 返回顶部 ===== */
+        .to-top {
+            position: fixed;
+            right: 26px;
+            bottom: 26px;
+            z-index: 30;
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border: 1px solid #16191b;
+            background: #16191b;
+            color: #f1f1ec;
+            cursor: pointer;
+            display: none;
+            text-align: center;
+        }
+
+        .to-top:hover {
+            background: #0b6b5f;
+            border-color: #0b6b5f;
+        }
+
+        .to-top.is-show {
+            display: block;
+        }
+
+        .to-top svg {
+            width: 18px;
+            height: 18px;
+            margin-top: 12px;
+        }
+
+        .footer {
+            margin-top: 64px;
+            padding-top: 18px;
+            border-top: 1px solid #e3e4de;
+            color: #9a9f9a;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        /* ===== 窄屏 ===== */
+        @media (max-width: 980px) {
+            .topbar-inner {
+                padding: 0 16px;
+            }
+
+            .topbar-ver {
+                display: none;
+            }
+
+            .topbar-menu {
+                display: inline-block;
+            }
+
+            .layout {
+                display: block;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 56px;
+                left: 0;
+                z-index: 35;
+                width: 268px;
+                height: calc(100vh - 56px);
+                max-height: none;
+                padding-bottom: 40px;
+                border-right: 1px solid #d8d9d2;
+                box-shadow: 2px 0 10px rgba(0,0,0,.08);
+                -webkit-transform: translateX(-105%);
+                -ms-transform: translateX(-105%);
+                transform: translateX(-105%);
+                -webkit-transition: transform .22s ease;
+                transition: transform .22s ease;
+            }
+
+            .sidebar.is-open {
+                -webkit-transform: translateX(0);
+                -ms-transform: translateX(0);
+                transform: translateX(0);
+            }
+
+            .paper {
+                padding: 28px 18px 96px;
+            }
+
+            .hero {
+                padding: 26px 22px 24px;
+            }
+
+            .hero h1 {
+                font-size: 29px;
+            }
+
+            .hero-stats {
+                display: block;
+            }
+
+            .hero-stat {
+                display: inline-block;
+                margin-bottom: 10px;
+            }
+
+            .layer-card,
+            .component-card {
+                width: 100%;
+                margin-right: 0;
+            }
+
+            .component-grid,
+            .layer-grid {
+                margin-right: 0;
+            }
+
+            .callout-code {
+                font-size: 16px;
+            }
+
+            pre {
+                font-size: 12px;
+                padding: 12px;
+            }
+
+            h2 {
+                font-size: 19px;
+            }
+        }
+    </style>
+<link rel="stylesheet" href="../dist/melui.min.css">
+<script src="../dist/melui.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="topbar-brand">MelUi <span>Docs</span></div>
+        <div class="topbar-ver">v1.0.0 &nbsp;·&nbsp; Core + Components + Util + Third &nbsp;·&nbsp; IE9+</div>
+        <button type="button" class="topbar-menu" id="menuBtn">目录</button>
+    </div>
+</header>
+
+<div class="layout">
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-head">
+            <div class="sidebar-title">文档目录</div>
+            <button type="button" class="tree-all" id="treeAll" aria-expanded="true" aria-controls="docTree">全部收起</button>
+        </div>
+        <ul id="docTree"></ul>
+    </aside>
+
+    <main class="paper">
+        <div class="paper-inner">
+
+            <!-- ===== 首页 ===== -->
+            <section class="hero">
+                <div class="eyebrow">MelUi · Native JavaScript UI</div>
+                <h1>MelUi <span>使用手册</span></h1>
+                <p class="lead">一套不依赖 jQuery、面向 IE9+ 的原生 JS UI 框架。Core 负责加载、遮罩和 iframe 弹窗，组件负责界面，Util 提供工具函数，Third 负责 Excel 与图片导出适配。</p>
+                <div class="hero-stats">
+                    <div class="hero-stat"><b>Core</b><span>顶层 API</span></div>
+                    <div class="hero-stat"><b>7+</b><span>UI 组件</span></div>
+                    <div class="hero-stat"><b>Util</b><span>工具函数</span></div>
+                    <div class="hero-stat"><b>Third</b><span>第三方适配</span></div>
+                    <div class="hero-stat"><b>IE9+</b><span>兼容目标</span></div>
+                </div>
+            </section>
+
+            <!-- ===== 一、开始使用 ===== -->
+            <h2 id="sec-1">一、开始使用<span class="h2-desc">MelUi 是什么、产物怎么拿、页面怎么引</span></h2>
+
+            <h3 id="sec-1-1">1.1 整体结构</h3>
+            <p class="lead-small">MelUi 不是一个只有组件的 UI 包，而是四层结构：Core 提供运行时能力，组件负责界面，Util 提供工具函数，Third 把 Excel / 图片导出这类第三方能力包装成统一入口。</p>
+
+            <div class="layer-grid">
+                <div class="layer-card">
+                    <div class="layer-num">LAYER 01</div>
+                    <div class="layer-name">Core 核心库</div>
+                    <p class="layer-desc">Loading/Spinner、Mask、Iframe 等运行时能力，对外提供顶层 API。随主包一起加载，不存在单独的 <span class="inline-code">melui.Core</span> 对象。</p>
+                </div>
+                <div class="layer-card">
+                    <div class="layer-num">LAYER 02</div>
+                    <div class="layer-name">Components 组件</div>
+                    <p class="layer-desc">Layout、Button、DatePicker、Dialog、Drawer、Pagination、Table 等 7+ 个 UI 组件；Loading 是 Core 能力。每个组件入口都有独立使用手册，复杂参数不堆在总入口里。</p>
+                </div>
+                <div class="layer-card">
+                    <div class="layer-num">LAYER 03</div>
+                    <div class="layer-name">Util 工具库</div>
+                    <p class="layer-desc">主包内置基础函数；<span class="inline-code">melui-util.js</span> 再提供扩展模块与工具函数，按需引入。</p>
+                </div>
+                <div class="layer-card">
+                    <div class="layer-num">LAYER 04</div>
+                    <div class="layer-name">Third 第三方适配</div>
+                    <p class="layer-desc"><span class="inline-code">melui.third</span> 提供 Excel 导出与网页导出图片两个适配 API。第三方库不内置，需业务页面自行引入。</p>
+                </div>
+            </div>
+
+            <div class="note note--warn">
+                <p><b>先记住一个边界：</b>主包 <span class="inline-code">melui.js</span> 不打包 Util 扩展包。用到 <span class="inline-code">melui.util.date</span>、<span class="inline-code">melui.util.format</span> 这些扩展模块时，必须再引入 <span class="inline-code">melui-util.js</span>。</p>
+            </div>
+
+            <h3 id="sec-1-2">1.2 产物与引入顺序</h3>
+            <div class="table-wrap">
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>产物</th>
+                            <th>内容</th>
+                            <th>什么时候需要</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>melui.js</code> / <code>melui.min.js</code></td>
+                            <td>Core + 7+ 个 UI 组件，Loading 属于 Core</td>
+                            <td>所有使用 MelUi 的页面，必引。</td>
+                        </tr>
+                        <tr>
+                            <td><code>melui.css</code> / <code>melui.min.css</code></td>
+                            <td>Core 与组件的整包样式</td>
+                            <td>使用整包时，先于 JS 引入。</td>
+                        </tr>
+                        <tr>
+                            <td><code>melui-util.js</code> / <code>melui-util.min.js</code></td>
+                            <td>扩展模块与工具函数</td>
+                            <td>用到 <code>melui.util.date</code>、<code>format</code>、<code>dom</code> 等扩展模块时引入。</td>
+                        </tr>
+                        <tr>
+                            <td><code>melui-third.js</code> / <code>melui-third.min.js</code></td>
+                            <td>Excel 导出、网页导出图片</td>
+                            <td>用 <code>melui.third</code> 时引入；还需自行引入 SheetJS / html2canvas。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="code-label">标准引入顺序</div>
+            <pre><code>&lt;link rel="stylesheet" href="../release/dist/melui.min.css"&gt;
+&lt;script src="../release/dist/melui.min.js"&gt;&lt;/script&gt;
+
+&lt;!-- 可选：工具库扩展 --&gt;
+&lt;script src="../release/dist/melui-util.min.js"&gt;&lt;/script&gt;
+
+&lt;!-- 可选：第三方适配 --&gt;
+&lt;script src="../release/dist/melui-third.min.js"&gt;&lt;/script&gt;</code></pre>
+
+            <p>CSS 必须先加载，再加载 JS；<span class="inline-code">melui-util.js</span> 和 <span class="inline-code">melui-third.js</span> 都排在主包之后。组件如果单独打包，则按组件目录下的独立 CSS / JS 引入，不要和整包混用。</p>
+
+            <h3 id="sec-1-3">1.3 最小示例</h3>
+            <p>先确认 <span class="inline-code">melui</span> 已挂到全局，再调用 Core 的 Loading。下面的写法只依赖主包：</p>
+
+            <div class="code-label">JavaScript</div>
+            <pre><code>melui.showLoading('正在加载...');
+
+setTimeout(function () {
+    melui.closeLoading();
+}, 1200);</code></pre>
+
+            <div class="note">
+                <p><b>文档位置：</b>本手册与各组件手册建议放在同一个 <span class="inline-code">demo/</span> 目录。手册按钮全部使用相对路径，移动主文档时要同步调整。</p>
+                <p><b>打开方式：</b>直接双击 HTML 即可，不需要本地服务器。所有手册按钮都在新标签页打开，不使用 iframe 嵌套。</p>
+            </div>
+
+            <!-- ===== 二、兼容性与常见问题 ===== -->
+            <h2 id="sec-2">二、兼容性与常见问题<span class="h2-desc">先看边界，再查问题；这部分放在最前面，避免后面反复解释</span></h2>
+
+            <h3 id="sec-2-1">2.1 浏览器与语法基线</h3>
+            <p>MelUi 的目标环境是 IE9+。框架源码使用 ES5 写法，不依赖 jQuery，不使用 <span class="inline-code">let</span>、<span class="inline-code">const</span>、箭头函数、模板字符串这类 IE9 不支持的语法。项目里的组件与工具函数都按这个基线维护。</p>
+
+            <div class="note">
+                <p><b>IE9 的两个实际限制：</b>Loading 的转圈动画不支持 <span class="inline-code">@keyframes</span>，会显示静态四点环；部分 CSS 动画和滤镜效果会降级。遮罩、文字、滚动锁仍正常工作。</p>
+            </div>
+
+            <h3 id="sec-2-2">2.2 命名与调用入口</h3>
+            <p><span class="inline-code">melui</span> 与 <span class="inline-code">MelUi</span> 指向同一个命名空间，大小写都能用。Core 的顶层 API 全部提升到顶层，所以正确写法是 <span class="inline-code">melui.showLoading()</span>，不是 <span class="inline-code">melui.Core.showLoading()</span>。</p>
+
+            <div class="note note--warn">
+                <p><b>当前源码里不存在 <span class="inline-code">melui.Core</span>。</b>旧架构文档里的 <span class="inline-code">melui.Core</span> 说法已经过时，不要照搬。Core 只导出白名单 API，内部实现不作为对外契约。</p>
+            </div>
+
+            <div class="table-wrap">
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>类型</th>
+                            <th>入口</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Core</td>
+                            <td><code>melui.showLoading()</code></td>
+                            <td>顶层 API 都不加 <code>Core</code>。</td>
+                        </tr>
+                        <tr>
+                            <td>工具库</td>
+                            <td><code>melui.util.base.xxx</code> / <code>melui.util.date.xxx</code></td>
+                            <td>基础函数随主包；扩展模块需 <code>melui-util.js</code>。</td>
+                        </tr>
+                        <tr>
+                            <td>组件</td>
+                            <td><code>MelUi.Table(options)</code></td>
+                            <td>组件使用大驼峰；Table 支持工厂写法，Pagination 可省略 <code>new</code>。</td>
+                        </tr>
+                        <tr>
+                            <td>第三方适配</td>
+                            <td><code>melui.third.export2Excel()</code></td>
+                            <td>需 <code>melui-third.js</code>，并自行加载 SheetJS / html2canvas。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>Layout 和 Button 是 CSS 类组件，入口不是构造函数：布局用 <span class="inline-code">mel-row</span>、<span class="inline-code">mel-col</span>、<span class="inline-code">mel-span-N</span>；按钮用 <span class="inline-code">mel-btn</span> 及修饰类。Dialog、Drawer、Table、Pagination、DatePicker 才走 JS 入口。</p>
+
+            <h3 id="sec-2-3">2.3 引入顺序与依赖边界</h3>
+            <p>整包使用时，先 CSS、后 JS；工具扩展和第三方适配排在主包之后。第三方适配只负责调用，不内置 SheetJS / html2canvas，也不在运行时动态插 CDN。页面没加载对应库时，调用会给出提示，不会静默失败。</p>
+
+            <div class="note">
+                <p><b>主包边界：</b>Core 与组件在主包；Util 扩展包单独；Third 单独。不要假设“引了 melui.js 就一定有全部 util 函数”。</p>
+            </div>
+
+            <h3 id="sec-2-4">2.4 常见问题</h3>
+
+            <div class="faq-item">
+                <div class="faq-q">Q：页面提示 <span class="inline-code">melui.showLoading is not a function</span>？</div>
+                <p class="faq-answer">先确认 <span class="inline-code">melui.min.js</span> 已成功加载，且没有在 JS 执行前被其他脚本打断；再看是否只引了组件单包，却调用了 Core 的顶层 API。Core 随主包，不在组件单包里。</p>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">Q：调用了 <span class="inline-code">closeLoading()</span>，Loading 还在？</div>
+                <p class="faq-answer">Loading 是计数式关闭：调用了几次 <span class="inline-code">showLoading</span>，就要对应调用几次 <span class="inline-code">closeLoading</span>。计数归零才会销毁或隐藏；多调 <span class="inline-code">closeLoading</span> 只会 warn，不会抛错。</p>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">Q：<span class="inline-code">isLoading()</span> 返回 false，但页面上还有转圈？</div>
+                <p class="faq-answer"><span class="inline-code">isLoading</span> 只看全局 Loading 计数，不看 DOM。<span class="inline-code">createSpinner</span> 生成的局部转圈不计入这个计数，需要你自己保存实例并调用它的 <span class="inline-code">destroy</span>。</p>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">Q：关闭遮罩时关错了层？</div>
+                <p class="faq-answer"><span class="inline-code">closeMask()</span> 不传参数关闭最后打开的一层；传 <span class="inline-code">'all'</span> 关闭全部；传 id 或节点关闭指定遮罩。遮罩支持多层叠放和滚动锁引用计数。</p>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">Q：<span class="inline-code">openIframe()</span> 打开空白或直接失败？</div>
+                <p class="faq-answer">先看协议：当前页面是 HTTPS、目标地址是 HTTP 时，会被混合内容策略拦截，并给出提示。其次检查目标站点是否设置了 <span class="inline-code">X-Frame-Options</span> 或 CSP <span class="inline-code">frame-ancestors</span>，这类限制 MelUi 无法绕过。</p>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">Q：<span class="inline-code">melui.util.date</span> 不存在？</div>
+                <p class="faq-answer">主包只有基础工具函数。<span class="inline-code">date</span>、<span class="inline-code">format</span>、<span class="inline-code">dom</span> 等扩展模块在 <span class="inline-code">melui-util.js</span> 里，需在主包之后额外引入。</p>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">Q：<span class="inline-code">melui.third</span> 不存在，或导出 Excel 没反应？</div>
+                <p class="faq-answer"><span class="inline-code">melui.third</span> 需要单独引入 <span class="inline-code">melui-third.js</span>；Excel 导出还要求页面已加载 SheetJS，且浏览器为 IE11+。导出图片要求页面已加载 html2canvas。</p>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">Q：执行 <span class="inline-code">npm run build</span> 末尾出现 <span class="inline-code">npm update check failed</span>？</div>
+                <p class="faq-answer">这是 npm 的更新检查器无法写入用户配置目录（Windows 下常见于 <span class="inline-code">C:\Users\Administrator\.config</span>）导致的提示，不是 MelUi 构建失败。以构建产物是否生成、构建命令是否返回成功为准；该提示不会影响 <span class="inline-code">release/dist</span> 的输出。</p>
+            </div>
+
+            <!-- ===== 三、Core 核心能力 ===== -->
+            <h2 id="sec-3">三、Core 核心能力<span class="h2-desc">运行时底座；这里只做能力导航，参数和示例看对应手册</span></h2>
+
+            <p class="lead-small">Core 随主包加载，对外只暴露顶层 API，全部挂在 <span class="inline-code">melui</span> / <span class="inline-code">MelUi</span> 顶层；<span class="inline-code">zIndex</span>、<span class="inline-code">scrollLock</span>、<span class="inline-code">polyfill</span> 属于内部机制，不作为业务 API。</p>
+
+            <div class="callout">
+                <div class="callout-label">CORE 能力</div>
+                <div class="callout-code"><em>Loading</em> / Mask / Iframe</div>
+                <div class="callout-note">统一由 melui 顶层 API 提供；不存在 melui.Core，不要写成 melui.Core.xxx()</div>
+            </div>
+
+            <h3 id="sec-3-1">3.1 Core 负责什么</h3>
+            <p>Core 负责页面运行时最公共的三类能力：Loading 加载反馈、Mask 遮罩层、Iframe 内嵌弹窗。它不负责按钮、表格、日期选择器这类界面组件，也不包含 Util 工具函数或 Third 第三方适配。</p>
+
+            <div class="note">
+                <p><b>边界：</b>组件可以复用 Core 的遮罩、层级和滚动锁，但 Core 不反向依赖任何组件；业务代码应调用 <span class="inline-code">melui</span> 顶层 API，不要访问内部模块。</p>
+            </div>
+
+            <h3 id="sec-3-2">3.2 能力入口</h3>
+            <div class="component-grid">
+                <article class="component-card" id="core-loading">
+                    <div class="comp-top">
+                        <span class="comp-kicker">Core / Loading</span>
+                        <span class="comp-type">独立手册</span>
+                    </div>
+                    <h4 class="comp-title" data-tree-kind="component">Loading 与 Spinner</h4>
+                    <p class="comp-desc">全局 / 局部加载，包含 Spinner、遮罩、提示文字、层级、滚动锁和调用计数。完整参数、默认值与示例在独立手册里。</p>
+                    <div class="comp-tags"><span>全局 / 局部</span><span>Spinner</span><span>计数关闭</span><span>IE9+</span></div>
+                    <div class="comp-entry">入口写法<code>melui.showLoading(options|string)</code></div>
+                    <div class="comp-actions">
+                        <a class="btn btn-primary" href="core_loading_转圈加载_使用手册.html" target="_blank" rel="noopener">打开 Loading 手册 ↗</a>
+                    </div>
+                </article>
+
+                <article class="component-card" id="core-mask">
+                    <div class="comp-top">
+                        <span class="comp-kicker">Core / Mask</span>
+                        <span class="comp-type">Core 手册</span>
+                    </div>
+                    <h4 class="comp-title" data-tree-kind="component">Mask 遮罩</h4>
+                    <p class="comp-desc">独立遮罩层，支持多层叠放、自动层级、滚动锁、点击关闭和关闭回调。详细 API、默认参数与示例看 Core 手册。</p>
+                    <div class="comp-tags"><span>多层叠放</span><span>滚动锁</span><span>关闭回调</span><span>IE9+</span></div>
+                    <div class="comp-entry">入口写法<code>melui.openMask(options)</code></div>
+                    <div class="comp-actions">
+                        <a class="btn btn-primary" href="core_核心能力_使用手册.html#sec-2" target="_blank" rel="noopener">打开 Core 手册 ↗</a>
+                    </div>
+                </article>
+
+                <article class="component-card" id="core-iframe">
+                    <div class="comp-top">
+                        <span class="comp-kicker">Core / Iframe</span>
+                        <span class="comp-type">Core 手册</span>
+                    </div>
+                    <h4 class="comp-title" data-tree-kind="component">Iframe 弹窗</h4>
+                    <p class="comp-desc">带标题栏、按钮栏、遮罩和 iframe 的弹窗，适合嵌入独立页面。参数、按钮回调与关闭规则看 Core 手册。</p>
+                    <div class="comp-tags"><span>标题与按钮</span><span>遮罩</span><span>回调</span><span>IE9+</span></div>
+                    <div class="comp-entry">入口写法<code>melui.openIframe(options)</code></div>
+                    <div class="comp-actions">
+                        <a class="btn btn-primary" href="core_核心能力_使用手册.html#sec-3" target="_blank" rel="noopener">打开 Core 手册 ↗</a>
+                    </div>
+                </article>
+            </div>
+
+            <h3 id="sec-3-3">3.3 运行时约定</h3>
+            <p>Core 统一维护全局自增层级、滚动锁和 IE9 polyfill。遮罩、Loading、iframe 自动分配层级；滚动锁按引用计数管理，不会因为先关一个就提前解锁。具体行为与边界见 Core 手册的“运行时约定”一章。</p>
+
+            <p><a class="btn btn-primary" href="core_核心能力_使用手册.html" target="_blank" rel="noopener">打开 Core 核心能力手册 ↗</a></p>
+
+            <!-- ===== 四、组件总览 ===== -->
+            <h2 id="sec-4">四、组件总览<span class="h2-desc">这里只做简介和入口，具体参数、实例 API、事件看各自手册</span></h2>
+
+            <p class="lead-small">当前组件入口：Layout、Button、Dialog、Drawer、Table、Pagination、DatePicker。Loading 归 Core，在第三章单独列出；总入口不复制组件 API，避免和单独手册出现两套说法。</p>
+
+            <div class="note">
+                <p><b>打开方式：</b>“打开使用手册”与“打开演示示例”都在新标签页打开，不使用 iframe。Table、Pagination 有独立演示示例；其余组件的示例已放在各自使用手册内。</p>
+            </div>
+
+            <h3 id="sec-4-1">4.1 基础组件</h3>
+            <div class="component-grid">
+                <article class="component-card" id="comp-layout">
+                    <div class="comp-top">
+                        <span class="comp-kicker">基础 / Layout</span>
+                        <span class="comp-type">CSS 布局</span>
+                    </div>
+                    <h4 class="comp-title" data-tree-kind="component">Layout 布局</h4>
+                    <p class="comp-desc">24 栅格页面骨架，负责基础分栏、间隔、偏移、嵌套和表单布局。适合后台页面、筛选区和编辑表单。</p>
+                    <div class="comp-tags"><span>24 栅格</span><span>间隔 / 偏移</span><span>表单布局</span><span>IE9+</span></div>
+                    <div class="comp-entry">入口写法<code>mel-row + mel-col + mel-span-N</code></div>
+                    <div class="comp-actions">
+                        <a class="btn btn-primary" href="layout_布局组件_使用手册.html" target="_blank" rel="noopener">打开使用手册 ↗</a>
+                    </div>
+                </article>
+
+                <article class="component-card" id="comp-button">
+                    <div class="comp-top">
+                        <span class="comp-kicker">基础 / Button</span>
+                        <span class="comp-type">CSS 组件</span>
+                    </div>
+                    <h4 class="comp-title" data-tree-kind="component">Button 按钮</h4>
+                    <p class="comp-desc">基础按钮样式与高级用法，按 <span class="inline-code">mel-btn</span> 及修饰类切换主题、描边、朴素、圆角等状态。</p>
+                    <div class="comp-tags"><span>主题色</span><span>描边 / 朴素</span><span>圆角</span><span>IE9+</span></div>
+                    <div class="comp-entry">入口写法<code>mel-btn mel-btn--primary</code></div>
+                    <div class="comp-actions">
+                        <a class="btn btn-primary" href="button_按钮组件_使用手册.html" target="_blank" rel="noopener">打开使用手册 ↗</a>
+                    </div>
+                </article>
+            </div>
+
+            <h3 id="sec-4-2">4.2 弹层与反馈</h3>
+            <div class="component-grid">
+                <article class="component-card" id="comp-dialog">
+                    <div class="comp-top">
+                        <span class="comp-kicker">弹层 / Dialog</span>
+                        <span class="comp-type">JS + CSS</span>
+                    </div>
+                    <h4 class="comp-title" data-tree-kind="component">Dialog 对话框</h4>
+                    <p class="comp-desc">通用模态对话框，包含 dialog、alert、confirm、prompt 等调用方式，适合确认、短表单和提示。支持按钮回调与关闭拦截。</p>
+                    <div class="comp-tags"><span>模态弹窗</span><span>alert / confirm</span><span>按钮回调</span><span>IE9+</span></div>
+                    <div class="comp-entry">入口写法<code>melui.dialog(options) / MelUi.Dialog</code></div>
+                    <div class="comp-actions">
+                        <a class="btn btn-primary" href="dialog_对话框组件_使用手册.html" target="_blank" rel="noopener">打开使用手册 ↗</a>
+                    </div>
+                </article>
+
+                <article class="component-card" id="comp-drawer">
+                    <div class="comp-top">
+                        <span class="comp-kicker">弹层 / Drawer</span>
+                        <span class="comp-type">JS + CSS</span>
+                    </div>
+                    <h4 class="comp-title" data-tree-kind="component">Drawer 抽屉</h4>
+                    <p class="comp-desc">侧边抽屉，适合筛选、详情、配置和批量操作。支持多方向弹出、按钮区、关闭拦截与 <span class="inline-code">destroyOnClose:false</span> 复用。</p>
+                    <div class="comp-tags"><span>侧边弹出</span><span>多方向</span><span>按钮区</span><span>IE9+</span></div>
+                    <div class="comp-entry">入口写法<code>melui.drawer(options) / MelUi.Drawer()</code></div>
+                    <div class="comp-actions">
+                        <a class="btn btn-primary" href="drawer_抽屉组件_使用手册.html" target="_blank" rel="noopener">打开使用手册 ↗</a>
+                    </div>
+                </article>
+
+
+            </div>
+
+            <h3 id="sec-4-3">4.3 数据展示</h3>
+            <div class="component-grid">
+                <article class="component-card" id="comp-table">
+                    <div class="comp-top">
+                        <span class="comp-kicker">数据 / Table</span>
+                        <span class="comp-type">JS + CSS</span>
+                    </div>
+                    <h4 class="comp-title" data-tree-kind="component">Table 表格</h4>
+                    <p class="comp-desc">数据驱动的原生表格，核心层只留骨架，序号、勾选、状态列、排序、分页、合计、合并表头、展开行、导出等能力按插件启用。</p>
+                    <div class="comp-tags"><span>数据驱动</span><span>插件化</span><span>固定列 / 排序</span><span>IE9+</span></div>
+                    <div class="comp-entry">入口写法<code>MelUi.Table(options)</code></div>
+                    <div class="comp-actions">
+                        <a class="btn btn-primary" href="table_表格组件_使用手册.html" target="_blank" rel="noopener">打开使用手册 ↗</a>
+                        <a class="btn btn-ghost" href="table_表格组件_演示示例.html" target="_blank" rel="noopener">打开演示示例 ↗</a>
+                    </div>
+                </article>
+
+                <article class="component-card" id="comp-pagination">
+                    <div class="comp-top">
+                        <span class="comp-kicker">数据 / Pagination</span>
+                        <span class="comp-type">JS + CSS</span>
+                    </div>
+                    <h4 class="comp-title" data-tree-kind="component">Pagination 分页</h4>
+                    <p class="comp-desc">独立分页条：只负责渲染分页控件、响应用户操作并抛出变更事件。数据请求、数据切片、列表渲染全部由业务自己控制。</p>
+                    <div class="comp-tags"><span>页码钳位</span><span>onChange</span><span>与 Table 配合</span><span>IE9+</span></div>
+                    <div class="comp-entry">入口写法<code>MelUi.Pagination(options)</code></div>
+                    <div class="comp-actions">
+                        <a class="btn btn-primary" href="pagination_分页组件_使用手册.html" target="_blank" rel="noopener">打开使用手册 ↗</a>
+                        <a class="btn btn-ghost" href="pagination_分页组件_演示示例.html" target="_blank" rel="noopener">打开演示示例 ↗</a>
+                    </div>
+                </article>
+            </div>
+
+            <h3 id="sec-4-4">4.4 选择器</h3>
+            <div class="component-grid">
+                <article class="component-card" id="comp-datepicker">
+                    <div class="comp-top">
+                        <span class="comp-kicker">选择 / DatePicker</span>
+                        <span class="comp-type">JS + CSS</span>
+                    </div>
+                    <h4 class="comp-title" data-tree-kind="component">DatePicker 日期选择器</h4>
+                    <p class="comp-desc">兼容 IE9+ 的原生日期选择器，支持 ID、Class、<span class="inline-code">data-trigger</span>、<span class="inline-code">inputTrigger</span> 等多种触发方式，以及默认日期、日期范围、回调和确定后关闭。</p>
+                    <div class="comp-tags"><span>多种触发</span><span>日期范围</span><span>快捷日期</span><span>IE9+</span></div>
+                    <div class="comp-entry">入口写法<code>new MelDatePicker(el, options)</code></div>
+                    <div class="comp-actions">
+                        <a class="btn btn-primary" href="datePicker_日期选择器组件_使用手册.html" target="_blank" rel="noopener">打开使用手册 ↗</a>
+                    </div>
+                </article>
+            </div>
+
+            <!-- ===== 五、工具与第三方适配 ===== -->
+            <h2 id="sec-5">五、工具与第三方适配<span class="h2-desc">Util 扩展包单独引入；Third 负责 Excel / 图片导出，依赖业务自带</span></h2>
+
+            <p class="lead-small">Util 和 Third 都不是组件，不放在组件分类里。Util 是工具函数库，Third 是第三方能力的适配层；两者都不进主包。</p>
+
+            <h3 id="sec-5-1">5.1 Util 工具库</h3>
+
+            <div class="tool-card">
+                <div class="tool-kicker">UTIL / TOOLKIT</div>
+                <div class="tool-title">基础函数 + 扩展模块，按需引入</div>
+                <p class="tool-desc">基础函数随主包；扩展模块在 <span class="inline-code">melui-util.js</span>。所有扩展函数按模块分组挂载，不扁平到 <span class="inline-code">melui.util</span> 顶层。</p>
+                <div class="tool-metrics">
+                    <div class="tool-metric"><b>基础</b><span>主包内置</span></div>
+                    <div class="tool-metric"><b>扩展</b><span>工具包提供</span></div>
+                    <div class="tool-metric"><b>按需</b><span>单独引入</span></div>
+                </div>
+                <a class="btn" href="util_工具库_使用手册.html" target="_blank" rel="noopener">打开 Util 使用手册 ↗</a>
+            </div>
+
+            <div class="table-wrap">
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>模块</th>
+                            <th>调用前缀</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>date 日期工具</td><td><code>melui.util.date.xxx</code></td></tr>
+                        <tr><td>format 格式化工具</td><td><code>melui.util.format.xxx</code></td></tr>
+                        <tr><td>dom DOM 工具</td><td><code>melui.util.dom.xxx</code></td></tr>
+                        <tr><td>string 字符串工具</td><td><code>melui.util.string.xxx</code></td></tr>
+                        <tr><td>validate 校验工具</td><td><code>melui.util.validate.xxx</code></td></tr>
+                        <tr><td>array 数组工具</td><td><code>melui.util.array.xxx</code></td></tr>
+                        <tr><td>random 随机工具</td><td><code>melui.util.random.xxx</code></td></tr>
+                        <tr><td>biz 业务工具</td><td><code>melui.util.biz.xxx</code></td></tr>
+                        <tr><td>widget 界面小部件</td><td><code>melui.util.widget.xxx</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>主包内置的基础函数可以直接用；上表扩展模块的工具函数要引入 <span class="inline-code">melui-util.js</span> 后才会出现。具体函数签名、返回类型和示例，看 Util 使用手册。</p>
+
+            <h3 id="sec-5-2">5.2 Third 第三方适配</h3>
+
+            <p><span class="inline-code">melui.third</span> 是第三方适配层，当前提供 Excel 导出和网页导出图片两类适配 API。它只负责调用和统一提示，不内置第三方库，也不在 JS 里动态加载 CDN。</p>
+
+            <div class="table-wrap">
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>API</th>
+                            <th>作用</th>
+                            <th>返回</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>melui.third.export2Excel(options)</code></td>
+                            <td>把表格导出为 Excel / CSV，使用 SheetJS 解析行列与合并单元格。</td>
+                            <td><code>Boolean</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>melui.third.exportWeb2Image(options)</code></td>
+                            <td>把指定节点导出为图片；桌面端下载，移动端显示长按保存浮层。</td>
+                            <td><code>Promise|null</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4 class="subhead" id="sec-5-2-1" data-tree-kind="sub">5.2.1 第三方依赖</h4>
+            <div class="table-wrap">
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>能力</th>
+                            <th>需要页面自行引入</th>
+                            <th>全局变量</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>导出 Excel</td>
+                            <td><code>xlsx.full.min.js</code>（SheetJS）</td>
+                            <td><code>XLSX</code></td>
+                        </tr>
+                        <tr>
+                            <td>网页导出图片</td>
+                            <td><code>html2canvas.min.js</code></td>
+                            <td><code>html2canvas</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="note note--warn">
+                <p><b>依赖边界：</b>MelUi 不内置 SheetJS / html2canvas，也不会自动插 script 加载 CDN。业务页面要先引入对应库，再调用 <span class="inline-code">melui.third</span>。库没加载时，导出函数会给出提示并返回失败值。</p>
+                <p><b>兼容提醒：</b>Excel 导出在 IE9 / IE10 下会被明确拦截，要求 IE11+；图片导出以 html2canvas 自身兼容范围为准。</p>
+            </div>
+
+            <p>官方资料：<a href="https://sheetjs.com/" target="_blank" rel="noopener">SheetJS</a>（xlsx.full.min.js） / <a href="https://html2canvas.hertzen.com/" target="_blank" rel="noopener">html2canvas</a>。版本与下载路径按项目实际依赖为准。</p>
+
+            <h4 class="subhead" id="sec-5-2-2" data-tree-kind="sub">5.2.2 export2Excel 参数</h4>
+            <div class="table-wrap">
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>参数</th>
+                            <th>默认</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>enable</code></td><td><code>true</code></td><td>是否启用导出；false 时提示并返回 false。</td></tr>
+                        <tr><td><code>filename</code></td><td><code>'导出报表-'</code></td><td>文件名前缀；空值会回退默认。</td></tr>
+                        <tr><td><code>fileAutoTime</code></td><td><code>true</code></td><td>是否自动追加时间戳。</td></tr>
+                        <tr><td><code>extension</code></td><td><code>'.xls'</code></td><td>支持 <code>.xls</code>、<code>.xlsx</code>、<code>.csv</code>。</td></tr>
+                        <tr><td><code>table</code></td><td><code>'.mel-table'</code></td><td>表格节点或选择器。</td></tr>
+                        <tr><td><code>exclude</code></td><td><code>'.noExl'</code></td><td>导出前从克隆表格中排除的节点选择器。</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>实现上会克隆表格、剔除 <span class="inline-code">exclude</span> 命中的节点，再交给 SheetJS 的 <span class="inline-code">table_to_sheet</span> / <span class="inline-code">writeFile</span>。不依赖 Table 的导出插件，普通 HTML 表格也能用；但表格节点必须存在，且行列结构要能被 SheetJS 解析。</p>
+
+            <h4 class="subhead" id="sec-5-2-3" data-tree-kind="sub">5.2.3 exportWeb2Image 参数</h4>
+            <div class="table-wrap">
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>参数</th>
+                            <th>默认</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>element</code></td><td><code>'body'</code></td><td>要导出的节点或选择器。</td></tr>
+                        <tr><td><code>filename</code></td><td><code>'下载图片.png'</code></td><td>文件名；不是 png / jpg / jpeg 时会自动补 <code>.png</code>。</td></tr>
+                        <tr><td><code>caption</code></td><td><code>'长按图片“保存到手机”'</code></td><td>移动端预览浮层的提示文案。</td></tr>
+                        <tr><td><code>closeCallBack</code></td><td><code>null</code></td><td>移动端关闭浮层后的回调。</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>桌面端调用会生成下载链接；移动端显示一张带提示和关闭按钮的浮层。节点不存在或 <span class="inline-code">html2canvas</span> 未加载时返回 <code>null</code> 并提示。导出函数在提示时都优先调用 <span class="inline-code">melui.alert</span>，没有 dialog 组件时退回原生 <span class="inline-code">alert</span>。</p>
+
+            <div class="code-label">引入与调用</div>
+            <pre><code>&lt;!-- 第三方库按项目实际路径引入 --&gt;
+&lt;script src="xlsx.full.min.js"&gt;&lt;/script&gt;
+&lt;script src="html2canvas.min.js"&gt;&lt;/script&gt;
+
+&lt;!-- MelUi 主包与 third 适配包 --&gt;
+&lt;script src="../release/dist/melui.min.js"&gt;&lt;/script&gt;
+&lt;script src="../release/dist/melui-third.min.js"&gt;&lt;/script&gt;
+
+&lt;script&gt;
+melui.third.export2Excel({
+    table: '.mel-table',
+    filename: '订单报表',
+    extension: '.xlsx'
+});
+
+melui.third.exportWeb2Image({
+    element: '#report',
+    filename: '报表.png'
+});
+&lt;/script&gt;</code></pre>
+
+            <div class="footer">
+                MelUi 使用手册 · v1.0.0 · 2026-11-20<br>
+                原生 JavaScript · IE9+ · Core / Components / Util / Third
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<button type="button" class="to-top" id="toTop" aria-label="返回顶部">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+        <path d="M12 19V5M5 12l7-7 7 7"></path>
+    </svg>
+</button>
+
+<script>
+    (function () {
+        var headerH = 56;
+        var offsetGap = 20;
+        var treeBox = document.getElementById('docTree');
+        var sidebar = document.getElementById('sidebar');
+        var menuBtn = document.getElementById('menuBtn');
+        var toTop = document.getElementById('toTop');
+        var treeAll = document.getElementById('treeAll');
+
+        // 1. 从正文标题生成树：h2 章节 / h3 小节 / h4 组件
+        var nodes = document.querySelectorAll('.paper-inner h2, .paper-inner h3, .paper-inner h4');
+        var map = {};
+        var links = [];
+        var parents = [];
+        var currentH2 = null;
+        var currentH3 = null;
+        var i;
+        var id;
+        var level;
+        var text;
+        var target;
+        var parentLi;
+        var parentEntry;
+
+        function getHeadingText(el) {
+            if (el.firstChild && el.firstChild.nodeType === 3) {
+                return el.firstChild.nodeValue;
+            }
+            return el.textContent;
+        }
+
+        function ensureChildren(parent) {
+            var ul;
+            if (!parent.__childrenUl) {
+                ul = document.createElement('ul');
+                ul.className = 'tree-children';
+                parent.appendChild(ul);
+                parent.__childrenUl = ul;
+            }
+            return parent.__childrenUl;
+        }
+
+        function makeNode(el, className, parent) {
+            var node = document.createElement('li');
+            var rowEl = document.createElement('div');
+            var link = document.createElement('a');
+            var title = (getHeadingText(el) || '').replace(/^\s+|\s+$/g, '');
+
+            node.className = 'tree-node ' + className;
+            rowEl.className = 'tree-row';
+            link.className = 'tree-label ' + className;
+            link.href = '#' + el.id;
+            link.setAttribute('data-target', el.id);
+            link.appendChild(document.createTextNode(title));
+            rowEl.appendChild(link);
+            node.appendChild(rowEl);
+
+            if (parent) {
+                ensureChildren(parent).appendChild(node);
+            } else {
+                treeBox.appendChild(node);
+            }
+
+            node.__entry = { li: node, row: rowEl, label: link, childrenUl: null, toggle: null };
+            map[el.id] = node.__entry;
+            links.push(link);
+            return node;
+        }
+
+        for (i = 0; i < nodes.length; i++) {
+            target = nodes[i];
+            if (!target.id) {
+                target.id = 'doc-anchor-' + i;
+            }
+            level = target.tagName.toLowerCase();
+            text = (getHeadingText(target) || '').replace(/^\s+|\s+$/g, '');
+
+            if (!text) {
+                continue;
+            }
+
+            if (level === 'h2') {
+                makeNode(target, 'tree-chapter', null);
+                currentH2 = target;
+                currentH3 = null;
+            } else if (level === 'h3') {
+                parentLi = currentH2 ? map[currentH2.id].li : null;
+                makeNode(target, 'tree-sub', parentLi);
+                currentH3 = target;
+            } else {
+                parentLi = currentH3 && map[currentH3.id]
+                    ? map[currentH3.id].li
+                    : (currentH2 && map[currentH2.id] ? map[currentH2.id].li : null);
+                if (target.getAttribute('data-tree-kind') === 'component') {
+                    makeNode(target, 'tree-component', parentLi);
+                } else if (target.getAttribute('data-tree-kind') === 'sub') {
+                    makeNode(target, 'tree-subleaf', parentLi);
+                } else {
+                    makeNode(target, 'tree-api', parentLi);
+                }
+            }
+        }
+
+        // 2. 有子节点的行加 + / − 折叠按钮
+        function setExpanded(entry, expanded) {
+            if (!entry || !entry.childrenUl) {
+                return;
+            }
+            entry.childrenUl.className = 'tree-children' + (expanded ? '' : ' is-collapsed');
+            if (entry.toggle) {
+                entry.toggle.innerHTML = expanded ? '−' : '+';
+                entry.toggle.className = 'tree-toggle' + (expanded ? ' is-open' : '');
+                entry.toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                entry.toggle.title = expanded ? '收起子菜单' : '展开子菜单';
+            }
+        }
+
+        function hasChildren(entry) {
+            return !!(entry && entry.li && entry.li.__childrenUl && entry.li.__childrenUl.firstChild);
+        }
+
+        function addToggle(entry) {
+            var btn = document.createElement('button');
+            entry.childrenUl = entry.li.__childrenUl;
+            btn.type = 'button';
+            btn.className = 'tree-toggle is-open';
+            btn.innerHTML = '−';
+            btn.setAttribute('aria-expanded', 'true');
+            btn.setAttribute('aria-label', '收起子菜单');
+            btn.onclick = function (e) {
+                var evt = e || window.event;
+                if (evt.preventDefault) {
+                    evt.preventDefault();
+                } else {
+                    evt.returnValue = false;
+                }
+                if (evt.stopPropagation) {
+                    evt.stopPropagation();
+                } else {
+                    evt.cancelBubble = true;
+                }
+                setExpanded(entry, entry.childrenUl.className.indexOf('is-collapsed') !== -1);
+                updateAllLabel();
+                return false;
+            };
+            entry.toggle = btn;
+            entry.row.appendChild(btn);
+        }
+
+        for (id in map) {
+            if (Object.prototype.hasOwnProperty.call(map, id)) {
+                parentEntry = map[id];
+                if (hasChildren(parentEntry)) {
+                    addToggle(parentEntry);
+                    parents.push(parentEntry);
+                }
+            }
+        }
+
+        function updateAllLabel() {
+            var collapsed = 0;
+            var j;
+            for (j = 0; j < parents.length; j++) {
+                if (parents[j].childrenUl.className.indexOf('is-collapsed') !== -1) {
+                    collapsed++;
+                }
+            }
+            if (treeAll) {
+                treeAll.innerHTML = collapsed ? '全部展开' : '全部收起';
+                treeAll.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            }
+        }
+
+        if (treeAll) {
+            treeAll.onclick = function () {
+                var collapsed = 0;
+                var j;
+                var expand;
+                for (j = 0; j < parents.length; j++) {
+                    if (parents[j].childrenUl.className.indexOf('is-collapsed') !== -1) {
+                        collapsed++;
+                    }
+                }
+                expand = collapsed > 0;
+                for (j = 0; j < parents.length; j++) {
+                    setExpanded(parents[j], expand);
+                }
+                updateAllLabel();
+            };
+        }
+        updateAllLabel();
+
+        // 3. 锚点跳转 + 自动展开父级
+        function currentTop() {
+            return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        }
+
+        function jumpTo(el) {
+            if (!el) {
+                return;
+            }
+            var rect = el.getBoundingClientRect();
+            var top = currentTop();
+            var y = rect.top + top - headerH - offsetGap;
+            window.scrollTo(0, y < 0 ? 0 : y);
+        }
+
+        function expandAncestors(targetId) {
+            var entry = map[targetId];
+            var parentNode;
+            var parentLiItem;
+            var parentEntryItem;
+            if (!entry) {
+                return;
+            }
+            parentNode = entry.li.parentNode;
+            if (!parentNode || parentNode === treeBox) {
+                return;
+            }
+            parentLiItem = parentNode.parentNode;
+            while (parentLiItem && parentLiItem.tagName === 'LI') {
+                parentEntryItem = parentLiItem.__entry;
+                if (parentEntryItem) {
+                    setExpanded(parentEntryItem, true);
+                }
+                parentNode = parentLiItem.parentNode;
+                parentLiItem = parentNode && parentNode.parentNode;
+            }
+        }
+
+        function bindJump(link, targetId) {
+            link.onclick = function (e) {
+                var evt = e || window.event;
+                if (evt.preventDefault) {
+                    evt.preventDefault();
+                } else {
+                    evt.returnValue = false;
+                }
+                var el = document.getElementById(targetId);
+                if (!el) {
+                    return false;
+                }
+                expandAncestors(targetId);
+                jumpTo(el);
+                if (sidebar.className.indexOf('is-open') !== -1) {
+                    sidebar.className = 'sidebar';
+                }
+                updateAllLabel();
+                return false;
+            };
+        }
+
+        for (i = 0; i < links.length; i++) {
+            bindJump(links[i], links[i].getAttribute('data-target'));
+        }
+
+        // 4. 滚动高亮 + 返回顶部
+        function onScroll() {
+            var top = currentTop();
+            var cur = -1;
+            var j;
+
+            for (j = 0; j < nodes.length; j++) {
+                if (nodes[j].getBoundingClientRect().top + top - headerH - 30 <= top) {
+                    cur = j;
+                }
+            }
+            for (j = 0; j < links.length; j++) {
+                var base = links[j].className.replace(/\s*is-active/g, '');
+                links[j].className = (j === cur) ? base + ' is-active' : base;
+            }
+            if (toTop) {
+                toTop.className = top > 320 ? 'to-top is-show' : 'to-top';
+            }
+        }
+
+        var ticking = false;
+        window.onscroll = function () {
+            if (ticking) {
+                return;
+            }
+            ticking = true;
+            setTimeout(function () {
+                onScroll();
+                ticking = false;
+            }, 16);
+        };
+
+        if (toTop) {
+            toTop.onclick = function () {
+                window.scrollTo(0, 0);
+            };
+        }
+
+        // 5. 窄屏目录
+        if (menuBtn) {
+            menuBtn.onclick = function () {
+                sidebar.className = sidebar.className.indexOf('is-open') === -1
+                    ? 'sidebar is-open'
+                    : 'sidebar';
+            };
+        }
+
+        // 6. 带 hash 打开时按偏移量定位
+        if (location.hash) {
+            var hashId = location.hash.replace('#', '');
+            var hashEl = document.getElementById(hashId);
+            if (hashEl) {
+                expandAncestors(hashId);
+                setTimeout(function () {
+                    jumpTo(hashEl);
+                }, 80);
+            }
+        }
+
+        onScroll();
+    }());
+</script>
+
+</body>
+</html>

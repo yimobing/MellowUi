@@ -445,7 +445,33 @@ export default [
     },
 
 
-    //======================== 三. 全局完整库打包 ======================== 
+    //======================== 三. 第三方适配包打包 ========================
+    // 只做第三方库适配，不内置 SheetJS / html2canvas；不依赖主包和 util 包
+    // 开发版
+    {
+        input: 'src/third/third.js',
+        output: {
+            file: 'release/dist/melui-third.js',
+            format: 'umd',
+            name: '_MelUiThirdTemp',
+            exports: 'named'
+        },
+        plugins: [activateRollupOnly(), dropTempGlobal('_MelUiThirdTemp')]
+    },
+    // 压缩版
+    {
+        input: 'src/third/third.js',
+        output: {
+            file: 'release/dist/melui-third.min.js',
+            format: 'umd',
+            name: '_MelUiThirdTemp',
+            exports: 'named'
+        },
+        plugins: [activateRollupOnly(), terser(terserConfig), dropTempGlobal('_MelUiThirdTemp')]
+    },
+
+
+    //======================== 四. 全局完整库打包 ======================== 
     // 即：将各个组件的JS合并打包成一个JS
     // 全量开发版
     {

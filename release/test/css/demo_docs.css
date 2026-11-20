@@ -35,14 +35,7 @@ body {
     background-color: #f4f4f4;
 }
 
-button[type="button"] {
-    margin: 8px 0;
-    padding: 6px 8px;
-    background-color: #1296db;
-    border: 0;
-    border-radius: 4px;
-    color: #fff;
-}
+
 
 /* 页面主标题 */
 .page-title {
@@ -90,6 +83,7 @@ h2 + .block-group {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }
+
 .block-group__title {
     margin: 25px 0 15px 0;
     font-size: 28px;

@@ -1,9 +1,9 @@
 /**
  * @File    index.js
  * @Desc    MelUI 全量入口：CSS 集中导入 + 组件 JS 引入 + core/util 装配
- * @Version 0.1.5
+ * @Version 0.1.6
  * @Date    2026-11-13
- * @PubDate 2026-11-17 12:05:00
+ * @PubDate 2026-11-19 15:49:00
  * @Author  ChenMufeng
  *
  * ── 文件职责：全量打包入口 ───────────────────────────────
@@ -19,6 +19,9 @@
  * ──────────────────────────────────────────────────────
  */
 
+// 兼容补丁放在最前：组件 script 执行时就能用到 matches / bind / classList 等
+import './core/polyfill.js';
+
 //----------------------------------------
 // CSS打包处理：把各个组件的CSS + 公用CSS 合并打包成一个CSS
 // 以下css会被 `rollup-plugin-postcss` 提取，合并输出到：melui.css / melui.min.css
@@ -33,7 +36,7 @@
 import './components/layout/index.css';
 import './components/button/index.css';
 
-// 核心库样式：loading / spinner / 遮罩
+// 核心库样式：loading / spinner / 遮罩 / iframe
 import './core/core.css';
 
 // 各个组件样式

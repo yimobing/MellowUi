@@ -1,9 +1,9 @@
 /**
  * @File    type.js
  * @Desc    MelUI Util 基础层：类型判断（纯函数，无 DOM）
- * @Version 0.1.1
+ * @Version 0.1.2
  * @Date    2026-11-13
- * @PubDate 2026-11-16 10:15:14
+ * @PubDate 2026-11-20 15:30:00
  * @Author  ChenMufeng
  *
  * ── 层级定位：共享基础层（base）──────────────────────────
@@ -23,14 +23,20 @@
  * @param {*} val
  * @return {String} 例如 '[object Object]'
  */
- function internalTag(val) {
+function internalTag(val) {
   return Object.prototype.toString.call(val);
 }
 
 /**
  * 是否普通对象（排除 null、数组、DOM 节点、日期、正则）
  * @param {*} val
- * @return {Boolean}
+ * @returns {Boolean} true 表示 Object 原型对象且不是 DOM/window；null、数组、函数、日期、正则返回 false
+ * @example
+ * isPlainObject({ a: 1 })       // true
+ * isPlainObject(Object.create(null)) // true
+ * isPlainObject([])             // false
+ * isPlainObject(document.body)  // false
+ * isPlainObject(null)           // false
  */
 export function isPlainObject(val) {
   if (val === null || typeof val !== 'object') {
@@ -49,7 +55,12 @@ export function isPlainObject(val) {
 /**
  * 是否数组
  * @param {*} val
- * @return {Boolean}
+ * @returns {Boolean} true 表示 Array；类数组对象、字符串返回 false
+ * @example
+ * isArray([])        // true
+ * isArray([1, 2])    // true
+ * isArray('abc')     // false
+ * isArray({ 0: 'a', length: 1 }) // false
  */
 export function isArray(val) {
   return internalTag(val) === '[object Array]';
@@ -58,7 +69,11 @@ export function isArray(val) {
 /**
  * 是否函数
  * @param {*} val
- * @return {Boolean}
+ * @returns {Boolean} true 表示 typeof 为 function
+ * @example
+ * isFunction(function () {}) // true
+ * isFunction(() => {})       // true
+ * isFunction({})             // false
  */
 export function isFunction(val) {
   return typeof val === 'function';
@@ -67,7 +82,11 @@ export function isFunction(val) {
 /**
  * 是否数字（NaN 不算）
  * @param {*} val
- * @return {Boolean}
+ * @returns {Boolean} true 表示 typeof 为 number 且不是 NaN；'123' 字符串返回 false
+ * @example
+ * isNumber(123)  // true
+ * isNumber(NaN)  // false
+ * isNumber('123') // false
  */
 export function isNumber(val) {
   return typeof val === 'number' && !isNaN(val);
@@ -76,7 +95,11 @@ export function isNumber(val) {
 /**
  * 是否字符串
  * @param {*} val
- * @return {Boolean}
+ * @returns {Boolean} true 表示 typeof 为 string；String 对象返回 false
+ * @example
+ * isString('abc')        // true
+ * isString('')           // true
+ * isString(new String('a')) // false
  */
 export function isString(val) {
   return typeof val === 'string';
@@ -85,7 +108,11 @@ export function isString(val) {
 /**
  * 是否 DOM 元素节点
  * @param {*} val
- * @return {Boolean}
+ * @returns {Boolean} true 表示 nodeType 为 1；文本节点、普通对象、null 返回 false
+ * @example
+ * isElement(document.body) // true
+ * isElement(document.createTextNode('x')) // false
+ * isElement({ nodeType: 1 }) // true（只判断 nodeType，不要求真实 DOM）
  */
 export function isElement(val) {
   return !!(val && val.nodeType === 1);

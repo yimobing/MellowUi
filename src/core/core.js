@@ -1,9 +1,9 @@
 /**
  * @File    core.js
  * @Desc    MelUI Core 对外出口：只登记 publicApi 白名单，不导出、不暴露 Core 对象
- * @Version 0.1.4
+ * @Version 0.1.6
  * @Date    2026-11-13
- * @PubDate 2026-11-16 17:10:00
+ * @PubDate 2026-11-19 15:49:00
  * @Author  ChenMufeng
  *
  * ── 文件职责：core 的对外出口（与 core.css 同目录同名，一眼对应）────
@@ -21,18 +21,25 @@
  * ──────────────────────────────────────────────────────
  */
 
- import { showLoading, closeLoading, createSpinner, isLoading } from './loading.js';
+// 兼容补丁必须先于其它模块执行：组件与 core 都可能用到 bind / filter / matches
+import './polyfill.js';
+import { showLoading, closeLoading, createSpinner, isLoading } from './loading.js';
+import { openMask, closeMask } from './mask.js';
+import { openIframe, closeIframe } from './iframe.js';
 
- /**
-  * 唯一白名单：登记要提升到 melui.xxx 顶层的 API。
-  * 只填真的在 loading.js 里实现过、且允许业务直接用的函数。
-  */
- export var publicApi = {
-   showLoading: showLoading,
-   closeLoading: closeLoading,
-   createSpinner: createSpinner,
-   isLoading: isLoading
- };
- 
- export default publicApi;
- 
+/**
+ * 唯一白名单：登记要提升到 melui.xxx 顶层的 API。
+ * 只填真的在 core 里实现过、且允许业务直接用的函数。
+ */
+export var publicApi = {
+  showLoading: showLoading,
+  closeLoading: closeLoading,
+  createSpinner: createSpinner,
+  isLoading: isLoading,
+  openMask: openMask,
+  closeMask: closeMask,
+  openIframe: openIframe,
+  closeIframe: closeIframe
+};
+
+export default publicApi;

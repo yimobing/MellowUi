@@ -1,9 +1,9 @@
 /**
  * @File    util.js
  * @Desc    MelUI Util 扩展包入口：汇总全部工具，统一挂到 melui.util，不新增顶层全局
- * @Version 0.1.4
+ * @Version 0.1.5
  * @Date    2026-11-13
- * @PubDate 2026-11-16 18:20:00
+ * @PubDate 2026-11-20 16:10:00
  * @Author  ChenMufeng
  *
  * ── 文件职责：工具扩展包入口（与 util 目录同名，不用 index.js）────
@@ -25,13 +25,35 @@
 
  import * as type from './base/type.js';
  import * as object from './base/object.js';
- // 后续扩展：import * as date from './date.js'; import * as money from './money.js';
- //            一个文件一行，加进下面的 groups 数组即可
+ import * as date from './date.js';
+ import * as format from './format.js';
+ import * as dom from './dom.js';
+ import * as string from './string.js';
+ import * as validate from './validate.js';
+ import * as array from './array.js';
+ import * as random from './random.js';
+ import * as biz from './biz.js';
+ import * as widget from './widget.js';
  
  var utilAll = {};
+ // base 的键直接扁平挂到 melui.util（如 melui.util.isArray）；
+ // 业务模块按模块名分组挂载（如 melui.util.dom.getHtml）。
  var groups = [type, object];
+ var modules = {
+   date: date,
+   format: format,
+   dom: dom,
+   string: string,
+   validate: validate,
+   array: array,
+   random: random,
+   biz: biz,
+   widget: widget
+ };
  var group;
+ var module;
  var key;
+ var subKey;
  var i;
  
  // ES5 合并：IE9 没有 Object.assign，也不用对象展开
@@ -40,6 +62,19 @@
    for (key in group) {
      if (Object.prototype.hasOwnProperty.call(group, key)) {
        utilAll[key] = group[key];
+     }
+   }
+ }
+ 
+ // 业务模块按模块名分组，复制成普通对象，避免把 Rollup 的只读命名空间直接挂出去
+ for (key in modules) {
+   if (Object.prototype.hasOwnProperty.call(modules, key)) {
+     module = modules[key];
+     utilAll[key] = {};
+     for (subKey in module) {
+       if (Object.prototype.hasOwnProperty.call(module, subKey)) {
+         utilAll[key][subKey] = module[subKey];
+       }
      }
    }
  }

@@ -12,7 +12,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta http-equiv="Cache-Control" content="no-transform">
     <meta http-equiv="Cache-Control" content="no-siteapp">
-    <title> MelUi Loading 加载转圈组件演示 </title>
+    <title>MelUi Core Loading 转圈加载使用手册</title>
     <meta name="keywords" content="">
     <meta name="description" content="">
     <!-- 源码调试：core 相关样式只需 core.css，顺序与 src/index.js 的 css 块一致 -->
@@ -292,8 +292,8 @@
 
 <header class="topbar">
     <div class="topbar-inner">
-        <div class="topbar-brand">MelUi <span>Loading</span></div>
-        <div class="topbar-ver">v0.1.4 &nbsp;·&nbsp; IE9+ &nbsp;·&nbsp; Loading / Spinner</div>
+        <div class="topbar-brand">MelUi <span>Core Loading</span></div>
+        <div class="topbar-ver">v0.1.4 &nbsp;·&nbsp; IE9+ &nbsp;·&nbsp; Core Loading / Spinner</div>
         <button type="button" class="topbar-menu" id="menuBtn">目录</button>
     </div>
 </header>
@@ -307,14 +307,14 @@
     <main class="paper">
         <div class="paper-inner">
 
-    <h1 class="page-title">MelUi Loading 加载转圈组件</h1>
+    <h1 class="page-title">MelUi Core Loading 加载转圈</h1>
     <div class="version-desc">
         版本：v0.1.4 | 兼容IE9~11、移动端自适应 | melui.showLoading() 与 MelUi.showLoading() 等价（小写只是别名）
     </div>
 
     <div class="demo-warn">
         <p><strong>说明：</strong>不能直接双击打开本页面（file://），浏览器会拦截模块加载，必须使用本地 HTTP 服务打开。</p>
-        <p><strong>原因：</strong>本页用 type="module" 直接加载 ../src/index.js，浏览器对 file:// 协议下的模块脚本做了安全拦截，必须起一个本地 http 服务，访问 <strong>http://localhost:8099/demo/loading.html</strong>。</p>
+        <p><strong>原因：</strong>本页用 type="module" 直接加载 ../src/index.js，浏览器对 file:// 协议下的模块脚本做了安全拦截，必须起一个本地 http 服务，访问 <strong>http://localhost:8099/demo/core_loading_转圈加载_使用手册.html</strong>。</p>
         <p><strong>发布后的业务项目：</strong>只引下面「二、标准引入方式」里的两行 dist 产物，Loading 与 Spinner 已经打包进 melui 主包，不需要单独引 core，也不需要引任何 ../src 下的源码文件。</p>
         <p><strong>IE9 验收：</strong>IE9 不支持 ES Module，请用打包产物验证，必须用 release/dist/melui.min.js 在 IE9 真机验证，源码的 type="module" 写法 IE9 不认。</p>
     </div>
@@ -355,7 +355,7 @@ melui.closeLoading()                      计数归零 → 销毁 / 隐藏，并
 
     <div class="subsec">
     <h3>3.1 对外 API</h3>
-    <p>业务只调用这 4 个入口，参数全部可选；后续新增 API 在表格里加一行即可。</p>
+    <p>业务只调用这些入口，参数全部可选；后续新增 API 在表格里加一行即可。</p>
     <table class="api-table">
         <colgroup>
             <col style="width:27%">
